@@ -1,4 +1,4 @@
-# mongolad
+# mongoload
 
 simple mongodb load provider tool
 
