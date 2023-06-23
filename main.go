@@ -31,63 +31,48 @@ type Book struct {
 	ISBN   string
 }
 
+type mongoload struct {
+	db *mongo.Client
+	wg sync.WaitGroup
+
+	rateLimit int
+
+	// rps
+	rlp   sync.Mutex
+	reqs  int64
+	start time.Time
+}
+
+func (*mongoload) newMongoLoad() (*mongoload, error) {
+	mongoLoad := new(mongoload)
+
+	return mongoLoad, nil
+}
+func (*mongoload) performSingleWrite()             {}
+func (*mongoload) performBatchWrite(batchSize int) {}
+func (*mongoload) performSingleRead()              {}
+func (*mongoload) worker()                         {}
+
 func main() {
 	// iserts
-	connectionsAmount := 150
-	insertsAmount := 125 * 8000
+	connectionsAmount := 400
+	insertsAmount := 125 * 800
 
 	start := time.Now()
 
-	var wg sync.WaitGroup
-	wg.Add(connectionsAmount)
+  uri := "mongodb://localhost:27017"
+	opts := options.Client().
+		ApplyURI(uri).
+		SetReadPreference(readpref.SecondaryPreferred()).
+		SetAppName("test").
+		SetMaxPoolSize(uint64(connectionsAmount * 8)).
+		SetMaxConnecting(100).
+		SetMaxConnIdleTime(time.Microsecond * 100000)
 
-	jobChannel := make(chan int)
-	resultChannel := make(chan bool, insertsAmount)
-
-	fmt.Println("worker starting")
-	// start workers
-	for i := 0; i < connectionsAmount; i++ {
-		go worker(&wg, jobChannel, resultChannel)
-	}
-	fmt.Println("after worker starting")
-
-	fmt.Println("main sending jobs")
-	// send jobs
-	for i := 0; i < insertsAmount; i++ {
-		jobChannel <- i
-	}
-	fmt.Println("main jobs sended")
-
-	close(jobChannel)
-	wg.Wait()
-	close(resultChannel)
-
-  fmt.Println("done")
-
-	// for result := range resultChannel {
-	// 	fmt.Printf("%v \n", result)
-	// }
-
-	elapsed := time.Since(start)
-	fmt.Printf("Find documents took %s", elapsed)
-}
-
-func worker(wg *sync.WaitGroup, jobChannel <-chan int, resultChannel chan bool) {
-	defer wg.Done()
-	uri := "mongodb://localhost:27017"
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	client, err := mongo.Connect(
-		ctx,
-		options.Client().
-			ApplyURI(uri).
-			SetReadPreference(readpref.SecondaryPreferred()).
-			SetAppName("catalog").
-      SetMaxPoolSize(200).
-      SetMaxConnecting(100).
-			SetMaxConnIdleTime(time.Microsecond*100000),
-	)
 
+	client, err := mongo.Connect(ctx, opts)
 	defer func() {
 		if err = client.Disconnect(ctx); err != nil {
 			panic(err)
@@ -107,6 +92,43 @@ func worker(wg *sync.WaitGroup, jobChannel <-chan int, resultChannel chan bool) 
 	} else {
 		fmt.Println("no errors found")
 	}
+
+	var wg sync.WaitGroup
+	wg.Add(connectionsAmount)
+
+	jobChannel := make(chan int)
+	resultChannel := make(chan bool, insertsAmount)
+
+	fmt.Println("worker starting")
+	// start workers
+	for i := 0; i < connectionsAmount; i++ {
+		go worker(&wg, client, jobChannel, resultChannel)
+	}
+	fmt.Println("after worker starting")
+
+	fmt.Println("main sending jobs")
+	// send jobs
+	for i := 0; i < insertsAmount; i++ {
+		jobChannel <- i
+	}
+	fmt.Println("main jobs sended")
+
+	close(jobChannel)
+	wg.Wait()
+	close(resultChannel)
+
+	fmt.Println("done")
+
+	// for result := range resultChannel {
+	// 	fmt.Printf("%v \n", result)
+	// }
+
+	elapsed := time.Since(start)
+	fmt.Printf("Find documents took %s", elapsed)
+}
+
+func worker(wg *sync.WaitGroup, client *mongo.Client, jobChannel <-chan int, resultChannel chan bool) {
+	defer wg.Done()
 
 	collection := client.Database("test").Collection("go")
 
@@ -131,19 +153,19 @@ func worker(wg *sync.WaitGroup, jobChannel <-chan int, resultChannel chan bool) 
 
 func insertManyDocuments(collection *mongo.Collection, books []interface{}, i int) bool {
 	_, err := collection.InsertMany(context.Background(), books)
-	if err != nil {
-		fmt.Printf("error %v \n", err)
-	} else {
-		fmt.Printf("inserted %d \n", i)
-	}
+	// if err != nil {
+	// 	fmt.Printf("error %v \n", err)
+	// } else {
+	// 	fmt.Printf("inserted %d \n", i)
+	// }
 	return bool(err == nil)
 }
 
 func readDocuments(collection *mongo.Collection) bool {
-	start := time.Now()
+	// start := time.Now()
 	batch_size := int32(1000)
 
-	cursor, err := collection.Find(context.Background(), bson.M{"author": "Franz Kafka"}, &options.FindOptions{BatchSize: &batch_size})
+	cursor, err := collection.Find(context.Background(), bson.M{"author": "Franz Kafkaaa"}, &options.FindOptions{BatchSize: &batch_size})
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -172,19 +194,7 @@ func readDocuments(collection *mongo.Collection) bool {
 		totalFound++
 	}
 
-	elapsed := time.Since(start)
-	fmt.Printf("Find documents took %s", elapsed)
-
-	// var wg sync.WaitGroup
-
-	// for i := 0; i < *numConns; i++ {
-	// 	go func(i int) {
-	// 		defer wg.Done()
-	// 		for j := 0; j < *numReqs / *numConns; j++ {
-	// 			bar.Add(1)
-	// 		}
-	// 	}(i)
-	// }
-	// wg.Wait()
-  return true
+	// elapsed := time.Since(start)
+	// fmt.Printf("Find documents took %s", elapsed)
+	return true
 }
