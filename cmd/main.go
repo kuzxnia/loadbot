@@ -14,8 +14,8 @@ func main() {
 	mongoCollection := flag.String("col", "load_test_coll", "Collection name")
 	concurrentConnections := flag.Int("conn", 100, "Concurrent connections amount")
 	rpsLimit := flag.Int("rps", 0, "RPS limit")
-	timeLimit := flag.Int("t", 0, "Time limit")
-	opsAmount := flag.Int("ops", 10000, "Operations amount")
+	durationLimit := flag.Duration("d", 0, "Duration limit")
+	opsAmount := flag.Int("ops", 1000, "Operations amount")
 
 	flag.Parse()
 
@@ -36,7 +36,7 @@ func main() {
 		*opsAmount,
 		*concurrentConnections,
 		*rpsLimit,
-		*timeLimit,
+		*durationLimit,
 		db,
 	)
 

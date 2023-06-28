@@ -2,9 +2,13 @@ module github.com/kuzxnia/mongoload
 
 go 1.20
 
-require go.mongodb.org/mongo-driver v1.11.7
+require (
+	go.mongodb.org/mongo-driver v1.11.7
+	go.uber.org/ratelimit v0.2.0
+)
 
 require (
+	github.com/andres-erbsen/clock v0.0.0-20160526145045-9e14626cd129 // indirect
 	github.com/golang/snappy v0.0.1 // indirect
 	github.com/klauspost/compress v1.16.3 // indirect
 	github.com/montanaflynn/stats v0.0.0-20171201202039-1bf9dbcd8cbe // indirect

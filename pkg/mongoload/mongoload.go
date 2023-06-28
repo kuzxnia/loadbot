@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/kuzxnia/mongoload/pkg/database"
+	"github.com/kuzxnia/mongoload/pkg/rps"
 )
 
 type Book struct {
@@ -22,26 +23,35 @@ type mongoload struct {
 	rateLimit             int // rps limit
 	operationsAmount      int64
 
-	// rps
 	// rlp      sync.Mutex
 	// requests int64
-	// start time.Time
+
+	start       time.Time
+	duration    time.Duration
+	rateLimiter rps.Limiter
 
 	jobs chan int
 	done chan bool
 }
 
-func New(ops int, conns int, rps int, time int, database database.DbClient) (*mongoload, error) {
+func New(ops int, conns int, rateLimit int, duration time.Duration, database database.DbClient) (*mongoload, error) {
 	load := new(mongoload)
 	// uri, rps, time, ops, conns,
-	if (time == 0 && rps == 0) && ops == 0 {
-		panic("time and rps or ops are required")
-	} else if time != 0 && rps != 0 {
-		load.operationsAmount = int64(time * rps)
+	if duration != 0 && ops != 0 {
+		panic("duration or ops are required")
+	} else if duration != 0 {
+		load.duration = duration
+		load.operationsAmount = 0
 	} else {
 		load.operationsAmount = int64(ops)
+		load.duration = 0
 	}
-	load.rateLimit = rps
+	load.rateLimit = rateLimit
+	if rateLimit == 0 {
+		load.rateLimiter = rps.NewNoLimitLimiter()
+	} else {
+		load.rateLimiter = rps.NewSimpleLimiter(rateLimit)
+	}
 
 	if conns == 0 {
 		conns = 100
@@ -59,12 +69,12 @@ func New(ops int, conns int, rps int, time int, database database.DbClient) (*mo
 
 func (ml *mongoload) Torment() {
 	// start workers
-	start := time.Now()
 	for i := 0; i < ml.concurrentConnections; i++ {
 		go ml.worker()
 	}
 	fmt.Println("workers started")
 
+	ml.start = time.Now()
 	// send jobs
 	for i := 0; i < int(ml.operationsAmount); i++ {
 		ml.jobs <- i
@@ -79,7 +89,7 @@ func (ml *mongoload) Torment() {
 	// }
 
 	// start := time.Now()
-	elapsed := time.Since(start)
+	elapsed := time.Since(ml.start)
 	fmt.Printf("Time took %f s\n", elapsed.Seconds())
 	fmt.Printf("Total operations: %d\n", ml.operationsAmount)
 	opsPerSecond := float64(ml.operationsAmount) / elapsed.Seconds()
@@ -91,6 +101,7 @@ func (ml *mongoload) worker() {
 	defer ml.wg.Done()
 
 	for range ml.jobs {
+    ml.rateLimiter.Take()
 		ml.done <- ml.performSingleWrite()
 	}
 }
