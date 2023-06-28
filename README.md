@@ -7,7 +7,6 @@ currently
 simple mongodb load provider tool
 
 todo:
-* working rateLimit
 * working duration and indefinitely if not set (with and without ratelimit)
 * dockerfile
 * ci to automically build package and dockerfile
@@ -20,3 +19,5 @@ todo:
         * mix ratio
 
 * helmchart for multi instance load test and easier install
+
+* ~~working rateLimit~~, added more accurate rate limit, current have 30ops deviation with bigger rps's
