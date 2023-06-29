@@ -61,7 +61,6 @@ func (w *deductionJobPool) GetRequestsDone() uint64 {
 }
 
 type timerJobPool struct {
-	start        time.Time
 	duration     time.Duration
 	requestsDone uint64
 
@@ -75,7 +74,6 @@ func NewTimerJobPool(duration time.Duration) JobPool {
 	}
 
 	pool := &timerJobPool{
-		start:        time.Now(),
 		duration:     duration,
 		requestsDone: 0,
 		done:         make(chan struct{}),
@@ -106,5 +104,41 @@ func (w *timerJobPool) Cancel() {
 }
 
 func (w *timerJobPool) GetRequestsDone() uint64 {
+	return atomic.LoadUint64(&w.requestsDone)
+}
+
+type noLimitTimerJobPool struct {
+	requestsDone uint64
+
+	done  chan struct{}
+	close sync.Once
+}
+
+func NewNoLimitTimerJobPool() JobPool {
+	pool := &noLimitTimerJobPool{
+		requestsDone: 0,
+		done:         make(chan struct{}),
+	}
+	return JobPool(pool)
+}
+
+func (w *noLimitTimerJobPool) SpawnJob() bool {
+	select {
+	case <-w.done:
+		return false
+	default:
+		return true
+	}
+}
+
+func (w *noLimitTimerJobPool) MarkJobDone() {
+	atomic.AddUint64(&w.requestsDone, 1)
+}
+
+func (w *noLimitTimerJobPool) Cancel() {
+	w.close.Do(func() { close(w.done) })
+}
+
+func (w *noLimitTimerJobPool) GetRequestsDone() uint64 {
 	return atomic.LoadUint64(&w.requestsDone)
 }

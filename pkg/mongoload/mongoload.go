@@ -40,14 +40,12 @@ func New(ops int, conns int, rateLimit int, duration time.Duration, database dat
 	load := new(mongoload)
 	// uri, rps, time, ops, conns,
 	if duration == 0 && ops == 0 {
-		panic("duration or ops are required")
+		load.pool = worker.NewNoLimitTimerJobPool()
 	} else if duration != 0 {
 		load.duration = duration
-		load.operationsAmount = 0
 		load.pool = worker.NewTimerJobPool(duration)
 	} else {
 		load.operationsAmount = int64(ops)
-		load.duration = 0
 		load.pool = worker.NewDeductionJobPool(uint64(load.operationsAmount))
 	}
 	load.rateLimit = rateLimit

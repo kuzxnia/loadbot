@@ -15,7 +15,7 @@ func main() {
 	concurrentConnections := flag.Int("conn", 100, "Concurrent connections amount")
 	rpsLimit := flag.Int("rps", 0, "RPS limit")
 	durationLimit := flag.Duration("d", 0, "Duration limit")
-	opsAmount := flag.Int("ops", 1000, "Operations amount")
+	opsAmount := flag.Int("ops", 0, "Operations amount")
 
 	flag.Parse()
 
