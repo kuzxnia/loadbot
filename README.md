@@ -1,7 +1,27 @@
 # mongoload - workload driver for MongoDB 
 
 
+The purpose of this tool is to simulate workloads and to facilitate test the failover capabilities of MongoDB clusters under the load. This code, being open source, is in its early stages and likely contains numerous bugs.
+
+requirements:
+* go in version 1.20 
+
+current flags:
+
+* `-uri` - mongo uri connection
+* `-db` - database name (default: 'load_test')
+* `-col` - collection name (default: 'load_test_coll')
+* `-conn` - number of concurrent connections
+* `-rps` - request per second limit
+* `-d` - duration (ex. 10s, 1m) 
+* `-ops` - operations amount (inserts by default)
+
+Note:
+If you don't provide the operations amount(`-ops') or duration(`-d`), the program will run indefinitely.
+
+
 todo:
+* simpler build - makefile?
 * more params with functionality:
     * ~~single write~~
     * batch write
