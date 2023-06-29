@@ -1,7 +1,6 @@
 package database
 
 import (
-	"fmt"
 	"math/rand"
 
 	"go.mongodb.org/mongo-driver/bson"

@@ -87,12 +87,13 @@ func (ml *mongoload) Torment() {
 
 	requestsDone := ml.pool.GetRequestsDone()
 	rps := float64(requestsDone) / elapsed.Seconds()
-	ops := float64(requestsDone*ml.db.GetBatchSize()) / elapsed.Seconds()
 
 	fmt.Printf("\nTime took %f s\n", elapsed.Seconds())
 	fmt.Printf("Total operations: %d\n", requestsDone)
 	fmt.Printf("Requests per second: %f rp/s\n", rps)
-	fmt.Printf("Operations per second: %f op/s\n", ops)
+	if batch := ml.db.GetBatchSize(); batch > 1 {
+		fmt.Printf("Operations per second: %f op/s\n", float64(requestsDone*batch)/elapsed.Seconds())
+	}
 }
 
 func (ml *mongoload) cancel() {
