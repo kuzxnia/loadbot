@@ -2,11 +2,14 @@ package mongoload
 
 import (
 	"fmt"
+	"os"
+	"os/signal"
 	"sync"
 	"time"
 
 	"github.com/kuzxnia/mongoload/pkg/database"
 	"github.com/kuzxnia/mongoload/pkg/rps"
+	"github.com/kuzxnia/mongoload/pkg/worker"
 )
 
 type Book struct {
@@ -30,8 +33,7 @@ type mongoload struct {
 	duration    time.Duration
 	rateLimiter rps.Limiter
 
-	jobs chan int
-	done chan bool
+	pool worker.JobPool
 }
 
 func New(ops int, conns int, rateLimit int, duration time.Duration, database database.DbClient) (*mongoload, error) {
@@ -45,6 +47,7 @@ func New(ops int, conns int, rateLimit int, duration time.Duration, database dat
 	} else {
 		load.operationsAmount = int64(ops)
 		load.duration = 0
+		load.pool = worker.NewDeductionJobPool(uint64(load.operationsAmount))
 	}
 	load.rateLimit = rateLimit
 	if rateLimit == 0 {
@@ -61,53 +64,62 @@ func New(ops int, conns int, rateLimit int, duration time.Duration, database dat
 	load.db = database
 
 	load.wg.Add(load.concurrentConnections)
-	load.jobs = make(chan int)
-	load.done = make(chan bool, load.operationsAmount)
 
 	return load, nil
 }
 
 func (ml *mongoload) Torment() {
-	// start workers
+	// handle interrupt
+	interruptChan := make(chan os.Signal, 1)
+	signal.Notify(interruptChan, os.Interrupt)
+	go func() {
+		<-interruptChan
+		ml.cancel()
+	}()
+
+	fmt.Println("Starting workers")
 	for i := 0; i < ml.concurrentConnections; i++ {
 		go ml.worker()
 	}
-	fmt.Println("workers started")
-
+	fmt.Println("Workers started")
 	ml.start = time.Now()
-	// send jobs
-	for i := 0; i < int(ml.operationsAmount); i++ {
-		ml.jobs <- i
-	}
 
-	close(ml.jobs)
 	ml.wg.Wait()
-	close(ml.done)
 
-	// for result := range ml.done {
-	//   fmt.Printf("%v \n", result)
-	// }
-
-	// start := time.Now()
 	elapsed := time.Since(ml.start)
-	fmt.Printf("Time took %f s\n", elapsed.Seconds())
-	fmt.Printf("Total operations: %d\n", ml.operationsAmount)
-	opsPerSecond := float64(ml.operationsAmount) / elapsed.Seconds()
+
+	requestsDone := ml.pool.GetRequestsDone()
+	opsPerSecond := float64(requestsDone) / elapsed.Seconds()
+
+	fmt.Printf("\nTime took %f s\n", elapsed.Seconds())
+	fmt.Printf("Total operations: %d\n", requestsDone)
 	fmt.Printf("Ops per second: %f ops/s\n", opsPerSecond)
 }
 
+func (ml *mongoload) cancel() {
+	print("\nCancelling...")
+	ml.pool.Cancel()
+}
+
 func (ml *mongoload) worker() {
-	// fmt.Println("worker starting")
 	defer ml.wg.Done()
 
-	for range ml.jobs {
-    ml.rateLimiter.Take()
-		ml.done <- ml.performSingleWrite()
+	for ml.pool.SpawnJob() {
+		ml.rateLimiter.Take()
+		ml.performSingleWrite()
+		ml.pool.MarkJobDone()
 	}
 }
 
 func (ml *mongoload) performSingleWrite() bool {
 	writedSuccessfuly, _ := ml.db.InsertOne()
+
+	// if writedSuccessfuly {
+	//   fmt.Printf("s")
+	// } else {
+	//   fmt.Printf("f")
+	// }
+
 	// handle error in stats -> change '_' from above
 	return writedSuccessfuly
 }

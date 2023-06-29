@@ -35,19 +35,15 @@ func NewMongoDbClient(uri string, databaseName string, collectionName string, ma
 	defer cancel()
 
 	client, err := mongo.Connect(ctx, opts)
-
 	if err != nil {
 		panic(err)
-	} else {
-		fmt.Println("connected")
 	}
-
 	err = client.Ping(ctx, readpref.Primary())
 
 	if err != nil {
 		fmt.Println("error in ping to mongo")
 	} else {
-		fmt.Println("no errors found")
+		fmt.Println("Successfully connected to database server")
 	}
 
 	// db - test, collection - go
