@@ -15,12 +15,14 @@ func main() {
 	concurrentConnections := flag.Int("conn", 100, "Concurrent connections amount")
 	rpsLimit := flag.Int("rps", 0, "RPS limit")
 	durationLimit := flag.Duration("d", 0, "Duration limit")
-	opsAmount := flag.Int("ops", 0, "Operations amount")
+	opsAmount := flag.Int("req", 0, "Requests to perform")
+	batchSize := flag.Uint64("bs", 0, "Batch size")
+	dataLenght := flag.Uint64("dl", 100, "Lenght of single item data(chars)")
 
 	flag.Parse()
 
 	poolSize := *concurrentConnections * 8
-	db, err := database.NewMongoDbClient(*mongoURI, *mongoDatabase, *mongoCollection, uint64(poolSize))
+	db, err := database.NewMongoDbClient(*mongoURI, *mongoDatabase, *mongoCollection, uint64(poolSize), *batchSize, *dataLenght)
 
 	defer func() {
 		if err = db.Disconnect(); err != nil {

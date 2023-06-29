@@ -13,12 +13,21 @@ import (
 )
 
 type MongoDbClient struct {
-	ctx        context.Context
-	client     *mongo.Client
-	collection *mongo.Collection
+	ctx           context.Context
+	client        *mongo.Client
+	collection    *mongo.Collection
+	batchProvider *DataProvider
 }
 
-func NewMongoDbClient(uri string, databaseName string, collectionName string, maxPoolSize uint64) (*MongoDbClient, error) {
+// todo: change params to options struct
+func NewMongoDbClient(
+	uri string,
+	databaseName string,
+	collectionName string,
+	maxPoolSize uint64,
+	batchSize uint64,
+	dataLenght uint64,
+) (*MongoDbClient, error) {
 	if uri == "" {
 		panic("uri is required")
 	}
@@ -49,7 +58,9 @@ func NewMongoDbClient(uri string, databaseName string, collectionName string, ma
 	// db - test, collection - go
 	collection := client.Database(databaseName).Collection(collectionName)
 
-	return &MongoDbClient{ctx: ctx, client: client, collection: collection}, err
+	batchProvider := NewDataProvider(batchSize, dataLenght)
+
+	return &MongoDbClient{ctx: ctx, client: client, collection: collection, batchProvider: batchProvider}, err
 }
 
 func (c *MongoDbClient) Disconnect() error {
@@ -57,22 +68,31 @@ func (c *MongoDbClient) Disconnect() error {
 }
 
 func (c *MongoDbClient) InsertOne() (bool, error) {
-	_, err := c.collection.InsertOne(context.Background(), SingleBook)
-
+	_, err := c.collection.InsertOne(context.Background(), c.batchProvider.singleItem)
 	return bool(err == nil), err
 }
 
 func (c *MongoDbClient) InsertMany() (bool, error) {
-	_, err := c.collection.InsertMany(context.Background(), MultipleBooks)
+	_, err := c.collection.InsertMany(context.Background(), *c.batchProvider.batchOfItems)
+	return bool(err == nil), err
+}
+
+func (c *MongoDbClient) InsertOneOrMany() (bool, error) {
+	err := error(nil)
+	if c.batchProvider.batchSize == 0 {
+		_, err = c.collection.InsertOne(context.Background(), c.batchProvider.singleItem)
+	} else {
+		_, err = c.collection.InsertMany(context.Background(), *c.batchProvider.batchOfItems)
+	}
 
 	return bool(err == nil), err
 }
 
-func (c *MongoDbClient) readOne() (bool, error) {
+func (c *MongoDbClient) ReadOne() (bool, error) {
 	return true, nil
 }
 
-func (c *MongoDbClient) readMany() (bool, error) {
+func (c *MongoDbClient) ReadMany() (bool, error) {
 	// start := time.Now()
 	batch_size := int32(1000)
 
@@ -97,9 +117,9 @@ func (c *MongoDbClient) readMany() (bool, error) {
 
 	totalFound := 0
 	for cursor.Next(context.Background()) {
-		var book Book
+		var data bson.M
 
-		if err = cursor.Decode(&book); err != nil {
+		if err = cursor.Decode(&data); err != nil {
 			log.Fatal(err)
 		}
 		totalFound++
@@ -108,4 +128,8 @@ func (c *MongoDbClient) readMany() (bool, error) {
 	// elapsed := time.Since(start)
 	// fmt.Printf("Find documents took %s", elapsed)
 	return true, nil
+}
+
+func (c *MongoDbClient) GetBatchSize() uint64 {
+	return c.batchProvider.batchSize
 }
