@@ -12,6 +12,7 @@ type JobPool interface {
 
 	Cancel()
 
+	GetRequestsStarted() uint64
 	GetRequestsDone() uint64
 }
 
@@ -56,13 +57,18 @@ func (w *deductionJobPool) Cancel() {
 	w.close.Do(func() { close(w.done) })
 }
 
+func (w *deductionJobPool) GetRequestsStarted() uint64 {
+	return atomic.LoadUint64(&w.requestsStarted)
+}
+
 func (w *deductionJobPool) GetRequestsDone() uint64 {
 	return atomic.LoadUint64(&w.requestsDone)
 }
 
 type timerJobPool struct {
-	duration     time.Duration
-	requestsDone uint64
+	duration        time.Duration
+	requestsStarted uint64
+	requestsDone    uint64
 
 	done  chan struct{}
 	close sync.Once
@@ -74,9 +80,10 @@ func NewTimerJobPool(duration time.Duration) JobPool {
 	}
 
 	pool := &timerJobPool{
-		duration:     duration,
-		requestsDone: 0,
-		done:         make(chan struct{}),
+		requestsStarted: 0,
+		requestsDone:    0,
+		duration:        duration,
+		done:            make(chan struct{}),
 	}
 	go func() {
 		time.AfterFunc(duration, func() {
@@ -91,6 +98,7 @@ func (w *timerJobPool) SpawnJob() bool {
 	case <-w.done:
 		return false
 	default:
+		atomic.AddUint64(&w.requestsStarted, 1)
 		return true
 	}
 }
@@ -103,12 +111,17 @@ func (w *timerJobPool) Cancel() {
 	w.close.Do(func() { close(w.done) })
 }
 
+func (w *timerJobPool) GetRequestsStarted() uint64 {
+	return atomic.LoadUint64(&w.requestsStarted)
+}
+
 func (w *timerJobPool) GetRequestsDone() uint64 {
 	return atomic.LoadUint64(&w.requestsDone)
 }
 
 type noLimitTimerJobPool struct {
-	requestsDone uint64
+	requestsStarted uint64
+	requestsDone    uint64
 
 	done  chan struct{}
 	close sync.Once
@@ -127,6 +140,7 @@ func (w *noLimitTimerJobPool) SpawnJob() bool {
 	case <-w.done:
 		return false
 	default:
+		atomic.AddUint64(&w.requestsStarted, 1)
 		return true
 	}
 }
@@ -137,6 +151,10 @@ func (w *noLimitTimerJobPool) MarkJobDone() {
 
 func (w *noLimitTimerJobPool) Cancel() {
 	w.close.Do(func() { close(w.done) })
+}
+
+func (w *noLimitTimerJobPool) GetRequestsStarted() uint64 {
+	return atomic.LoadUint64(&w.requestsStarted)
 }
 
 func (w *noLimitTimerJobPool) GetRequestsDone() uint64 {

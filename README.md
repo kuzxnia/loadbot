@@ -26,10 +26,7 @@ If you don't provide the operations amount(`-ops') or duration(`-d`), the progra
 todo:
 * simpler build - makefile?
 * more params with functionality:
-    * single read
     * cursor read
-    * mixed (if you provide will 50/50 by default)
-        * mix ratio
 
 * dockerfile
 * ci to automically build package and dockerfile

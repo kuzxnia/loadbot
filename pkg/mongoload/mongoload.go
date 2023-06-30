@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/signal"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/kuzxnia/mongoload/pkg/database"
@@ -26,6 +27,9 @@ type mongoload struct {
 	rateLimiter rps.Limiter
 
 	pool worker.JobPool
+
+	readRequest   uint64
+	insertRequest uint64
 }
 
 // todo: change params to options struct
@@ -62,6 +66,8 @@ func New(
 	load.concurrentConnections = conns
 	load.db = database
 	load.writeRatio = writeRatio
+	load.readRequest = 0
+	load.insertRequest = 0
 
 	load.wg.Add(load.concurrentConnections)
 
@@ -79,11 +85,7 @@ func (ml *mongoload) Torment() {
 
 	fmt.Println("Starting workers")
 	for i := 0; i < ml.concurrentConnections; i++ {
-		if i%10 < int(ml.writeRatio*10) {
-			go ml.worker(ml.db.InsertOneOrMany)
-		} else {
-			go ml.worker(ml.db.ReadOne)
-		}
+		go ml.worker()
 	}
 	fmt.Println("Workers started")
 	ml.start = time.Now()
@@ -97,6 +99,8 @@ func (ml *mongoload) Torment() {
 
 	fmt.Printf("\nTime took %f s\n", elapsed.Seconds())
 	fmt.Printf("Total operations: %d\n", requestsDone)
+	fmt.Printf("Total writes: %d\n", atomic.LoadUint64(&ml.insertRequest))
+	fmt.Printf("Total reads: %d\n", atomic.LoadUint64(&ml.readRequest))
 	fmt.Printf("Requests per second: %f rp/s\n", rps)
 	if batch := ml.db.GetBatchSize(); batch > 1 {
 		fmt.Printf("Operations per second: %f op/s\n", float64(requestsDone*batch)/elapsed.Seconds())
@@ -108,13 +112,18 @@ func (ml *mongoload) cancel() {
 	ml.pool.Cancel()
 }
 
-func (ml *mongoload) worker(operation func() (bool, error)) {
+func (ml *mongoload) worker() {
 	defer ml.wg.Done()
 
 	for ml.pool.SpawnJob() {
+		GetRequestsStarted := ml.pool.GetRequestsStarted()
+
 		ml.rateLimiter.Take()
-		operation()
-		// ml.performSingleOperation()
+		if int(GetRequestsStarted)%10 < int(ml.writeRatio*10) {
+			ml.performReadOperation()
+		} else {
+			ml.performInsertOperation()
+		}
 		ml.pool.MarkJobDone()
 	}
 }
@@ -122,6 +131,7 @@ func (ml *mongoload) worker(operation func() (bool, error)) {
 func (ml *mongoload) performInsertOperation() bool {
 	writedSuccessfuly, _ := ml.db.InsertOneOrMany()
 
+	atomic.AddUint64(&ml.insertRequest, 1)
 	// if writedSuccessfuly {
 	//   fmt.Printf("s")
 	// } else {
@@ -135,6 +145,7 @@ func (ml *mongoload) performInsertOperation() bool {
 func (ml *mongoload) performReadOperation() bool {
 	writedSuccessfuly, _ := ml.db.ReadOne()
 
+	atomic.AddUint64(&ml.readRequest, 1)
 	// if writedSuccessfuly {
 	//   fmt.Printf("s")
 	// } else {
