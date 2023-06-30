@@ -17,6 +17,7 @@ current flags:
 * `-req` - requests to perform (inserts by default)
 * `-bs` - batch size (if set inserts will be in batches)
 * `-dl` - length of item (default: 100, len of chars in single item to insert)
+* `-wr` - write ratio (default: 0.5)
 
 Note:
 If you don't provide the operations amount(`-ops') or duration(`-d`), the program will run indefinitely.

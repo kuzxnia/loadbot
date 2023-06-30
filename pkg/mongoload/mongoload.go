@@ -19,6 +19,7 @@ type mongoload struct {
 	concurrentConnections int
 	rateLimit             int // rps limit
 	operationsAmount      int64
+	writeRatio            float64
 
 	start       time.Time
 	duration    time.Duration
@@ -34,6 +35,7 @@ func New(
 	rateLimit int,
 	duration time.Duration,
 	database database.DbClient,
+	writeRatio float64,
 ) (*mongoload, error) {
 	load := new(mongoload)
 
@@ -59,6 +61,7 @@ func New(
 	}
 	load.concurrentConnections = conns
 	load.db = database
+	load.writeRatio = writeRatio
 
 	load.wg.Add(load.concurrentConnections)
 
@@ -76,7 +79,11 @@ func (ml *mongoload) Torment() {
 
 	fmt.Println("Starting workers")
 	for i := 0; i < ml.concurrentConnections; i++ {
-		go ml.worker()
+		if i%10 < int(ml.writeRatio*10) {
+			go ml.worker(ml.db.InsertOneOrMany)
+		} else {
+			go ml.worker(ml.db.ReadOne)
+		}
 	}
 	fmt.Println("Workers started")
 	ml.start = time.Now()
@@ -101,18 +108,32 @@ func (ml *mongoload) cancel() {
 	ml.pool.Cancel()
 }
 
-func (ml *mongoload) worker() {
+func (ml *mongoload) worker(operation func() (bool, error)) {
 	defer ml.wg.Done()
 
 	for ml.pool.SpawnJob() {
 		ml.rateLimiter.Take()
-		ml.performSingleOperation()
+		operation()
+		// ml.performSingleOperation()
 		ml.pool.MarkJobDone()
 	}
 }
 
-func (ml *mongoload) performSingleOperation() bool {
+func (ml *mongoload) performInsertOperation() bool {
 	writedSuccessfuly, _ := ml.db.InsertOneOrMany()
+
+	// if writedSuccessfuly {
+	//   fmt.Printf("s")
+	// } else {
+	//   fmt.Printf("f")
+	// }
+
+	// handle error in stats -> change '_' from above
+	return writedSuccessfuly
+}
+
+func (ml *mongoload) performReadOperation() bool {
+	writedSuccessfuly, _ := ml.db.ReadOne()
 
 	// if writedSuccessfuly {
 	//   fmt.Printf("s")

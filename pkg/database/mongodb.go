@@ -89,6 +89,14 @@ func (c *MongoDbClient) InsertOneOrMany() (bool, error) {
 }
 
 func (c *MongoDbClient) ReadOne() (bool, error) {
+	var result bson.M
+	err := c.collection.FindOne(context.Background(), c.batchProvider.singleItem).Decode(&result)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			return true, err
+		}
+		return false, err
+	}
 	return true, nil
 }
 

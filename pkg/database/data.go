@@ -16,13 +16,6 @@ type DataProvider struct {
 }
 
 func NewDataProvider(batchSize, dataLenght uint64) *DataProvider {
-	if dataLenght < 0 {
-		panic("dataLenght must be positive")
-	}
-	if batchSize < 0 {
-		panic("batchSize must be positive")
-	}
-
 	batchOfData := make([]interface{}, batchSize)
 
 	for i := 0; i < int(batchSize); i++ {
