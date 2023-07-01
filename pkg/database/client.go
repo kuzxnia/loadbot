@@ -34,6 +34,7 @@ func NewMongoClient(
 	uri string,
 	databaseName string,
 	collectionName string,
+	connections uint64,
 	maxPoolSize uint64,
 	batchSize uint64,
 	dataLenght uint64,
@@ -42,7 +43,10 @@ func NewMongoClient(
 		panic("uri is required")
 	}
 
-	opts := options.Client().
+	opts := &options.ClientOptions{
+		HTTPClient: HTTPClient(connections),
+	}
+	opts = opts.
 		ApplyURI(uri).
 		SetReadPreference(readpref.SecondaryPreferred()).
 		SetAppName("test").

@@ -25,16 +25,23 @@ If you don't provide the operations amount(`-ops') or duration(`-d`), the progra
 
 todo:
 * simpler build - makefile?
+* faster http client, https://github.com/valyala/fasthttp
 * add timeouts for queries
-* add summary of successful writes, reads (success, with error, nodata, timeout)
+* fix error handling, add summary of successful writes, reads (success, with error, nodata returned, timeout)
 * add progress bar if running with limit
-* change read preffered (not only from primary)
+* more options
+    * read preference (not only from primary)
+        Primary, PrimaryPreferred, SecondaryPreferred, Secondary, Nearest
+    * majority write
+
 * more params with functionality:
     * cursor read
 
 * dockerfile
+    * check if automaxprocs will give better performance, https://github.com/uber-go/automaxprocs
 * ci to automically build package and dockerfile
 
 * helmchart for multi instance load test and easier install
 
-* ~~working rateLimit~~, added more accurate rate limit, current have 30ops deviation with bigger rps's
+known issues:
+* rate limit accuracy, current have 30ops deviation with bigger rps's

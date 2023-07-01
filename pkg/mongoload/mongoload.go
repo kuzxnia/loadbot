@@ -16,7 +16,7 @@ type mongoload struct {
 	db database.Client
 	wg sync.WaitGroup
 
-	concurrentConnections int
+	concurrentConnections uint64
 	rateLimit             int // rps limit
 	operationsAmount      int64
 	writeRatio            float64
@@ -34,7 +34,7 @@ type mongoload struct {
 // todo: change params to options struct
 func New(
 	ops int,
-	conns int,
+	conns uint64,
 	rateLimit int,
 	duration time.Duration,
 	database database.Client,
@@ -68,7 +68,7 @@ func New(
 	load.readHistogram = NewHistogram()
 	load.writeHistogram = NewHistogram()
 
-	load.wg.Add(load.concurrentConnections)
+	load.wg.Add(int(load.concurrentConnections))
 
 	return load, nil
 }
@@ -83,7 +83,7 @@ func (ml *mongoload) Torment() {
 	}()
 
 	fmt.Println("Starting workers")
-	for i := 0; i < ml.concurrentConnections; i++ {
+	for i := 0; i < int(ml.concurrentConnections); i++ {
 		go ml.worker()
 	}
 	fmt.Println("Workers started")

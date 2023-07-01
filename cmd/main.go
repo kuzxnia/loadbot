@@ -13,7 +13,7 @@ func main() {
 	mongoDatabase := flag.String("db", "load_test", "Database name")
 	mongoCollection := flag.String("col", "load_test_coll", "Collection name")
 
-	concurrentConnections := flag.Int("conn", 100, "Concurrent connections amount")
+	concurrentConnections := flag.Uint64("conn", 100, "Concurrent connections amount")
 	rpsLimit := flag.Int("rps", 0, "RPS limit")
 	durationLimit := flag.Duration("d", 0, "Duration limit")
 	opsAmount := flag.Int("req", 0, "Requests to perform")
@@ -28,7 +28,15 @@ func main() {
 	}
 
 	poolSize := *concurrentConnections * 8
-	db, err := database.NewMongoClient(*mongoURI, *mongoDatabase, *mongoCollection, uint64(poolSize), *batchSize, *dataLenght)
+	db, err := database.NewMongoClient(
+		*mongoURI,
+		*mongoDatabase,
+		*mongoCollection,
+		*concurrentConnections,
+		uint64(poolSize),
+		*batchSize,
+		*dataLenght,
+	)
 
 	defer func() {
 		if err = db.Disconnect(); err != nil {
