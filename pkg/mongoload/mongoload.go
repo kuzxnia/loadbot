@@ -5,7 +5,6 @@ import (
 	"os"
 	"os/signal"
 	"sync"
-	"sync/atomic"
 	"time"
 
 	"github.com/kuzxnia/mongoload/pkg/database"
@@ -28,8 +27,8 @@ type mongoload struct {
 
 	pool worker.JobPool
 
-	readRequest   uint64
-	insertRequest uint64
+	readHistogram  Histogram
+	writeHistogram Histogram
 }
 
 // todo: change params to options struct
@@ -66,8 +65,8 @@ func New(
 	load.concurrentConnections = conns
 	load.db = database
 	load.writeRatio = writeRatio
-	load.readRequest = 0
-	load.insertRequest = 0
+	load.readHistogram = NewHistogram()
+	load.writeHistogram = NewHistogram()
 
 	load.wg.Add(load.concurrentConnections)
 
@@ -97,10 +96,26 @@ func (ml *mongoload) Torment() {
 	requestsDone := ml.pool.GetRequestsDone()
 	rps := float64(requestsDone) / elapsed.Seconds()
 
+	// wp := ml.stats.WriteHistogram.Percentiles([]float64{0.5, 0.9, 0.99})
+	// rp := ml.stats.ReadHistogram.Percentiles([]float64{0.5, 0.9, 0.99})
+
 	fmt.Printf("\nTime took %f s\n", elapsed.Seconds())
 	fmt.Printf("Total operations: %d\n", requestsDone)
-	fmt.Printf("Total writes: %d\n", atomic.LoadUint64(&ml.insertRequest))
-	fmt.Printf("Total reads: %d\n", atomic.LoadUint64(&ml.readRequest))
+
+	wmean, _ := ml.writeHistogram.Mean()
+	wp50, _ := ml.writeHistogram.Percentile(50)
+	wp90, _ := ml.writeHistogram.Percentile(90)
+	wp99, _ := ml.writeHistogram.Percentile(99)
+	fmt.Printf("Total writes: %d\n", ml.writeHistogram.Len())
+	fmt.Printf("Write AVG: %.2fms, P50: %.2fms, P90: %.2fms P99: %f.2ms\n", wmean, wp50, wp90, wp99)
+
+	rmean, _ := ml.readHistogram.Mean()
+	rp50, _ := ml.readHistogram.Percentile(50)
+	rp90, _ := ml.readHistogram.Percentile(90)
+	rp99, _ := ml.readHistogram.Percentile(99)
+	fmt.Printf("Total reads: %d\n", ml.readHistogram.Len())
+	fmt.Printf("Read AVG: %.2fms, P50: %f.2ms, P90: %f.2ms P99: %f.2ms\n", rmean, rp50, rp90, rp99)
+
 	fmt.Printf("Requests per second: %f rp/s\n", rps)
 	if batch := ml.db.GetBatchSize(); batch > 1 {
 		fmt.Printf("Operations per second: %f op/s\n", float64(requestsDone*batch)/elapsed.Seconds())
@@ -120,37 +135,29 @@ func (ml *mongoload) worker() {
 
 		ml.rateLimiter.Take()
 		if int(GetRequestsStarted)%10 < int(ml.writeRatio*10) {
-			ml.performReadOperation()
+			ml.performWriteOperation()
 		} else {
-			ml.performInsertOperation()
+			ml.performReadOperation()
 		}
 		ml.pool.MarkJobDone()
 	}
 }
 
-func (ml *mongoload) performInsertOperation() bool {
+func (ml *mongoload) performWriteOperation() bool {
+	start := time.Now()
 	writedSuccessfuly, _ := ml.db.InsertOneOrMany()
-
-	atomic.AddUint64(&ml.insertRequest, 1)
-	// if writedSuccessfuly {
-	//   fmt.Printf("s")
-	// } else {
-	//   fmt.Printf("f")
-	// }
+	elapsed := time.Since(start)
+	ml.writeHistogram.Update(float64(elapsed.Milliseconds()))
 
 	// handle error in stats -> change '_' from above
 	return writedSuccessfuly
 }
 
 func (ml *mongoload) performReadOperation() bool {
+	start := time.Now()
 	writedSuccessfuly, _ := ml.db.ReadOne()
-
-	atomic.AddUint64(&ml.readRequest, 1)
-	// if writedSuccessfuly {
-	//   fmt.Printf("s")
-	// } else {
-	//   fmt.Printf("f")
-	// }
+	elapsed := time.Since(start)
+	ml.readHistogram.Update(float64(elapsed.Milliseconds()))
 
 	// handle error in stats -> change '_' from above
 	return writedSuccessfuly

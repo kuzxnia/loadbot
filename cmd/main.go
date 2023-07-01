@@ -19,7 +19,7 @@ func main() {
 	opsAmount := flag.Int("req", 0, "Requests to perform")
 	batchSize := flag.Uint64("bs", 0, "Batch size")
 	dataLenght := flag.Uint64("dl", 100, "Lenght of single item data(chars)")
-	writeRatio := flag.Float64("wr", 0.5, "Write ratio")
+	writeRatio := flag.Float64("wr", 0.5, "Write ratio (ex. 0.2 will result with 20% writes)")
 
 	flag.Parse()
 
