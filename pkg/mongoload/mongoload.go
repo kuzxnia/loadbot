@@ -88,6 +88,7 @@ func (ml *mongoload) Torment() {
 	}
 	fmt.Println("Workers started")
 	ml.start = time.Now()
+  // add progress bar if running with limit
 
 	ml.wg.Wait()
 
@@ -108,7 +109,7 @@ func (ml *mongoload) Torment() {
 		wp90, _ := ml.writeHistogram.Percentile(90)
 		wp99, _ := ml.writeHistogram.Percentile(99)
 		fmt.Printf("Total writes: %d\n", ml.writeHistogram.Len())
-		fmt.Printf("Write AVG: %.2fms, P50: %.2fms, P90: %.2fms P99: %f.2ms\n", wmean, wp50, wp90, wp99)
+		fmt.Printf("Write AVG: %.2fms, P50: %.2fms, P90: %.2fms P99: %.2fms\n", wmean, wp50, wp90, wp99)
 	}
 
 	if ml.writeRatio != 1 {
