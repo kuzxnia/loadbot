@@ -18,6 +18,7 @@ var CLI struct {
 	BatchSize             uint64        `short:"b" help:"Batch size"`
 	DataLenght            uint64        `short:"s" help:"Lenght of single item data(chars)" default:"100"`
 	WriteRatio            float64       `short:"w" help:"Write ratio (ex. 0.2 will result with 20% writes)" default:"0.5"`
+	Timeout               time.Duration `short:"t" help:"Timeout for requests" default:"1s"`
 }
 
 func Parse() (*config.Config, error) {
@@ -35,6 +36,7 @@ func Parse() (*config.Config, error) {
 		BatchSize:             CLI.BatchSize,
 		DataLenght:            CLI.DataLenght,
 		WriteRatio:            CLI.WriteRatio,
+		Timeout:               CLI.Timeout,
 	}
 	error := cfg.Validate()
 	if error != nil {

@@ -18,6 +18,7 @@ type Config struct {
 	BatchSize             uint64
 	DataLenght            uint64
 	WriteRatio            float64
+	Timeout               time.Duration
 }
 
 func (c *Config) Validate() error {

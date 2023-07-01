@@ -20,6 +20,8 @@ The purpose of this tool is to simulate workloads to facilitate testing the fail
     -b, --batch-size=UINT-64                   Batch size
     -s, --data-lenght=100                      Lenght of single item data(chars)
     -w, --write-ratio=0.5                      Write ratio (ex. 0.2 will result with 20% writes)
+    -t, --timeout=1s                           Timeout for requests
+
 
     Note:
     If you don't provide the requests amount or duration limit program will continue running 
@@ -27,13 +29,14 @@ The purpose of this tool is to simulate workloads to facilitate testing the fail
 
 
 ## What's next - TODO:
-- add timeouts for queries
+mvp:
 - fix error handling, add summary of successful writes, reads (success, with error, nodata returned, timeout)
 - more options
     - read preference (not only from primary) Primary, PrimaryPreferred, SecondaryPreferred, Secondary, Nearest
     - majority write
 - more params with functionality:
     - cursor read
+improvements:
 - faster http client, https://github.com/valyala/fasthttp
 - check if automaxprocs will give better performance, https://github.com/uber-go/automaxprocs
 - ci to automically build package and dockerfile

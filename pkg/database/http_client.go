@@ -3,19 +3,21 @@ package database
 import (
 	"net/http"
 	"time"
+
+	"github.com/kuzxnia/mongoload/pkg/config"
 )
 
-func HTTPClient(maxIdleConns uint64) *http.Client {
+func HTTPClient(config *config.Config) *http.Client {
 	transport := &http.Transport{
 		Proxy:                 http.ProxyFromEnvironment,
-		MaxIdleConns:          int(maxIdleConns),
+		MaxIdleConns:          int(config.ConcurrentConnections),
 		IdleConnTimeout:       90 * time.Second,
 		TLSHandshakeTimeout:   10 * time.Second,
 		ExpectContinueTimeout: 1 * time.Second,
 	}
 	return &http.Client{
 		Transport: transport,
-		// timeout
+		Timeout:   config.Timeout,
 	}
 }
 

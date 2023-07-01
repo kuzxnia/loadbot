@@ -33,10 +33,7 @@ type mongoload struct {
 }
 
 // todo: change params to options struct
-func New(
-	config *config.Config,
-	database database.Client,
-) (*mongoload, error) {
+func New(config *config.Config, database database.Client) (*mongoload, error) {
 	load := new(mongoload)
 
 	if config.DurationLimit == 0 && config.OpsAmount == 0 {

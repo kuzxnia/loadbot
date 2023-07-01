@@ -32,7 +32,7 @@ type MongoClient struct {
 
 func NewMongoClient(config *config.Config) (*MongoClient, error) {
 	opts := &options.ClientOptions{
-		HTTPClient: HTTPClient(config.ConcurrentConnections),
+		HTTPClient: HTTPClient(config),
 	}
 	opts = opts.
 		ApplyURI(config.MongoURI).
@@ -40,7 +40,8 @@ func NewMongoClient(config *config.Config) (*MongoClient, error) {
 		SetAppName("test").
 		SetMaxPoolSize(config.PoolSize).
 		SetMaxConnecting(100).
-		SetMaxConnIdleTime(time.Microsecond * 100000)
+		SetMaxConnIdleTime(time.Microsecond * 100000).
+		SetTimeout(config.Timeout)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -81,9 +82,9 @@ func (c *MongoClient) InsertMany() (bool, error) {
 func (c *MongoClient) InsertOneOrMany() (bool, error) {
 	err := error(nil)
 	if c.batchProvider.batchSize == 0 {
-		_, err = c.collection.InsertOne(context.Background(), c.batchProvider.singleItem)
+		_, err = c.InsertOne()
 	} else {
-		_, err = c.collection.InsertMany(context.Background(), *c.batchProvider.batchOfItems)
+		_, err = c.InsertMany()
 	}
 
 	return bool(err == nil), err
