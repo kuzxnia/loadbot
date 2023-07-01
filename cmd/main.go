@@ -28,7 +28,7 @@ func main() {
 	}
 
 	poolSize := *concurrentConnections * 8
-	db, err := database.NewMongoDbClient(*mongoURI, *mongoDatabase, *mongoCollection, uint64(poolSize), *batchSize, *dataLenght)
+	db, err := database.NewMongoClient(*mongoURI, *mongoDatabase, *mongoCollection, uint64(poolSize), *batchSize, *dataLenght)
 
 	defer func() {
 		if err = db.Disconnect(); err != nil {

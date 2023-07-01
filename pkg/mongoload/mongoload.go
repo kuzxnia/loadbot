@@ -13,7 +13,7 @@ import (
 )
 
 type mongoload struct {
-	db database.DbClient
+	db database.Client
 	wg sync.WaitGroup
 
 	concurrentConnections int
@@ -37,7 +37,7 @@ func New(
 	conns int,
 	rateLimit int,
 	duration time.Duration,
-	database database.DbClient,
+	database database.Client,
 	writeRatio float64,
 ) (*mongoload, error) {
 	load := new(mongoload)
