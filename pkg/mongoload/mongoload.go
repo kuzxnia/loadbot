@@ -7,6 +7,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/kuzxnia/mongoload/pkg/config"
 	"github.com/kuzxnia/mongoload/pkg/database"
 	"github.com/kuzxnia/mongoload/pkg/rps"
 	"github.com/kuzxnia/mongoload/pkg/worker"
@@ -33,38 +34,35 @@ type mongoload struct {
 
 // todo: change params to options struct
 func New(
-	ops int,
-	conns uint64,
-	rateLimit int,
-	duration time.Duration,
+	config *config.Config,
 	database database.Client,
-	writeRatio float64,
 ) (*mongoload, error) {
 	load := new(mongoload)
 
-	if duration == 0 && ops == 0 {
+	if config.DurationLimit == 0 && config.OpsAmount == 0 {
 		load.pool = worker.NewNoLimitTimerJobPool()
-	} else if duration != 0 {
-		load.duration = duration
-		load.pool = worker.NewTimerJobPool(duration)
+	} else if config.DurationLimit != 0 {
+		load.duration = config.DurationLimit
+		load.pool = worker.NewTimerJobPool(config.DurationLimit)
 	} else {
-		load.operationsAmount = int64(ops)
+		load.operationsAmount = int64(config.OpsAmount)
 		load.pool = worker.NewDeductionJobPool(uint64(load.operationsAmount))
 	}
 
-	load.rateLimit = rateLimit
-	if rateLimit == 0 {
+	load.rateLimit = config.RpsLimit
+	// change to is pointer nil
+	if config.RpsLimit == 0 {
 		load.rateLimiter = rps.NewNoLimitLimiter()
 	} else {
-		load.rateLimiter = rps.NewSimpleLimiter(rateLimit)
+		load.rateLimiter = rps.NewSimpleLimiter(config.RpsLimit)
 	}
 
-	if conns == 0 {
-		conns = 100
+	if config.ConcurrentConnections == 0 {
+		config.ConcurrentConnections = 100
 	}
-	load.concurrentConnections = conns
+	load.concurrentConnections = config.ConcurrentConnections
 	load.db = database
-	load.writeRatio = writeRatio
+	load.writeRatio = config.WriteRatio
 	load.readHistogram = NewHistogram()
 	load.writeHistogram = NewHistogram()
 
@@ -88,7 +86,7 @@ func (ml *mongoload) Torment() {
 	}
 	fmt.Println("Workers started")
 	ml.start = time.Now()
-  // add progress bar if running with limit
+	// add progress bar if running with limit
 
 	ml.wg.Wait()
 

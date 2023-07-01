@@ -6,6 +6,7 @@ import (
 	"log"
 	"time"
 
+	"github.com/kuzxnia/mongoload/pkg/config"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -29,28 +30,15 @@ type MongoClient struct {
 	batchProvider *DataProvider
 }
 
-// todo: change params to options struct
-func NewMongoClient(
-	uri string,
-	databaseName string,
-	collectionName string,
-	connections uint64,
-	maxPoolSize uint64,
-	batchSize uint64,
-	dataLenght uint64,
-) (*MongoClient, error) {
-	if uri == "" {
-		panic("uri is required")
-	}
-
+func NewMongoClient(config *config.Config) (*MongoClient, error) {
 	opts := &options.ClientOptions{
-		HTTPClient: HTTPClient(connections),
+		HTTPClient: HTTPClient(config.ConcurrentConnections),
 	}
 	opts = opts.
-		ApplyURI(uri).
+		ApplyURI(config.MongoURI).
 		SetReadPreference(readpref.SecondaryPreferred()).
 		SetAppName("test").
-		SetMaxPoolSize(maxPoolSize). // connectionsAmount * 8 is a magic number
+		SetMaxPoolSize(config.PoolSize).
 		SetMaxConnecting(100).
 		SetMaxConnIdleTime(time.Microsecond * 100000)
 
@@ -69,10 +57,9 @@ func NewMongoClient(
 		fmt.Println("Successfully connected to database server")
 	}
 
-	// db - test, collection - go
-	collection := client.Database(databaseName).Collection(collectionName)
+	collection := client.Database(config.MongoDatabase).Collection(config.MongoCollection)
 
-	batchProvider := NewDataProvider(batchSize, dataLenght)
+	batchProvider := NewDataProvider(config.BatchSize, config.DataLenght)
 
 	return &MongoClient{ctx: ctx, client: client, collection: collection, batchProvider: batchProvider}, err
 }

@@ -8,6 +8,7 @@ require (
 )
 
 require (
+	github.com/alecthomas/kong v0.8.0 // indirect
 	github.com/andres-erbsen/clock v0.0.0-20160526145045-9e14626cd129 // indirect
 	github.com/golang/snappy v0.0.1 // indirect
 	github.com/klauspost/compress v1.16.3 // indirect

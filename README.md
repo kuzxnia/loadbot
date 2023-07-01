@@ -9,19 +9,21 @@ The purpose of this tool is to simulate workloads to facilitate testing the fail
 2. Run - `docker run mload -uri=http://localhost:21017 -req=10000`
 
 ### Current flags:
-- `-uri` - mongo uri connection
-- `-db` - database name (default: 'load_test')
-- `-col` - collection name (default: 'load_test_coll')
-- `-conn` - number of concurrent connections
-- `-rps` - request per second limit
-- `-d` - duration (ex. 10s, 1m) 
-- `-req` - requests to perform (inserts by default)
-- `-bs` - batch size (if set inserts will be in batches)
-- `-dl` - length of item (default: 100, len of chars in single item to insert)
-- `-wr` - write ratio (default: 0.5)
+    -h, --help                                 Show context-sensitive help.
+    -u, --uri="mongodb://localhost:27017"      Database hostname url
+        --mongo-database="load_test"           Database name
+        --mongo-collection="load_test_coll"    Collection name
+    -c, --concurrent-connections=100           Concurrent connections amount
+        --rps=INT                              RPS limit
+    -d, --duration=DURATION                    Duration limit
+    -r, --requests=INT                         Requests to perform
+    -b, --batch-size=UINT-64                   Batch size
+    -s, --data-lenght=100                      Lenght of single item data(chars)
+    -w, --write-ratio=0.5                      Write ratio (ex. 0.2 will result with 20% writes)
 
-Note:
-If you don't provide the operations amount(`-ops`) or duration(`-d`), the program will continue running indefinitely unless it is manually stopped by pressing `ctrl-c`. 
+    Note:
+    If you don't provide the requests amount or duration limit program will continue running 
+    indefinitely unless it is manually stopped by pressing `ctrl-c`. 
 
 
 ## What's next - TODO:
