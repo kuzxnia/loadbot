@@ -102,19 +102,23 @@ func (ml *mongoload) Torment() {
 	fmt.Printf("\nTime took %f s\n", elapsed.Seconds())
 	fmt.Printf("Total operations: %d\n", requestsDone)
 
-	wmean, _ := ml.writeHistogram.Mean()
-	wp50, _ := ml.writeHistogram.Percentile(50)
-	wp90, _ := ml.writeHistogram.Percentile(90)
-	wp99, _ := ml.writeHistogram.Percentile(99)
-	fmt.Printf("Total writes: %d\n", ml.writeHistogram.Len())
-	fmt.Printf("Write AVG: %.2fms, P50: %.2fms, P90: %.2fms P99: %f.2ms\n", wmean, wp50, wp90, wp99)
+	if ml.writeRatio != 0 {
+		wmean, _ := ml.writeHistogram.Mean()
+		wp50, _ := ml.writeHistogram.Percentile(50)
+		wp90, _ := ml.writeHistogram.Percentile(90)
+		wp99, _ := ml.writeHistogram.Percentile(99)
+		fmt.Printf("Total writes: %d\n", ml.writeHistogram.Len())
+		fmt.Printf("Write AVG: %.2fms, P50: %.2fms, P90: %.2fms P99: %f.2ms\n", wmean, wp50, wp90, wp99)
+	}
 
-	rmean, _ := ml.readHistogram.Mean()
-	rp50, _ := ml.readHistogram.Percentile(50)
-	rp90, _ := ml.readHistogram.Percentile(90)
-	rp99, _ := ml.readHistogram.Percentile(99)
-	fmt.Printf("Total reads: %d\n", ml.readHistogram.Len())
-	fmt.Printf("Read AVG: %.2fms, P50: %f.2ms, P90: %f.2ms P99: %f.2ms\n", rmean, rp50, rp90, rp99)
+	if ml.writeRatio != 1 {
+		rmean, _ := ml.readHistogram.Mean()
+		rp50, _ := ml.readHistogram.Percentile(50)
+		rp90, _ := ml.readHistogram.Percentile(90)
+		rp99, _ := ml.readHistogram.Percentile(99)
+		fmt.Printf("Total reads: %d\n", ml.readHistogram.Len())
+		fmt.Printf("Read AVG: %.2fms, P50: %.2fms, P90: %.2fms P99: %.2fms\n", rmean, rp50, rp90, rp99)
+	}
 
 	fmt.Printf("Requests per second: %f rp/s\n", rps)
 	if batch := ml.db.GetBatchSize(); batch > 1 {

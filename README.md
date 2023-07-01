@@ -25,8 +25,9 @@ If you don't provide the operations amount(`-ops') or duration(`-d`), the progra
 
 todo:
 * simpler build - makefile?
-* add statistics, p50, p90, p99 for reads and writes
 * add timeouts for queries
+* add summary of successful writes, reads (success, with error, nodata, timeout)
+* add progress bar if running with limit
 * change read preffered (not only from primary)
 * more params with functionality:
     * cursor read
