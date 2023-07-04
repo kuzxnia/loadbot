@@ -14,9 +14,11 @@ import (
 )
 
 type mongoload struct {
-	db database.Client
-	wg sync.WaitGroup
+	config *config.Config
+	db     database.Client
+	wg     sync.WaitGroup
 
+	// todo: get rid of this from config
 	concurrentConnections uint64
 	rateLimit             int // rps limit
 	operationsAmount      int64
@@ -35,6 +37,8 @@ type mongoload struct {
 // todo: change params to options struct
 func New(config *config.Config, database database.Client) (*mongoload, error) {
 	load := new(mongoload)
+
+	load.config = config
 
 	if config.DurationLimit == 0 && config.OpsAmount == 0 {
 		load.pool = worker.NewNoLimitTimerJobPool()
@@ -92,9 +96,6 @@ func (ml *mongoload) Torment() {
 	requestsDone := ml.pool.GetRequestsDone()
 	rps := float64(requestsDone) / elapsed.Seconds()
 
-	// wp := ml.stats.WriteHistogram.Percentiles([]float64{0.5, 0.9, 0.99})
-	// rp := ml.stats.ReadHistogram.Percentiles([]float64{0.5, 0.9, 0.99})
-
 	fmt.Printf("\nTime took %f s\n", elapsed.Seconds())
 	fmt.Printf("Total operations: %d\n", requestsDone)
 
@@ -143,22 +144,28 @@ func (ml *mongoload) worker() {
 	}
 }
 
-func (ml *mongoload) performWriteOperation() bool {
+func (ml *mongoload) performWriteOperation() (bool, error) {
 	start := time.Now()
-	writedSuccessfuly, _ := ml.db.InsertOneOrMany()
+	writedSuccessfuly, error := ml.db.InsertOneOrMany()
 	elapsed := time.Since(start)
 	ml.writeHistogram.Update(float64(elapsed.Milliseconds()))
 
-	// handle error in stats -> change '_' from above
-	return writedSuccessfuly
+	// add debug of some kind
+	if error != nil {
+		fmt.Println(error)
+	}
+
+	return writedSuccessfuly, error
 }
 
-func (ml *mongoload) performReadOperation() bool {
+func (ml *mongoload) performReadOperation() (bool, error) {
 	start := time.Now()
-	writedSuccessfuly, _ := ml.db.ReadOne()
+	writedSuccessfuly, error := ml.db.ReadOne()
 	elapsed := time.Since(start)
 	ml.readHistogram.Update(float64(elapsed.Milliseconds()))
+	if error != nil {
+		fmt.Println(error)
+	}
 
-	// handle error in stats -> change '_' from above
-	return writedSuccessfuly
+	return writedSuccessfuly, error
 }

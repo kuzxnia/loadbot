@@ -40,7 +40,7 @@ func NewMongoClient(config *config.Config) (*MongoClient, error) {
 		SetAppName("test").
 		SetMaxPoolSize(config.PoolSize).
 		SetMaxConnecting(100).
-		SetMaxConnIdleTime(time.Microsecond * 100000).
+		SetMaxConnIdleTime(90 * time.Second).
 		SetTimeout(config.Timeout)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -70,12 +70,12 @@ func (c *MongoClient) Disconnect() error {
 }
 
 func (c *MongoClient) InsertOne() (bool, error) {
-	_, err := c.collection.InsertOne(context.Background(), c.batchProvider.singleItem)
+	_, err := c.collection.InsertOne(context.TODO(), c.batchProvider.singleItem)
 	return bool(err == nil), err
 }
 
 func (c *MongoClient) InsertMany() (bool, error) {
-	_, err := c.collection.InsertMany(context.Background(), *c.batchProvider.batchOfItems)
+	_, err := c.collection.InsertMany(context.TODO(), *c.batchProvider.batchOfItems)
 	return bool(err == nil), err
 }
 
@@ -92,7 +92,7 @@ func (c *MongoClient) InsertOneOrMany() (bool, error) {
 
 func (c *MongoClient) ReadOne() (bool, error) {
 	var result bson.M
-	err := c.collection.FindOne(context.Background(), c.batchProvider.singleItem).Decode(&result)
+	err := c.collection.FindOne(context.TODO(), c.batchProvider.singleItem).Decode(&result)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
 			return true, err
@@ -106,12 +106,12 @@ func (c *MongoClient) ReadMany() (bool, error) {
 	// start := time.Now()
 	batch_size := int32(1000)
 
-	cursor, err := c.collection.Find(context.Background(), bson.M{"author": "Franz Kafkaaa"}, &options.FindOptions{BatchSize: &batch_size})
+	cursor, err := c.collection.Find(context.TODO(), bson.M{"author": "Franz Kafkaaa"}, &options.FindOptions{BatchSize: &batch_size})
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	defer cursor.Close(context.Background())
+	defer cursor.Close(context.TODO())
 
 	// var results []Book
 	// if err = cursor.All(context.Background(), &results); err != nil {

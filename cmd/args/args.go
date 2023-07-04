@@ -12,13 +12,14 @@ var CLI struct {
 	MongoDatabase         string        `help:"Database name" default:"load_test"`
 	MongoCollection       string        `help:"Collection name" default:"load_test_coll"`
 	ConcurrentConnections uint64        `short:"c" help:"Concurrent connections amount" default:"100"`
+	PoolSize              uint64        `help:"Active connections pool size(default: 0 - no limit)" default:"0"`
 	RpsLimit              int           `name:"rps" help:"RPS limit"`
 	DurationLimit         time.Duration `short:"d" name:"duration" help:"Duration limit (ex. 10s, 5m, 1h)"`
 	OpsAmount             int           `short:"r" name:"requests" help:"Requests to perform"`
 	BatchSize             uint64        `short:"b" help:"Batch size"`
 	DataLenght            uint64        `short:"s" help:"Lenght of single item data(chars)" default:"100"`
 	WriteRatio            float64       `short:"w" help:"Write ratio (ex. 0.2 will result with 20% writes)" default:"0.5"`
-	Timeout               time.Duration `short:"t" help:"Timeout for requests" default:"1s"`
+	Timeout               time.Duration `short:"t" help:"Timeout for requests" default:"5s"`
 }
 
 func Parse() (*config.Config, error) {
@@ -29,7 +30,7 @@ func Parse() (*config.Config, error) {
 		MongoDatabase:         CLI.MongoDatabase,
 		MongoCollection:       CLI.MongoCollection,
 		ConcurrentConnections: CLI.ConcurrentConnections,
-		PoolSize:              CLI.ConcurrentConnections * 8,
+		PoolSize:              CLI.PoolSize,
 		RpsLimit:              CLI.RpsLimit,
 		DurationLimit:         CLI.DurationLimit,
 		OpsAmount:             CLI.OpsAmount,
