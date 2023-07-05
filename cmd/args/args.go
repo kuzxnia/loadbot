@@ -23,7 +23,8 @@ var CLI struct {
 	DataLenght            uint64        `short:"s" help:"Lenght of single item data(chars)" default:"100"`
 	WriteRatio            float64       `short:"w" help:"Write ratio (ex. 0.2 will result with 20% writes)" default:"0.5"`
 	Timeout               time.Duration `short:"t" help:"Timeout for requests" default:"5s"`
-  Debug                 bool          `help:"Displaying additional diagnostic information" default:"false"`
+	Debug                 bool          `help:"Displaying additional diagnostic information" default:"false"`
+	DebugFile             string        `type:"path" help:"Redirection debug information to file"`
 }
 
 func Parse() (*config.Config, error) {
@@ -42,7 +43,8 @@ func Parse() (*config.Config, error) {
 		DataLenght:            CLI.DataLenght,
 		WriteRatio:            CLI.WriteRatio,
 		Timeout:               CLI.Timeout,
-		Debug:                 CLI.Debug,
+		Debug:                 CLI.Debug || bool(CLI.DebugFile != ""),
+		DebugFilePath:         CLI.DebugFile,
 	}
 	error := cfg.Validate()
 	if error != nil {

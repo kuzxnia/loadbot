@@ -77,7 +77,7 @@ func (s *ReadStats) Summary() {
 		wp90, _ := s.Percentile(90)
 		wp99, _ := s.Percentile(99)
 		fmt.Printf(
-			"Total read ops: %d, successful: %d, errors: (timeout: %d, noDocsFound: %d, other: %d), error rate: %.2f%% \n",
+			"Total read ops: %d, successful: %d, errors: (timeout: %d, noDataFound: %d, other: %d), error rate: %.2f%% \n",
 			len, len-errors, s.timeoutErrors, s.noDocumentsFoundError, s.otherErrors, float64(errors)/float64(len)*100,
 		)
 		fmt.Printf("Read AVG: %.2fms, P50: %.2fms, P90: %.2fms P99: %.2fms\n", wmean, wp50, wp90, wp99)

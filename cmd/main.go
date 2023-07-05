@@ -12,7 +12,9 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	logger.Default().SetConfig(config)
+  log := logger.Default()
+  log.SetConfig(config)
+  defer log.CloseOutputFile()
 
 	db, err := database.NewMongoClient(config)
 	if err != nil {

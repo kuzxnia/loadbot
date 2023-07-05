@@ -20,6 +20,7 @@ type Config struct {
 	WriteRatio            float64
 	Timeout               time.Duration
 	Debug                 bool
+	DebugFilePath         string
 }
 
 func (c *Config) Validate() error {

@@ -21,6 +21,8 @@ The purpose of this tool is to simulate workloads to facilitate testing the fail
     -s, --data-lenght=100                      Lenght of single item data(chars)
     -w, --write-ratio=0.5                      Write ratio (ex. 0.2 will result with 20% writes)
     -t, --timeout=1s                           Timeout for requests
+        --debug                                Displaying additional diagnostic information
+
 
 
     Note:
@@ -29,13 +31,6 @@ The purpose of this tool is to simulate workloads to facilitate testing the fail
 
 
 ## What's next - TODO:
-mvp:
-- fix error handling, add summary of successful writes, reads (success, with error, nodata returned, timeout)
-- more options
-    - read preference (not only from primary) Primary, PrimaryPreferred, SecondaryPreferred, Secondary, Nearest
-    - majority write
-- more params with functionality:
-    - cursor read
 improvements:
 - faster http client, https://github.com/valyala/fasthttp
 - check if automaxprocs will give better performance, https://github.com/uber-go/automaxprocs
