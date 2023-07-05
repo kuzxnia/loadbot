@@ -3,6 +3,7 @@ package main
 import (
 	"github.com/kuzxnia/mongoload/cmd/args"
 	"github.com/kuzxnia/mongoload/pkg/database"
+	"github.com/kuzxnia/mongoload/pkg/logger"
 	"github.com/kuzxnia/mongoload/pkg/mongoload"
 )
 
@@ -11,6 +12,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+	logger.Default().SetConfig(config)
 
 	db, err := database.NewMongoClient(config)
 	if err != nil {

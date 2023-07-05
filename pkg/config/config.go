@@ -12,13 +12,14 @@ type Config struct {
 	MongoCollection       string
 	ConcurrentConnections uint64
 	PoolSize              uint64
-	RpsLimit              uint64 
+	RpsLimit              uint64
 	DurationLimit         time.Duration
 	OpsAmount             uint64
 	BatchSize             uint64
 	DataLenght            uint64
 	WriteRatio            float64
 	Timeout               time.Duration
+	Debug                 bool
 }
 
 func (c *Config) Validate() error {

@@ -9,9 +9,12 @@ import (
 
 	"github.com/kuzxnia/mongoload/pkg/config"
 	"github.com/kuzxnia/mongoload/pkg/database"
+	"github.com/kuzxnia/mongoload/pkg/logger"
 	"github.com/kuzxnia/mongoload/pkg/rps"
 	"github.com/kuzxnia/mongoload/pkg/worker"
 )
+
+var log = logger.Default()
 
 type mongoload struct {
 	config *config.Config
@@ -128,7 +131,7 @@ func (ml *mongoload) performWriteOperation() (bool, error) {
 	// add debug of some kind
 	if error != nil {
 		// todo: debug
-		// fmt.Println(error)
+    log.Debug(error)
 	}
 
 	return writedSuccessfuly, error
@@ -141,7 +144,7 @@ func (ml *mongoload) performReadOperation() (bool, error) {
 	ml.readStats.Add(float64(elapsed.Milliseconds()), error)
 	if error != nil {
 		// todo: debug
-		// fmt.Println(error)
+    log.Debug(error)
 	}
 
 	return writedSuccessfuly, error
