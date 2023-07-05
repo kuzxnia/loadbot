@@ -13,9 +13,9 @@ var CLI struct {
 	MongoCollection       string        `help:"Collection name" default:"load_test_coll"`
 	ConcurrentConnections uint64        `short:"c" help:"Concurrent connections amount" default:"100"`
 	PoolSize              uint64        `help:"Active connections pool size(default: 0 - no limit)" default:"0"`
-	RpsLimit              int           `name:"rps" help:"RPS limit"`
+	RpsLimit              uint64        `name:"rps" help:"RPS limit"`
 	DurationLimit         time.Duration `short:"d" name:"duration" help:"Duration limit (ex. 10s, 5m, 1h)"`
-	OpsAmount             int           `short:"r" name:"requests" help:"Requests to perform"`
+	OpsAmount             uint64        `short:"r" name:"requests" help:"Requests to perform"`
 	BatchSize             uint64        `short:"b" help:"Batch size"`
 	DataLenght            uint64        `short:"s" help:"Lenght of single item data(chars)" default:"100"`
 	WriteRatio            float64       `short:"w" help:"Write ratio (ex. 0.2 will result with 20% writes)" default:"0.5"`

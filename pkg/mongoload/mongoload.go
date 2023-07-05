@@ -18,20 +18,14 @@ type mongoload struct {
 	db     database.Client
 	wg     sync.WaitGroup
 
-	// todo: get rid of this from config
-	concurrentConnections uint64
-	rateLimit             int // rps limit
-	operationsAmount      int64
-	writeRatio            float64
-
 	start       time.Time
 	duration    time.Duration
 	rateLimiter rps.Limiter
 
 	pool worker.JobPool
 
-	readHistogram  Histogram
-	writeHistogram Histogram
+	readStats  Stats
+	writeStats Stats
 }
 
 // todo: change params to options struct
@@ -46,11 +40,9 @@ func New(config *config.Config, database database.Client) (*mongoload, error) {
 		load.duration = config.DurationLimit
 		load.pool = worker.NewTimerJobPool(config.DurationLimit)
 	} else {
-		load.operationsAmount = int64(config.OpsAmount)
-		load.pool = worker.NewDeductionJobPool(uint64(load.operationsAmount))
+		load.pool = worker.NewDeductionJobPool(uint64(load.config.OpsAmount))
 	}
 
-	load.rateLimit = config.RpsLimit
 	// change to is pointer nil
 	if config.RpsLimit == 0 {
 		load.rateLimiter = rps.NewNoLimitLimiter()
@@ -58,16 +50,11 @@ func New(config *config.Config, database database.Client) (*mongoload, error) {
 		load.rateLimiter = rps.NewSimpleLimiter(config.RpsLimit)
 	}
 
-	if config.ConcurrentConnections == 0 {
-		config.ConcurrentConnections = 100
-	}
-	load.concurrentConnections = config.ConcurrentConnections
 	load.db = database
-	load.writeRatio = config.WriteRatio
-	load.readHistogram = NewHistogram()
-	load.writeHistogram = NewHistogram()
+	load.readStats = NewReadStats()
+	load.writeStats = NewWriteStats()
 
-	load.wg.Add(int(load.concurrentConnections))
+	load.wg.Add(int(load.config.ConcurrentConnections))
 
 	return load, nil
 }
@@ -82,7 +69,7 @@ func (ml *mongoload) Torment() {
 	}()
 
 	fmt.Println("Starting workers")
-	for i := 0; i < int(ml.concurrentConnections); i++ {
+	for i := 0; i < int(ml.config.ConcurrentConnections); i++ {
 		go ml.worker()
 	}
 	fmt.Println("Workers started")
@@ -90,7 +77,10 @@ func (ml *mongoload) Torment() {
 	// add progress bar if running with limit
 
 	ml.wg.Wait()
+	ml.Summary()
+}
 
+func (ml *mongoload) Summary() {
 	elapsed := time.Since(ml.start)
 
 	requestsDone := ml.pool.GetRequestsDone()
@@ -99,23 +89,8 @@ func (ml *mongoload) Torment() {
 	fmt.Printf("\nTime took %f s\n", elapsed.Seconds())
 	fmt.Printf("Total operations: %d\n", requestsDone)
 
-	if ml.writeRatio != 0 {
-		wmean, _ := ml.writeHistogram.Mean()
-		wp50, _ := ml.writeHistogram.Percentile(50)
-		wp90, _ := ml.writeHistogram.Percentile(90)
-		wp99, _ := ml.writeHistogram.Percentile(99)
-		fmt.Printf("Total writes: %d\n", ml.writeHistogram.Len())
-		fmt.Printf("Write AVG: %.2fms, P50: %.2fms, P90: %.2fms P99: %.2fms\n", wmean, wp50, wp90, wp99)
-	}
-
-	if ml.writeRatio != 1 {
-		rmean, _ := ml.readHistogram.Mean()
-		rp50, _ := ml.readHistogram.Percentile(50)
-		rp90, _ := ml.readHistogram.Percentile(90)
-		rp99, _ := ml.readHistogram.Percentile(99)
-		fmt.Printf("Total reads: %d\n", ml.readHistogram.Len())
-		fmt.Printf("Read AVG: %.2fms, P50: %.2fms, P90: %.2fms P99: %.2fms\n", rmean, rp50, rp90, rp99)
-	}
+	ml.writeStats.Summary()
+	ml.readStats.Summary()
 
 	fmt.Printf("Requests per second: %f rp/s\n", rps)
 	if batch := ml.db.GetBatchSize(); batch > 1 {
@@ -135,7 +110,7 @@ func (ml *mongoload) worker() {
 		GetRequestsStarted := ml.pool.GetRequestsStarted()
 
 		ml.rateLimiter.Take()
-		if int(GetRequestsStarted)%10 < int(ml.writeRatio*10) {
+		if int(GetRequestsStarted)%10 < int(ml.config.WriteRatio*10) {
 			ml.performWriteOperation()
 		} else {
 			ml.performReadOperation()
@@ -148,11 +123,12 @@ func (ml *mongoload) performWriteOperation() (bool, error) {
 	start := time.Now()
 	writedSuccessfuly, error := ml.db.InsertOneOrMany()
 	elapsed := time.Since(start)
-	ml.writeHistogram.Update(float64(elapsed.Milliseconds()))
+	ml.writeStats.Add(float64(elapsed.Milliseconds()), error)
 
 	// add debug of some kind
 	if error != nil {
-		fmt.Println(error)
+		// todo: debug
+		// fmt.Println(error)
 	}
 
 	return writedSuccessfuly, error
@@ -162,9 +138,10 @@ func (ml *mongoload) performReadOperation() (bool, error) {
 	start := time.Now()
 	writedSuccessfuly, error := ml.db.ReadOne()
 	elapsed := time.Since(start)
-	ml.readHistogram.Update(float64(elapsed.Milliseconds()))
+	ml.readStats.Add(float64(elapsed.Milliseconds()), error)
 	if error != nil {
-		fmt.Println(error)
+		// todo: debug
+		// fmt.Println(error)
 	}
 
 	return writedSuccessfuly, error

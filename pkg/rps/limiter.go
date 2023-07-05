@@ -27,9 +27,9 @@ type SimpleLimiter struct {
 	rateLimit ratelimit.Limiter
 }
 
-func NewSimpleLimiter(rps int) *SimpleLimiter {
+func NewSimpleLimiter(rps uint64) *SimpleLimiter {
 	return &SimpleLimiter{
-		rateLimit: ratelimit.New(rps),
+		rateLimit: ratelimit.New(int(rps)),
 	}
 }
 
