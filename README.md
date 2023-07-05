@@ -13,6 +13,7 @@ The purpose of this tool is to simulate workloads to facilitate testing the fail
     -u, --uri="mongodb://localhost:27017"      Database hostname url
         --mongo-database="load_test"           Database name
         --mongo-collection="load_test_coll"    Collection name
+        --pool-size=0                          Active connections pool size(default: 0 - no limit)
     -c, --concurrent-connections=100           Concurrent connections amount
         --rps=INT                              RPS limit
     -d, --duration=DURATION                    Duration limit
@@ -22,7 +23,7 @@ The purpose of this tool is to simulate workloads to facilitate testing the fail
     -w, --write-ratio=0.5                      Write ratio (ex. 0.2 will result with 20% writes)
     -t, --timeout=1s                           Timeout for requests
         --debug                                Displaying additional diagnostic information
-
+        --debug-file=STRING                    Redirection debug information to file
 
 
     Note:
@@ -31,11 +32,11 @@ The purpose of this tool is to simulate workloads to facilitate testing the fail
 
 
 ## What's next - TODO:
-improvements:
-- faster http client, https://github.com/valyala/fasthttp
-- check if automaxprocs will give better performance, https://github.com/uber-go/automaxprocs
-- ci to automically build package and dockerfile
-- helmchart for easy multi instance load test and easier install
+
+- write / read / update ratio
+- speed improvements: 
+    - overwrite mongodb-go client to use faster http client, https://github.com/valyala/fasthttp
+    - leverage automaxprocs to give better performance, https://github.com/uber-go/automaxprocs
 
 known issues:
 - rate limit accuracy, current have 30ops deviation with bigger rps's
