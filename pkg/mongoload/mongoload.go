@@ -27,8 +27,9 @@ type mongoload struct {
 
 	pool worker.JobPool
 
-	readStats  Stats
-	writeStats Stats
+	readStats   Stats
+	writeStats  Stats
+	updateStats Stats
 }
 
 // todo: change params to options struct
@@ -56,6 +57,7 @@ func New(config *config.Config, database database.Client) (*mongoload, error) {
 	load.db = database
 	load.readStats = NewReadStats()
 	load.writeStats = NewWriteStats()
+	load.updateStats = NewUpdateStats()
 
 	load.wg.Add(int(load.config.ConcurrentConnections))
 
@@ -94,6 +96,7 @@ func (ml *mongoload) Summary() {
 
 	ml.writeStats.Summary()
 	ml.readStats.Summary()
+	ml.updateStats.Summary()
 
 	fmt.Printf("Requests per second: %f rp/s\n", rps)
 	if batch := ml.db.GetBatchSize(); batch > 1 {
@@ -110,14 +113,18 @@ func (ml *mongoload) worker() {
 	defer ml.wg.Done()
 
 	for ml.pool.SpawnJob() {
-		GetRequestsStarted := ml.pool.GetRequestsStarted()
 
 		ml.rateLimiter.Take()
-		if int(GetRequestsStarted)%10 < int(ml.config.WriteRatio*10) {
+		requestTypeFactor := ml.pool.GetRequestsStarted() % 100
+
+		if requestTypeFactor < ml.config.WriteRatio {
 			ml.performWriteOperation()
-		} else {
+		} else if requestTypeFactor < ml.config.ReadRatio {
 			ml.performReadOperation()
+		} else if requestTypeFactor < ml.config.UpdateRatio {
+			ml.performUpdateOperation()
 		}
+
 		ml.pool.MarkJobDone()
 	}
 }
@@ -131,7 +138,7 @@ func (ml *mongoload) performWriteOperation() (bool, error) {
 	// add debug of some kind
 	if error != nil {
 		// todo: debug
-    log.Debug(error)
+		log.Debug(error)
 	}
 
 	return writedSuccessfuly, error
@@ -144,7 +151,20 @@ func (ml *mongoload) performReadOperation() (bool, error) {
 	ml.readStats.Add(float64(elapsed.Milliseconds()), error)
 	if error != nil {
 		// todo: debug
-    log.Debug(error)
+		log.Debug(error)
+	}
+
+	return writedSuccessfuly, error
+}
+
+func (ml *mongoload) performUpdateOperation() (bool, error) {
+	start := time.Now()
+	writedSuccessfuly, error := ml.db.UpdateOne()
+	elapsed := time.Since(start)
+	ml.updateStats.Add(float64(elapsed.Milliseconds()), error)
+	if error != nil {
+		// todo: debug
+		log.Debug(error)
 	}
 
 	return writedSuccessfuly, error

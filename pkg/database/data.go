@@ -11,8 +11,9 @@ const letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 type DataProvider struct {
 	batchSize uint64
 
-	singleItem   *bson.M
-	batchOfItems *[]interface{}
+	singleItem         *bson.M
+	singleItemToUpdate *bson.M
+	batchOfItems       *[]interface{}
 }
 
 func NewDataProvider(batchSize, dataLenght uint64) *DataProvider {
@@ -23,9 +24,10 @@ func NewDataProvider(batchSize, dataLenght uint64) *DataProvider {
 	}
 
 	return &DataProvider{
-		batchSize:    batchSize,
-		batchOfItems: &batchOfData,
-		singleItem:   &bson.M{"data": randStringBytes(dataLenght)},
+		batchSize:          batchSize,
+		batchOfItems:       &batchOfData,
+		singleItem:         &bson.M{"data": randStringBytes(dataLenght)},
+		singleItemToUpdate: &bson.M{"$set": &bson.M{"data": randStringBytes(dataLenght)}},
 	}
 }
 

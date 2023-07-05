@@ -1,4 +1,4 @@
-package mongoload_test 
+package mongoload_test
 
 import (
 	"fmt"
@@ -37,6 +37,10 @@ func (c *DummyClient) ReadMany() (bool, error) {
 	return true, nil
 }
 
+func (c *DummyClient) UpdateOne() (bool, error) {
+	return true, nil
+}
+
 func (c *DummyClient) GetBatchSize() uint64 {
 	return 0
 }
@@ -69,7 +73,7 @@ func BenchmarkMongoloadMaxRps(b *testing.B) {
 		OpsAmount:             10000,
 		BatchSize:             0,
 		DataLenght:            1000,
-		WriteRatio:            0.5,
-		Timeout:               time.Second,
+		// WriteRatio:            0,
+		Timeout: time.Second,
 	}, b)
 }

@@ -17,7 +17,9 @@ type Config struct {
 	OpsAmount             uint64
 	BatchSize             uint64
 	DataLenght            uint64
-	WriteRatio            float64
+	WriteRatio            uint64
+	ReadRatio             uint64
+	UpdateRatio           uint64
 	Timeout               time.Duration
 	Debug                 bool
 	DebugFilePath         string
@@ -25,7 +27,7 @@ type Config struct {
 
 func (c *Config) Validate() error {
 	validators := []func() error{
-		c.validateWriteRatio,
+		// c.validateWriteRatio,
 	}
 
 	for _, validate := range validators {

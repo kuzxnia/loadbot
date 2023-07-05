@@ -19,6 +19,7 @@ type Client interface {
 	InsertOneOrMany() (bool, error)
 	ReadOne() (bool, error)
 	ReadMany() (bool, error)
+	UpdateOne() (bool, error)
 
 	GetBatchSize() uint64
 }
@@ -137,6 +138,18 @@ func (c *MongoClient) ReadMany() (bool, error) {
 
 	// elapsed := time.Since(start)
 	// fmt.Printf("Find documents took %s", elapsed)
+	return true, nil
+}
+
+func (c *MongoClient) UpdateOne() (bool, error) {
+  // todo: only for now
+  _, err := c.collection.UpdateOne(context.TODO(), c.batchProvider.singleItem, c.batchProvider.singleItemToUpdate)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			return true, err
+		}
+		return false, err
+	}
 	return true, nil
 }
 

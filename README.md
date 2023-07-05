@@ -8,20 +8,25 @@ The purpose of this tool is to simulate workloads to facilitate testing the fail
 1. Build image - `docker build -t mload .`
 2. Run - `docker run mload -uri=http://localhost:21017 -req=10000`
 
-### Current flags:
+### Usage:
+    Arguments:
+        [<mongo-uri>]    Database hostname url
+
+    Flags:
     -h, --help                                 Show context-sensitive help.
-    -u, --uri="mongodb://localhost:27017"      Database hostname url
         --mongo-database="load_test"           Database name
         --mongo-collection="load_test_coll"    Collection name
         --pool-size=0                          Active connections pool size(default: 0 - no limit)
     -c, --concurrent-connections=100           Concurrent connections amount
-        --rps=INT                              RPS limit
-    -d, --duration=DURATION                    Duration limit
-    -r, --requests=INT                         Requests to perform
+        --rps=UINT-64                          RPS limit
+    -d, --duration=DURATION                    Duration limit (ex. 10s, 5m, 1h)
+    -o, --operations=UINT-64                   Operations (read/write/update) to perform
     -b, --batch-size=UINT-64                   Batch size
     -s, --data-lenght=100                      Lenght of single item data(chars)
-    -w, --write-ratio=0.5                      Write ratio (ex. 0.2 will result with 20% writes)
-    -t, --timeout=1s                           Timeout for requests
+    -w, --write-ratio=UINT-64                  Write ratio
+    -r, --read-ratio=UINT-64                   Read ratio
+    -u, --update-ratio=UINT-64                 Update ratio
+    -t, --timeout=5s                           Timeout for requests
         --debug                                Displaying additional diagnostic information
         --debug-file=STRING                    Redirection debug information to file
 
@@ -33,7 +38,7 @@ The purpose of this tool is to simulate workloads to facilitate testing the fail
 
 ## What's next - TODO:
 
-- write / read / update ratio
+- write/read/update data in more real format
 - speed improvements: 
     - overwrite mongodb-go client to use faster http client, https://github.com/valyala/fasthttp
     - leverage automaxprocs to give better performance, https://github.com/uber-go/automaxprocs

@@ -85,7 +85,6 @@ func (s *ReadStats) Summary() {
 }
 
 type WriteStats struct {
-	noDocumentsFoundError uint64
 	BaseStats
 }
 
@@ -128,6 +127,52 @@ func (s *WriteStats) Summary() {
 			len, len-errors, s.timeoutErrors, s.otherErrors, float64(errors)/float64(len)*100,
 		)
 		fmt.Printf("Write AVG: %.2fms, P50: %.2fms, P90: %.2fms P99: %.2fms\n", wmean, wp50, wp90, wp99)
+	}
+}
+
+type UpdateStats struct {
+	BaseStats
+}
+
+func NewUpdateStats() Stats {
+	return Stats(
+		&UpdateStats{
+			BaseStats: BaseStats{
+				data: make([]float64, 0),
+			},
+		},
+	)
+}
+
+func (s *UpdateStats) Add(interval float64, err error) {
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+
+	s.data = append(s.data, interval)
+	if err != nil {
+		if mongo.IsTimeout(err) {
+			s.timeoutErrors++
+		} else {
+			s.otherErrors++
+		}
+	}
+}
+
+func (s *UpdateStats) Summary() {
+	s.mutex.RLock()
+	defer s.mutex.RUnlock()
+
+	if len := s.Len(); len != 0 {
+		errors := int(s.timeoutErrors + s.otherErrors)
+		wmean, _ := s.Mean()
+		wp50, _ := s.Percentile(50)
+		wp90, _ := s.Percentile(90)
+		wp99, _ := s.Percentile(99)
+		fmt.Printf(
+			"Total Update ops: %d, successful: %d, errors: (timeout: %d, other: %d), error rate: %.2f%% \n",
+			len, len-errors, s.timeoutErrors, s.otherErrors, float64(errors)/float64(len)*100,
+		)
+		fmt.Printf("Update AVG: %.2fms, P50: %.2fms, P90: %.2fms P99: %.2fms\n", wmean, wp50, wp90, wp99)
 	}
 }
 
