@@ -1,7 +1,9 @@
 package args
 
 import (
+	"encoding/json"
 	"fmt"
+	"os"
 	"time"
 
 	"github.com/alecthomas/kong"
@@ -9,7 +11,6 @@ import (
 )
 
 var CLI struct {
-	// mongo params
 	MongoURI              string        `arg:"" help:"Database hostname url" default:"mongodb://localhost:27017"`
 	MongoDatabase         string        `help:"Database name" default:"load_test"`
 	MongoCollection       string        `help:"Collection name" default:"load_test_coll"`
@@ -26,10 +27,15 @@ var CLI struct {
 	Timeout               time.Duration `short:"t" help:"Timeout for requests" default:"5s"`
 	Debug                 bool          `help:"Displaying additional diagnostic information" default:"false"`
 	DebugFile             string        `type:"path" help:"Redirection debug information to file"`
+	ConfigFile            string        `type:"path" help:"Config file path"`
 }
 
 func Parse() (*config.Config, error) {
 	kong.Parse(&CLI)
+
+	if filePath := CLI.ConfigFile; filePath != "" {
+		ParseConfigFile(filePath, &CLI)
+	}
 
 	wr, rr, ur := 0, 0, 0
 
@@ -65,4 +71,21 @@ func Parse() (*config.Config, error) {
 		return nil, error
 	}
 	return &cfg, nil
+}
+
+func ParseConfigFile(filePath string, cli interface{}) {
+	content, err := os.ReadFile(filePath)
+	if err != nil {
+		panic("Error when opening file: " + filePath)
+	}
+
+	var data interface{}
+	err = json.Unmarshal(content, &data)
+
+	if err != nil {
+		panic("Error during Unmarshal(): " + err.Error())
+	}
+
+  // todo: parsing data to cli
+
 }
