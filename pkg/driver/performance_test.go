@@ -1,4 +1,4 @@
-package mongoload_test
+package driver_test
 
 import (
 	"fmt"
@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/kuzxnia/mongoload/pkg/config"
-	"github.com/kuzxnia/mongoload/pkg/mongoload"
+	"github.com/kuzxnia/mongoload/pkg/driver"
 )
 
 type DummyClient struct{}
@@ -46,7 +46,7 @@ func (c *DummyClient) GetBatchSize() uint64 {
 }
 
 func benchmarkMongoload(c *config.Config, b *testing.B) {
-	ml, error := mongoload.New(c, &DummyClient{})
+	ml, error := driver.New(c, &DummyClient{})
 	if error != nil {
 		b.Error(error)
 	}

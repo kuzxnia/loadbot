@@ -3,8 +3,8 @@ package main
 import (
 	"github.com/kuzxnia/mongoload/cmd/args"
 	"github.com/kuzxnia/mongoload/pkg/database"
+	"github.com/kuzxnia/mongoload/pkg/driver"
 	"github.com/kuzxnia/mongoload/pkg/logger"
-	"github.com/kuzxnia/mongoload/pkg/mongoload"
 )
 
 func main() {
@@ -26,7 +26,7 @@ func main() {
 		}
 	}()
 
-	load, error := mongoload.New(config, db)
+	load, error := driver.New(config, db)
 	if error != nil {
 		panic(error)
 	}

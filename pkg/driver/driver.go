@@ -1,4 +1,4 @@
-package mongoload
+package driver
 
 import (
 	"fmt"
@@ -11,7 +11,6 @@ import (
 	"github.com/kuzxnia/mongoload/pkg/database"
 	"github.com/kuzxnia/mongoload/pkg/logger"
 	"github.com/kuzxnia/mongoload/pkg/rps"
-	"github.com/kuzxnia/mongoload/pkg/worker"
 )
 
 var log = logger.Default()
@@ -25,7 +24,7 @@ type mongoload struct {
 	duration    time.Duration
 	rateLimiter rps.Limiter
 
-	pool worker.JobPool
+	pool JobPool
 
 	readStats   Stats
 	writeStats  Stats
@@ -39,12 +38,12 @@ func New(config *config.Config, database database.Client) (*mongoload, error) {
 	load.config = config
 
 	if config.DurationLimit == 0 && config.OpsAmount == 0 {
-		load.pool = worker.NewNoLimitTimerJobPool()
+		load.pool = NewNoLimitTimerJobPool()
 	} else if config.DurationLimit != 0 {
 		load.duration = config.DurationLimit
-		load.pool = worker.NewTimerJobPool(config.DurationLimit)
+		load.pool = NewTimerJobPool(config.DurationLimit)
 	} else {
-		load.pool = worker.NewDeductionJobPool(uint64(load.config.OpsAmount))
+		load.pool = NewDeductionJobPool(uint64(load.config.OpsAmount))
 	}
 
 	// change to is pointer nil

@@ -3,7 +3,6 @@ package args
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"os"
 	"time"
 
@@ -60,8 +59,8 @@ func NewArgsParser() *ArgsParser {
 }
 
 func (ap *ArgsParser) Parse() (cfg *config.Config, error error) {
-	if kong.Parse(&FileConfigCLI); FileConfigCLI.ConfigFile != "" {
-		cfg, error = ap.configFileParser(FileConfigCLI.ConfigFile, &CLI)
+	if kong.Parse(&CLI); CLI.ConfigFile != "" {
+		cfg, error = ap.configFileParser(CLI.ConfigFile, &CLI)
 	} else {
 		cfg = ap.commandLineParser(&CLI)
 	}
@@ -76,8 +75,6 @@ func (ap *ArgsParser) Parse() (cfg *config.Config, error error) {
 }
 
 func ParseCommandLineArgs(cli interface{}) *config.Config {
-	kong.Parse(&cli)
-
 	wr, rr, ur := 0, 0, 0
 
 	if ratioFactor := CLI.WriteRatio + CLI.ReadRatio + CLI.UpdateRatio; ratioFactor == 0 {
@@ -87,7 +84,6 @@ func ParseCommandLineArgs(cli interface{}) *config.Config {
 		rr = int(float64(CLI.ReadRatio)/float64(ratioFactor)*100) + wr
 		ur = int(float64(CLI.UpdateRatio)/float64(ratioFactor)*100) + rr
 	}
-	fmt.Println(wr, rr, ur)
 
 	return &config.Config{
 		MongoURI:              CLI.MongoURI,
@@ -110,7 +106,7 @@ func ParseCommandLineArgs(cli interface{}) *config.Config {
 }
 
 func ParseFileConfigArgs(filePath string, cli interface{}) (*config.Config, error) {
-  // file, err := os.OpenFile(filePath, )
+	// file, err := os.OpenFile(filePath, )
 
 	content, err := os.ReadFile(filePath)
 	if err != nil {

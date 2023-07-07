@@ -1,4 +1,4 @@
-package mongoload
+package driver
 
 import (
 	"fmt"

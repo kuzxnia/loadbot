@@ -142,8 +142,8 @@ func (c *MongoClient) ReadMany() (bool, error) {
 }
 
 func (c *MongoClient) UpdateOne() (bool, error) {
-  // todo: only for now
-  _, err := c.collection.UpdateOne(context.TODO(), c.batchProvider.singleItem, c.batchProvider.singleItemToUpdate)
+	// todo: only for now
+	_, err := c.collection.UpdateOne(context.TODO(), c.batchProvider.singleItem, c.batchProvider.singleItemToUpdate)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
 			return true, err
