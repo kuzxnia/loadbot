@@ -5,7 +5,6 @@ import (
 	"time"
 )
 
-// to refactor
 type Config struct {
 	MongoURI              string
 	MongoDatabase         string
