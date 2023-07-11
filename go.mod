@@ -7,6 +7,7 @@ require (
 	github.com/montanaflynn/stats v0.7.1
 	github.com/stretchr/testify v1.8.4
 	go.mongodb.org/mongo-driver v1.11.7
+	go.uber.org/automaxprocs v1.5.2
 	go.uber.org/ratelimit v0.2.0
 )
 

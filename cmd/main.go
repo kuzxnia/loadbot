@@ -5,9 +5,12 @@ import (
 	"github.com/kuzxnia/mongoload/pkg/database"
 	"github.com/kuzxnia/mongoload/pkg/driver"
 	"github.com/kuzxnia/mongoload/pkg/logger"
+	"go.uber.org/automaxprocs/maxprocs"
 )
 
 func main() {
+	maxprocs.Set()
+
 	config, err := args.Parse()
 	if err != nil {
 		panic(err)

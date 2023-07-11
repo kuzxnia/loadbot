@@ -41,7 +41,6 @@ The purpose of this tool is to simulate workloads to facilitate testing the fail
 - write/read/update data in more real format
 - speed improvements: 
     - overwrite mongodb-go client to use faster http client, https://github.com/valyala/fasthttp
-    - leverage automaxprocs to give better performance, https://github.com/uber-go/automaxprocs
 
 known issues:
 - rate limit accuracy, current have 30ops deviation with bigger rps's
