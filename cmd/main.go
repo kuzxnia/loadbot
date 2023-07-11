@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/kuzxnia/mongoload/cmd/args"
+	"github.com/kuzxnia/mongoload/pkg/args"
 	"github.com/kuzxnia/mongoload/pkg/database"
 	"github.com/kuzxnia/mongoload/pkg/driver"
 	"github.com/kuzxnia/mongoload/pkg/logger"
