@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/kuzxnia/mongoload/pkg/config"
 	"github.com/montanaflynn/stats"
 	"go.mongodb.org/mongo-driver/mongo"
 )
@@ -18,6 +19,40 @@ type Stats interface {
 	Add(float64, error)
 
 	Summary()
+}
+
+func NewStatistics(job *config.Job) Stats {
+	switch job.Type {
+	case string(config.Write):
+	case string(config.BulkWrite):
+		return Stats(
+			&WriteStats{
+				BaseStats: BaseStats{
+					data: make([]float64, 0),
+				},
+			},
+		)
+	case string(config.Read):
+		return Stats(
+			&ReadStats{
+				BaseStats: BaseStats{
+					data: make([]float64, 0),
+				},
+			},
+		)
+	case string(config.Update):
+		return Stats(
+			&UpdateStats{
+				BaseStats: BaseStats{
+					data: make([]float64, 0),
+				},
+			},
+		)
+	default:
+		// todo change
+		panic("Invalid job type")
+	}
+	return nil
 }
 
 type BaseStats struct {
@@ -38,16 +73,6 @@ func (s *BaseStats) Percentile(percentile float64) (float64, error) {
 type ReadStats struct {
 	BaseStats
 	noDocumentsFoundError uint64
-}
-
-func NewReadStats() Stats {
-	return Stats(
-		&ReadStats{
-			BaseStats: BaseStats{
-				data: make([]float64, 0),
-			},
-		},
-	)
 }
 
 func (s *ReadStats) Add(interval float64, err error) {
@@ -88,16 +113,6 @@ type WriteStats struct {
 	BaseStats
 }
 
-func NewWriteStats() Stats {
-	return Stats(
-		&WriteStats{
-			BaseStats: BaseStats{
-				data: make([]float64, 0),
-			},
-		},
-	)
-}
-
 func (s *WriteStats) Add(interval float64, err error) {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
@@ -132,16 +147,6 @@ func (s *WriteStats) Summary() {
 
 type UpdateStats struct {
 	BaseStats
-}
-
-func NewUpdateStats() Stats {
-	return Stats(
-		&UpdateStats{
-			BaseStats: BaseStats{
-				data: make([]float64, 0),
-			},
-		},
-	)
 }
 
 func (s *UpdateStats) Add(interval float64, err error) {

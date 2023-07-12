@@ -9,6 +9,7 @@ type JobType string
 
 const (
 	Write      JobType = "write"
+	BulkWrite  JobType = "bulk_write"
 	Read       JobType = "read"
 	Update     JobType = "update"
 	Sleep      JobType = "sleep"

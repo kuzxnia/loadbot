@@ -1,106 +1,12 @@
 package driver
 
 import (
-	"errors"
-	"fmt"
-	"os"
-	"os/signal"
 	"sync"
 	"sync/atomic"
 	"time"
 
 	"github.com/kuzxnia/mongoload/pkg/config"
-	"github.com/kuzxnia/mongoload/pkg/database"
-	"github.com/kuzxnia/mongoload/pkg/rps"
 )
-
-type Worker interface {
-	Work()
-	ExecuteJob()
-	Cancel()
-	Summary()
-}
-
-func NewWorker(cfg *config.Job) (Worker, error) {
-	switch cfg.Type {
-	case string(config.Write):
-		worker := new(InsertWorker)
-		worker.wg.Add(int(cfg.Connections))
-		worker.Statistic = NewWriteStats()
-		worker.pool = NewJobPool(cfg)
-		worker.rateLimiter = rps.NewLimiter(cfg)
-		worker.startTime = time.Now()
-    // todo: init db
-
-		return Worker(worker), nil
-	default:
-		return nil, errors.New("Invalid job type")
-	}
-}
-
-type BaseWorker struct {
-	wg          sync.WaitGroup
-	db          database.Client
-	rateLimiter rps.Limiter
-	pool        JobPool
-	startTime   time.Time
-}
-
-type InsertWorker struct {
-	BaseWorker
-	Statistic Stats
-}
-
-func (w *InsertWorker) Work() {
-	interruptChan := make(chan os.Signal, 1)
-	signal.Notify(interruptChan, os.Interrupt)
-	go func() {
-		<-interruptChan
-		w.Cancel()
-	}()
-}
-
-func (w *InsertWorker) ExecuteJob() {
-	// start       time.Time
-
-	defer w.wg.Done()
-
-	for w.pool.SpawnJob() {
-		w.rateLimiter.Take()
-		// perform operation
-		start := time.Now()
-		// do sth with is error
-		_, error := w.db.InsertOneOrMany()
-		elapsed := time.Since(start)
-		w.Statistic.Add(float64(elapsed.Milliseconds()), error)
-
-		// add debug of some kind
-		if error != nil {
-			// todo: debug
-			log.Debug(error)
-		}
-
-		w.pool.MarkJobDone()
-	}
-}
-
-func (w *InsertWorker) Summary() {
-	elapsed := time.Since(w.startTime)
-	requestsDone := w.pool.GetRequestsDone()
-	rps := float64(requestsDone) / elapsed.Seconds()
-
-	fmt.Printf("\nTime took %f s\n", elapsed.Seconds())
-	fmt.Printf("Total operations: %d\n", requestsDone)
-  w.Statistic.Summary()
-	fmt.Printf("Requests per second: %f rp/s\n", rps)
-	if batch := w.db.GetBatchSize(); batch > 1 {
-		fmt.Printf("Operations per second: %f op/s\n", float64(requestsDone*batch)/elapsed.Seconds())
-	}
-}
-
-func (w *InsertWorker) Cancel() {
-	w.pool.Cancel()
-}
 
 type JobPool interface {
 	SpawnJob() bool

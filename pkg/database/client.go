@@ -13,6 +13,58 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/readpref"
 )
 
+type JobHandler interface {
+	Handle() (bool, error)
+}
+
+func NewJobHandler(cfg *config.Job, client Client) JobHandler {
+	switch cfg.Type {
+	case string(config.Write):
+		return JobHandler(&WriteHandler{client: client})
+	case string(config.Read):
+		return JobHandler(&ReadHandler{client: client})
+	case string(config.Update):
+		return JobHandler(&UpdateHandler{client: client})
+	case string(config.BulkWrite):
+		return JobHandler(&BulkWriteHandler{client: client})
+  default:
+    // todo change
+    panic("Invalid job type")
+	}
+}
+
+type WriteHandler struct {
+	client Client
+}
+
+func (h *WriteHandler) Handle() (bool, error) {
+	return h.client.InsertOne()
+}
+
+type BulkWriteHandler struct {
+	client Client
+}
+
+func (h *BulkWriteHandler) Handle() (bool, error) {
+	return h.client.InsertMany()
+}
+
+type ReadHandler struct {
+	client Client
+}
+
+func (h *ReadHandler) Handle() (bool, error) {
+	return h.client.ReadOne()
+}
+
+type UpdateHandler struct {
+	client Client
+}
+
+func (h *UpdateHandler) Handle() (bool, error) {
+	return h.client.UpdateOne()
+}
+
 type Client interface {
 	InsertOne() (bool, error)
 	InsertMany() (bool, error)
@@ -31,16 +83,16 @@ type MongoClient struct {
 	batchProvider *DataProvider
 }
 
-func NewMongoClient(config *config.Config) (*MongoClient, error) {
+func NewMongoClient(connectionString string, cfg *config.Job, schema *config.Schema) (*MongoClient, error) {
 	opts := &options.ClientOptions{
-		HTTPClient: HTTPClient(config),
+		HTTPClient: HTTPClient(cfg),
 	}
 	opts = opts.
-		ApplyURI(config.MongoURI).
+		ApplyURI(connectionString).
 		SetReadPreference(readpref.SecondaryPreferred()).
 		SetMaxConnecting(100).
 		SetMaxConnIdleTime(90 * time.Second).
-		SetTimeout(config.Timeout)
+		SetTimeout(cfg.Timeout)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -57,10 +109,8 @@ func NewMongoClient(config *config.Config) (*MongoClient, error) {
 		fmt.Println("Successfully connected to database server")
 	}
 
-	collection := client.Database(config.MongoDatabase).Collection(config.MongoCollection)
-
-	batchProvider := NewDataProvider(config.BatchSize, config.DataLenght)
-
+	collection := client.Database(schema.Database).Collection(schema.Collection)
+	batchProvider := NewDataProvider(cfg.BatchSize, cfg.DataSize)
 	return &MongoClient{ctx: ctx, client: client, collection: collection, batchProvider: batchProvider}, err
 }
 

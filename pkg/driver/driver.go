@@ -2,12 +2,15 @@ package driver
 
 import (
 	"fmt"
+	"os"
+	"os/signal"
 	"sync"
 	"time"
 
 	"github.com/kuzxnia/mongoload/pkg/config"
 	"github.com/kuzxnia/mongoload/pkg/database"
 	"github.com/kuzxnia/mongoload/pkg/logger"
+	"github.com/kuzxnia/mongoload/pkg/rps"
 )
 
 var log = logger.Default()
@@ -16,12 +19,12 @@ type mongoload struct {
 	config  *config.Config
 	db      database.Client
 	wg      sync.WaitGroup
-	workers []Worker
+	workers []*Worker
 	start   time.Time
 }
 
 // todo: change params to options struct
-// todo: move database part to worker 
+// todo: move database part to worker
 func New(config *config.Config, database database.Client) (*mongoload, error) {
 	load := new(mongoload)
 	load.config = config
@@ -29,7 +32,7 @@ func New(config *config.Config, database database.Client) (*mongoload, error) {
 
 	fmt.Println("Initializing workers")
 	for _, job := range config.Jobs {
-		worker, error := NewWorker(&job)
+		worker, error := NewWorker(config, &job)
 		if error != nil {
 			panic("Worker initialization error")
 		}
@@ -63,43 +66,80 @@ func (ml *mongoload) cancel() {
 	}
 }
 
-// func (ml *mongoload) performWriteOperation() (bool, error) {
-// 	start := time.Now()
-// 	writedSuccessfuly, error := ml.db.InsertOneOrMany()
-// 	elapsed := time.Since(start)
-// 	ml.writeStats.Add(float64(elapsed.Milliseconds()), error)
+type Worker struct {
+	wg          sync.WaitGroup
+	db          database.Client
+	handler     database.JobHandler
+	rateLimiter rps.Limiter
+	pool        JobPool
+	startTime   time.Time
+	Statistic   Stats
+}
 
-// 	// add debug of some kind
-// 	if error != nil {
-// 		// todo: debug
-// 		log.Debug(error)
-// 	}
+func NewWorker(cfg *config.Config, job *config.Job) (*Worker, error) {
+	db, err := database.NewMongoClient(cfg.ConnectionString, job, &cfg.Schemas[0])
+	if err != nil {
+		return nil, err
+	}
 
-// 	return writedSuccessfuly, error
-// }
+  // todo: check errors
+	worker := new(Worker)
+	worker.wg.Add(int(job.Connections))
+	worker.Statistic = NewStatistics(job)
+	worker.pool = NewJobPool(job)
+	worker.rateLimiter = rps.NewLimiter(job)
+	worker.startTime = time.Now()
+	worker.db = db
+	worker.handler = database.NewJobHandler(job, db)
+	// todo: init db
+	return worker, nil
+}
 
-// func (ml *mongoload) performReadOperation() (bool, error) {
-// 	start := time.Now()
-// 	writedSuccessfuly, error := ml.db.ReadOne()
-// 	elapsed := time.Since(start)
-// 	ml.readStats.Add(float64(elapsed.Milliseconds()), error)
-// 	if error != nil {
-// 		// todo: debug
-// 		log.Debug(error)
-// 	}
+func (w *Worker) Work() {
+	interruptChan := make(chan os.Signal, 1)
+	signal.Notify(interruptChan, os.Interrupt)
+	go func() {
+		<-interruptChan
+		w.Cancel()
+	}()
+}
 
-// 	return writedSuccessfuly, error
-// }
+func (w *Worker) ExecuteJob() {
+	defer w.wg.Done()
 
-// func (ml *mongoload) performUpdateOperation() (bool, error) {
-// 	start := time.Now()
-// 	writedSuccessfuly, error := ml.db.UpdateOne()
-// 	elapsed := time.Since(start)
-// 	ml.updateStats.Add(float64(elapsed.Milliseconds()), error)
-// 	if error != nil {
-// 		// todo: debug
-// 		log.Debug(error)
-// 	}
+	for w.pool.SpawnJob() {
+		w.rateLimiter.Take()
+		// perform operation
+		start := time.Now()
+		// do sth with is error
+		_, error := w.handler.Handle()
+		elapsed := time.Since(start)
+		w.Statistic.Add(float64(elapsed.Milliseconds()), error)
 
-// 	return writedSuccessfuly, error
-// }
+		// add debug of some kind
+		if error != nil {
+			// todo: debug
+			log.Debug(error)
+		}
+
+		w.pool.MarkJobDone()
+	}
+}
+
+func (w *Worker) Summary() {
+	elapsed := time.Since(w.startTime)
+	requestsDone := w.pool.GetRequestsDone()
+	rps := float64(requestsDone) / elapsed.Seconds()
+
+	fmt.Printf("\nTime took %f s\n", elapsed.Seconds())
+	fmt.Printf("Total operations: %d\n", requestsDone)
+	w.Statistic.Summary()
+	fmt.Printf("Requests per second: %f rp/s\n", rps)
+	if batch := w.db.GetBatchSize(); batch > 1 {
+		fmt.Printf("Operations per second: %f op/s\n", float64(requestsDone*batch)/elapsed.Seconds())
+	}
+}
+
+func (w *Worker) Cancel() {
+	w.pool.Cancel()
+}
