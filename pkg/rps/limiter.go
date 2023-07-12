@@ -1,6 +1,7 @@
 package rps
 
 import (
+	"github.com/kuzxnia/mongoload/pkg/config"
 	"go.uber.org/ratelimit"
 )
 
@@ -13,6 +14,14 @@ import (
 
 type Limiter interface {
 	Take()
+}
+
+func NewLimiter(cfg *config.Job) Limiter {
+	if cfg.Pace == 0 {
+		return Limiter(NewNoLimitLimiter())
+	} else {
+		return Limiter(NewSimpleLimiter(cfg.Pace))
+	}
 }
 
 type NoLimitLimiter struct{}

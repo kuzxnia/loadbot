@@ -38,8 +38,6 @@ func NewMongoClient(config *config.Config) (*MongoClient, error) {
 	opts = opts.
 		ApplyURI(config.MongoURI).
 		SetReadPreference(readpref.SecondaryPreferred()).
-		SetAppName("test").
-		SetMaxPoolSize(config.PoolSize).
 		SetMaxConnecting(100).
 		SetMaxConnIdleTime(90 * time.Second).
 		SetTimeout(config.Timeout)
