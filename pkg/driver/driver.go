@@ -105,7 +105,7 @@ func (w *Worker) ExecuteJob() {
 	defer w.wg.Done()
 
 	for w.pool.SpawnJob() {
-    w.rateLimiter.Take()
+		w.rateLimiter.Take()
 		// perform operation
 		start := time.Now()
 		// do sth with is error
