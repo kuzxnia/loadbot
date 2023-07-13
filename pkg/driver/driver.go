@@ -29,7 +29,7 @@ func New(config *config.Config) (*mongoload, error) {
 
 	fmt.Println("Initializing workers")
 	for _, job := range config.Jobs {
-		worker, error := NewWorker(config, &job)
+		worker, error := NewWorker(config, job)
 		if error != nil {
 			panic("Worker initialization error")
 		}
@@ -74,7 +74,7 @@ type Worker struct {
 }
 
 func NewWorker(cfg *config.Config, job *config.Job) (*Worker, error) {
-	db, err := database.NewMongoClient(cfg.ConnectionString, job, &cfg.Schemas[0])
+	db, err := database.NewMongoClient(cfg.ConnectionString, job, job.GetTemplateSchema())
 	if err != nil {
 		return nil, err
 	}

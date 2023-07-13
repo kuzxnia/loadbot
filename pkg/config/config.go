@@ -18,14 +18,15 @@ const (
 )
 
 type Config struct {
-	ConnectionString string   `json:"connection_string"`
-	Jobs             []Job    `json:"jobs"`
-	Schemas          []Schema `json:"schemas"`
-	Debug            bool     `json:"debug"`
-	DebugFile        string   `json:"debug_file"`
+	ConnectionString string    `json:"connection_string"`
+	Jobs             []*Job    `json:"jobs"`
+	Schemas          []*Schema `json:"schemas"`
+	Debug            bool      `json:"debug"`
+	DebugFile        string    `json:"debug_file"`
 }
 
 type Job struct {
+	Parent      *Config
 	Name        string
 	Type        string
 	Template    string
@@ -41,8 +42,8 @@ type Job struct {
 }
 
 func (j *Job) GetTemplateSchema() *Schema {
-  // todo
-  return nil
+	// todo
+	return nil
 }
 
 type Schema struct {
@@ -52,26 +53,6 @@ type Schema struct {
 	Schema     map[string]string
 	// template - nested dict
 }
-
-// type Config struct {
-// 	MongoURI        string
-// 	MongoDatabase   string
-// 	MongoCollection string
-
-// 	ConcurrentConnections uint64
-// 	PoolSize              uint64 // move to connection string
-// 	RpsLimit              uint64 // change to peace
-// 	DurationLimit         time.Duration
-// 	OpsAmount             uint64
-// 	BatchSize             uint64
-// 	DataLenght            uint64
-// 	WriteRatio            uint64
-// 	ReadRatio             uint64
-// 	UpdateRatio           uint64
-// 	Timeout               time.Duration
-// 	Debug                 bool
-// 	DebugFilePath         string
-// }
 
 func (c *Config) Validate() error {
 	validators := []func() error{

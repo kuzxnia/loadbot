@@ -81,20 +81,24 @@ func (ap *ArgsParser) Parse() (cfg *config.Config, error error) {
 }
 
 func ParseCommandLineArgs(cli interface{}) *config.Config {
-	return &config.Config{
-		ConnectionString: CLI.ConnectionString,
-		Jobs: []config.Job{
-			{
-				Connections: CLI.Connections,
-				Pace:        CLI.Pace,
-				Duration:    CLI.Duration,
-				Operations:  CLI.Operations,
-				BatchSize:   CLI.BatchSize,
-				Timeout:     CLI.Timeout,
-			},
+	jobs := []*config.Job{
+		{
+			Connections: CLI.Connections,
+			Pace:        CLI.Pace,
+			Duration:    CLI.Duration,
+			Operations:  CLI.Operations,
+			BatchSize:   CLI.BatchSize,
+			Timeout:     CLI.Timeout,
 		},
-		Debug: CLI.Debug,
 	}
+	cfg := config.Config{
+		ConnectionString: CLI.ConnectionString,
+		Debug:            CLI.Debug,
+	}
+	for _, job := range jobs {
+		job.Parent = &cfg
+	}
+	return &cfg
 }
 
 func ParseFileConfigArgs(filePath string, cli interface{}) (*config.Config, error) {
