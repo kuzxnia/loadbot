@@ -10,14 +10,12 @@ import (
 	"github.com/kuzxnia/mongoload/pkg/config"
 	"github.com/kuzxnia/mongoload/pkg/database"
 	"github.com/kuzxnia/mongoload/pkg/logger"
-	"github.com/kuzxnia/mongoload/pkg/rps"
 )
 
 var log = logger.Default()
 
 type mongoload struct {
 	config  *config.Config
-	db      database.Client
 	wg      sync.WaitGroup
 	workers []*Worker
 	start   time.Time
@@ -25,10 +23,9 @@ type mongoload struct {
 
 // todo: change params to options struct
 // todo: move database part to worker
-func New(config *config.Config, database database.Client) (*mongoload, error) {
+func New(config *config.Config) (*mongoload, error) {
 	load := new(mongoload)
 	load.config = config
-	load.db = database
 
 	fmt.Println("Initializing workers")
 	for _, job := range config.Jobs {
@@ -69,11 +66,11 @@ func (ml *mongoload) cancel() {
 type Worker struct {
 	wg          sync.WaitGroup
 	db          database.Client
-	handler     database.JobHandler
-	rateLimiter rps.Limiter
+	handler     JobHandler
+	rateLimiter Limiter
 	pool        JobPool
-	startTime   time.Time
 	Statistic   Stats
+	startTime   time.Time
 }
 
 func NewWorker(cfg *config.Config, job *config.Job) (*Worker, error) {
@@ -82,15 +79,15 @@ func NewWorker(cfg *config.Config, job *config.Job) (*Worker, error) {
 		return nil, err
 	}
 
-  // todo: check errors
+	// todo: check errors
 	worker := new(Worker)
 	worker.wg.Add(int(job.Connections))
 	worker.Statistic = NewStatistics(job)
 	worker.pool = NewJobPool(job)
-	worker.rateLimiter = rps.NewLimiter(job)
+	worker.rateLimiter = NewLimiter(job)
 	worker.startTime = time.Now()
 	worker.db = db
-	worker.handler = database.NewJobHandler(job, db)
+	worker.handler = NewJobHandler(job, db)
 	// todo: init db
 	return worker, nil
 }
@@ -108,7 +105,7 @@ func (w *Worker) ExecuteJob() {
 	defer w.wg.Done()
 
 	for w.pool.SpawnJob() {
-		w.rateLimiter.Take()
+    w.rateLimiter.Take()
 		// perform operation
 		start := time.Now()
 		// do sth with is error
@@ -133,11 +130,12 @@ func (w *Worker) Summary() {
 
 	fmt.Printf("\nTime took %f s\n", elapsed.Seconds())
 	fmt.Printf("Total operations: %d\n", requestsDone)
-	w.Statistic.Summary()
 	fmt.Printf("Requests per second: %f rp/s\n", rps)
-	if batch := w.db.GetBatchSize(); batch > 1 {
-		fmt.Printf("Operations per second: %f op/s\n", float64(requestsDone*batch)/elapsed.Seconds())
-	}
+	w.Statistic.Summary()
+
+	// if batch := w.db.GetBatchSize(); batch > 1 {
+	// 	fmt.Printf("Operations per second: %f op/s\n", float64(requestsDone*batch)/elapsed.Seconds())
+	// }
 }
 
 func (w *Worker) Cancel() {

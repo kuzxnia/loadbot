@@ -39,6 +39,12 @@ type Job struct {
 	// Params ex. for read / update
 	//     * filter: { "_id": "#_id"}
 }
+
+func (j *Job) GetTemplateSchema() *Schema {
+  // todo
+  return nil
+}
+
 type Schema struct {
 	Name       string
 	Database   string

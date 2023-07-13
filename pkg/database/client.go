@@ -13,74 +13,18 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/readpref"
 )
 
-type JobHandler interface {
-	Handle() (bool, error)
-}
-
-func NewJobHandler(cfg *config.Job, client Client) JobHandler {
-	switch cfg.Type {
-	case string(config.Write):
-		return JobHandler(&WriteHandler{client: client})
-	case string(config.Read):
-		return JobHandler(&ReadHandler{client: client})
-	case string(config.Update):
-		return JobHandler(&UpdateHandler{client: client})
-	case string(config.BulkWrite):
-		return JobHandler(&BulkWriteHandler{client: client})
-  default:
-    // todo change
-    panic("Invalid job type")
-	}
-}
-
-type WriteHandler struct {
-	client Client
-}
-
-func (h *WriteHandler) Handle() (bool, error) {
-	return h.client.InsertOne()
-}
-
-type BulkWriteHandler struct {
-	client Client
-}
-
-func (h *BulkWriteHandler) Handle() (bool, error) {
-	return h.client.InsertMany()
-}
-
-type ReadHandler struct {
-	client Client
-}
-
-func (h *ReadHandler) Handle() (bool, error) {
-	return h.client.ReadOne()
-}
-
-type UpdateHandler struct {
-	client Client
-}
-
-func (h *UpdateHandler) Handle() (bool, error) {
-	return h.client.UpdateOne()
-}
-
 type Client interface {
-	InsertOne() (bool, error)
-	InsertMany() (bool, error)
-	InsertOneOrMany() (bool, error)
-	ReadOne() (bool, error)
-	ReadMany() (bool, error)
-	UpdateOne() (bool, error)
-
-	GetBatchSize() uint64
+	InsertOne(interface{}) (bool, error)
+	InsertMany([]interface{}) (bool, error)
+	ReadOne(interface{}) (bool, error)
+	ReadMany(interface{}) (bool, error)
+	UpdateOne(interface{}, interface{}) (bool, error)
 }
 
 type MongoClient struct {
-	ctx           context.Context
-	client        *mongo.Client
-	collection    *mongo.Collection
-	batchProvider *DataProvider
+	ctx        context.Context
+	client     *mongo.Client
+	collection *mongo.Collection
 }
 
 func NewMongoClient(connectionString string, cfg *config.Job, schema *config.Schema) (*MongoClient, error) {
@@ -110,38 +54,26 @@ func NewMongoClient(connectionString string, cfg *config.Job, schema *config.Sch
 	}
 
 	collection := client.Database(schema.Database).Collection(schema.Collection)
-	batchProvider := NewDataProvider(cfg.BatchSize, cfg.DataSize)
-	return &MongoClient{ctx: ctx, client: client, collection: collection, batchProvider: batchProvider}, err
+	return &MongoClient{ctx: ctx, client: client, collection: collection}, err
 }
 
 func (c *MongoClient) Disconnect() error {
 	return c.client.Disconnect(c.ctx)
 }
 
-func (c *MongoClient) InsertOne() (bool, error) {
-	_, err := c.collection.InsertOne(context.TODO(), c.batchProvider.singleItem)
+func (c *MongoClient) InsertOne(data interface{}) (bool, error) {
+	_, err := c.collection.InsertOne(context.TODO(), data)
 	return bool(err == nil), err
 }
 
-func (c *MongoClient) InsertMany() (bool, error) {
-	_, err := c.collection.InsertMany(context.TODO(), *c.batchProvider.batchOfItems)
+func (c *MongoClient) InsertMany(data []interface{}) (bool, error) {
+	_, err := c.collection.InsertMany(context.TODO(), data)
 	return bool(err == nil), err
 }
 
-func (c *MongoClient) InsertOneOrMany() (bool, error) {
-	err := error(nil)
-	if c.batchProvider.batchSize == 0 {
-		_, err = c.InsertOne()
-	} else {
-		_, err = c.InsertMany()
-	}
-
-	return bool(err == nil), err
-}
-
-func (c *MongoClient) ReadOne() (bool, error) {
+func (c *MongoClient) ReadOne(filter interface{}) (bool, error) {
 	var result bson.M
-	err := c.collection.FindOne(context.TODO(), c.batchProvider.singleItem).Decode(&result)
+	err := c.collection.FindOne(context.TODO(), filter).Decode(&result)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
 			return true, err
@@ -151,7 +83,7 @@ func (c *MongoClient) ReadOne() (bool, error) {
 	return true, nil
 }
 
-func (c *MongoClient) ReadMany() (bool, error) {
+func (c *MongoClient) ReadMany(filter interface{}) (bool, error) {
 	// start := time.Now()
 	batch_size := int32(1000)
 
@@ -189,9 +121,9 @@ func (c *MongoClient) ReadMany() (bool, error) {
 	return true, nil
 }
 
-func (c *MongoClient) UpdateOne() (bool, error) {
+func (c *MongoClient) UpdateOne(filter interface{}, data interface{}) (bool, error) {
 	// todo: only for now
-	_, err := c.collection.UpdateOne(context.TODO(), c.batchProvider.singleItem, c.batchProvider.singleItemToUpdate)
+	_, err := c.collection.UpdateOne(context.TODO(), filter, data)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
 			return true, err
@@ -199,8 +131,4 @@ func (c *MongoClient) UpdateOne() (bool, error) {
 		return false, err
 	}
 	return true, nil
-}
-
-func (c *MongoClient) GetBatchSize() uint64 {
-	return c.batchProvider.batchSize
 }

@@ -1,4 +1,4 @@
-package rps
+package driver 
 
 import (
 	"github.com/kuzxnia/mongoload/pkg/config"
