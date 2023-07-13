@@ -1,6 +1,7 @@
 package config
 
 import (
+	"errors"
 	"time"
 )
 
@@ -42,7 +43,11 @@ type Job struct {
 }
 
 func (j *Job) GetTemplateSchema() *Schema {
-	// todo
+	for _, schema := range j.Parent.Schemas {
+		if schema.Name == j.Template {
+			return schema
+		}
+	}
 	return nil
 }
 
@@ -56,7 +61,7 @@ type Schema struct {
 
 func (c *Config) Validate() error {
 	validators := []func() error{
-		// c.validateWriteRatio,
+		c.validateAllJobTemplatesAreProvided,
 	}
 
 	for _, validate := range validators {
@@ -67,11 +72,22 @@ func (c *Config) Validate() error {
 	return nil
 }
 
-func (c *Config) validateWriteRatio() error {
-	// if c.WriteRatio < 0.0 || c.WriteRatio > 1.0 {
-	// 	return fmt.Errorf("Write ratio must be in range 0..1")
-	// }
+func (c *Config) validateAllJobTemplatesAreProvided() error {
+	isSchemaName := func(schema *Schema, comparator string) bool { return schema.Name == comparator }
+
+	for _, job := range c.Jobs {
+		if !Contains[*Schema, string](c.Schemas, job.Template, isSchemaName) {
+			return errors.New("Job: " + job.Name + " have invalid template \"" + job.Template + "\"")
+		}
+	}
 	return nil
 }
 
-// add more validators
+func Contains[T comparable, X comparable](array []T, comparator X, predicate func(T, X) bool) bool {
+	for _, elem := range array {
+		if predicate(elem, comparator) {
+			return true
+		}
+	}
+	return false
+}

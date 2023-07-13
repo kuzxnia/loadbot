@@ -5,13 +5,6 @@ import (
 	"go.uber.org/ratelimit"
 )
 
-// type token uint64
-
-// const (
-// 	limiterDone token = iota
-// 	limiterContinue
-// )
-
 type Limiter interface {
 	Take()
 }

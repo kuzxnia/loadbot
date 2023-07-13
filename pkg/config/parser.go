@@ -5,17 +5,14 @@ import (
 	"time"
 )
 
-// global config -- to rename as config
-
-
 func (c *Job) UnmarshalJSON(data []byte) (err error) {
 	var tmp struct {
 		Name        string
 		Type        string
 		Template    string
-		Connections uint64 // Maximum number of concurrent connections
-		Pace        uint64 // rps limit / peace - if not set max
-		DataSize    uint64 // data size in bytes
+		Connections uint64
+		Pace        uint64
+		DataSize    uint64
 		BatchSize   uint64
 		Duration    string
 		Operations  uint64
