@@ -19,6 +19,7 @@ type Client interface {
 	ReadOne(interface{}) (bool, error)
 	ReadMany(interface{}) (bool, error)
 	UpdateOne(interface{}, interface{}) (bool, error)
+  Disconnect() error
 }
 
 type MongoClient struct {

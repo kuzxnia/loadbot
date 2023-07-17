@@ -1,7 +1,6 @@
 package config
 
 import (
-	"errors"
 	"time"
 )
 
@@ -30,7 +29,7 @@ type Job struct {
 	Parent      *Config
 	Name        string
 	Type        string
-	Template    string
+	Template    string // validate required, or use default
 	Connections uint64 // Maximum number of concurrent connections
 	Pace        uint64 // rps limit / peace - if not set max
 	DataSize    uint64 // data size in bytes
@@ -52,42 +51,9 @@ func (j *Job) GetTemplateSchema() *Schema {
 }
 
 type Schema struct {
-	Name       string
-	Database   string
-	Collection string
-	Schema     map[string]string
-	// template - nested dict
-}
-
-func (c *Config) Validate() error {
-	validators := []func() error{
-		c.validateAllJobTemplatesAreProvided,
-	}
-
-	for _, validate := range validators {
-		if error := validate(); error != nil {
-			return error
-		}
-	}
-	return nil
-}
-
-func (c *Config) validateAllJobTemplatesAreProvided() error {
-	isSchemaName := func(schema *Schema, comparator string) bool { return schema.Name == comparator }
-
-	for _, job := range c.Jobs {
-		if !Contains[*Schema, string](c.Schemas, job.Template, isSchemaName) {
-			return errors.New("Job: " + job.Name + " have invalid template \"" + job.Template + "\"")
-		}
-	}
-	return nil
-}
-
-func Contains[T comparable, X comparable](array []T, comparator X, predicate func(T, X) bool) bool {
-	for _, elem := range array {
-		if predicate(elem, comparator) {
-			return true
-		}
-	}
-	return false
+	Name       string `json:"name"`
+	Database   string `json:"database"`
+	Collection string `json:"collection"`
+	// todo: introducte new type and parse
+	Schema map[string]interface{} `json:"schema"`
 }

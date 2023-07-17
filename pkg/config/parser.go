@@ -7,16 +7,16 @@ import (
 
 func (c *Job) UnmarshalJSON(data []byte) (err error) {
 	var tmp struct {
-		Name        string
-		Type        string
-		Template    string
-		Connections uint64
-		Pace        uint64
-		DataSize    uint64
-		BatchSize   uint64
-		Duration    string
-		Operations  uint64
-		Timeout     string // if not set, default
+		Name        string `json:"name"`
+		Type        string `json:"type"`
+		Template    string `json:"template"`
+		Connections uint64 `json:"connections"`
+		Pace        uint64 `json:"pace"`
+		DataSize    uint64 `json:"data_size"`
+		BatchSize   uint64 `json:"batch_size"`
+		Duration    string `json:"duration"`
+		Operations  uint64 `json:"operations"`
+		Timeout     string `json:"timeout"` // if not set, default
 		// Params ex. for read / update
 		//     * filter: { "_id": "#_id"}
 	}
@@ -25,10 +25,20 @@ func (c *Job) UnmarshalJSON(data []byte) (err error) {
 		return err
 	}
 
+	c.Name = tmp.Name
+	c.Type = tmp.Type
+	c.Template = tmp.Template
+	c.Connections = tmp.Connections
+	c.Pace = tmp.Pace
+	c.DataSize = tmp.DataSize
+	c.BatchSize = tmp.BatchSize
 	if c.Duration, err = time.ParseDuration(tmp.Duration); err != nil {
 		return err
 	}
-	c.Timeout, err = time.ParseDuration(tmp.Timeout)
+	c.Operations = tmp.Operations
+	if c.Timeout, err = time.ParseDuration(tmp.Timeout); err != nil {
+		return err
+	}
 
 	return
 }

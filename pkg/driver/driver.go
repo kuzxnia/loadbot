@@ -57,7 +57,7 @@ func (ml *mongoload) Summary() {
 	}
 }
 
-func (ml *mongoload) cancel() {
+func (ml *mongoload) Cancel() {
 	for _, worker := range ml.workers {
 		worker.Cancel()
 	}
@@ -99,11 +99,8 @@ func (w *Worker) Work() {
 		<-interruptChan
 		w.Cancel()
 	}()
-}
 
-func (w *Worker) ExecuteJob() {
 	defer w.wg.Done()
-
 	for w.pool.SpawnJob() {
 		w.rateLimiter.Take()
 		// perform operation
@@ -112,13 +109,11 @@ func (w *Worker) ExecuteJob() {
 		_, error := w.handler.Handle()
 		elapsed := time.Since(start)
 		w.Statistic.Add(float64(elapsed.Milliseconds()), error)
-
 		// add debug of some kind
 		if error != nil {
 			// todo: debug
 			log.Debug(error)
 		}
-
 		w.pool.MarkJobDone()
 	}
 }
@@ -140,4 +135,11 @@ func (w *Worker) Summary() {
 
 func (w *Worker) Cancel() {
 	w.pool.Cancel()
+	w.Close()
+}
+
+func (w *Worker) Close() {
+	if err := w.db.Disconnect(); err != nil {
+		panic(err)
+	}
 }
