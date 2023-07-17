@@ -12,7 +12,7 @@ This tool offers two ways to access it: one through CLI arguments and the other 
 
 ### CLI usage:
     Arguments:
-      [<connection-string>]    Database connection string
+      [<connection-string>]     Database connection string
 
     Flags:
     -h, --help                  Show context-sensitive help.
@@ -26,7 +26,7 @@ This tool offers two ways to access it: one through CLI arguments and the other 
         --debug                 Displaying additional diagnostic information
 
 
-### Config file usage:
+### Simple config-file example:
 You can execute the program using `--config-file <file-path>` or `-f <file-path>`. The file should be in JSON format. 
 Example file:
 
@@ -63,8 +63,43 @@ Example file:
 }
 ```
 <details>
-<summary>Defining Jobs</summary>
+<summary>Defining schemas</summary>
 
+
+**Schema fields**
+
+- `name` - unique name, used in jobs (see job.schema) for determining which template use
+- `database` - database name
+- `collection` - collection name
+
+**Schema generation mapper fields:**
+
+General
+- `#id` - ex. ``
+- `#string`` - ex. ``
+- `#word`` - ex. ``
+
+Internet
+- `#email`` - ex. ``
+- `#username`` - ex. ``
+- `#password`` - ex. ``
+ 
+Person
+- `#name`` - ex. ``
+- `#first_name`` - ex. ``
+- `#first_name_male`` - ex. ``
+- `#first_name_female`` - ex. ``
+- `#last_name`` - ex. ``
+- `#title_male`` - ex. ``
+- `#title_female`` - ex. ``
+- `#phone_number`` - ex. ``
+
+**More examples**
+
+</details>
+
+<details>
+<summary>Defining Jobs</summary>
 </details>
 
 
