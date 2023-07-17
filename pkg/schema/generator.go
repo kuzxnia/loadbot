@@ -12,9 +12,24 @@ import (
 )
 
 var GeneratorFieldTypesMapper = map[string]func(opts ...options.OptionFunc) string{
+	"#id":     faker.UUIDDigit,
 	"#string": faker.Word,
 	"#word":   faker.Word,
-	"#id":     faker.UUIDDigit,
+
+	// internet
+	"#email":    faker.Email,
+	"#username": faker.Username,
+	"#password": faker.Password,
+
+	// person
+	"#name":              faker.Name,
+	"#first_name":        faker.FirstName,
+	"#first_name_male":   faker.FirstNameMale,
+	"#first_name_female": faker.FirstNameFemale,
+	"#last_name":         faker.LastName,
+	"#title_male":        faker.TitleMale,
+	"#title_female":      faker.TitleFemale,
+	"#phone_number":      faker.Phonenumber,
 }
 
 var GeneratorFieldTypes = lo.Keys(GeneratorFieldTypesMapper)
@@ -28,22 +43,22 @@ func NewDataGenerator(schema *config.Schema, dataSize uint64) DataGenerator {
 		return DataGenerator(
 			&StructuralizableDataGenerator{
 				schema:   schema,
-				dataSize: dataSize,
+        // add support for custom byte size
 			},
 		)
 	}
 	return DataGenerator(
-		&SimpleDataGenerator{
+		&MeasurableDataGenerator{
 			dataSize: dataSize,
 		},
 	)
 }
 
-type SimpleDataGenerator struct {
+type MeasurableDataGenerator struct {
 	dataSize uint64
 }
 
-func (g *SimpleDataGenerator) Generate() (interface{}, error) {
+func (g *MeasurableDataGenerator) Generate() (interface{}, error) {
 	// todo: use faker to generate map'like data
 	// check size of empty bson to calculate how much data generate
 	return &bson.M{"data": randStringBytes(g.dataSize)}, nil
@@ -61,7 +76,6 @@ func randStringBytes(n uint64) string {
 
 type StructuralizableDataGenerator struct {
 	schema   *config.Schema
-	dataSize uint64
 }
 
 func (g *StructuralizableDataGenerator) Generate() (interface{}, error) {
