@@ -24,6 +24,13 @@ type Stats interface {
 func NewStatistics(job *config.Job) Stats {
 	switch job.Type {
 	case string(config.Write):
+		return Stats(
+			&WriteStats{
+				BaseStats: BaseStats{
+					data: make([]float64, 0),
+				},
+			},
+		)
 	case string(config.BulkWrite):
 		return Stats(
 			&WriteStats{

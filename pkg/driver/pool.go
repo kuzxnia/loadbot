@@ -1,6 +1,7 @@
 package driver
 
 import (
+	"fmt"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -18,10 +19,13 @@ type JobPool interface {
 
 func NewJobPool(cfg *config.Job) JobPool {
 	if cfg.Duration == 0 && cfg.Operations == 0 {
+		fmt.Println("no limit")
 		return JobPool(NewNoLimitTimerJobPool())
 	} else if cfg.Duration != 0 {
+		fmt.Println("duration", cfg.Duration)
 		return JobPool(NewTimerJobPool(cfg.Duration))
 	} else {
+		fmt.Println("operations", cfg.Operations)
 		return JobPool(NewDeductionJobPool(cfg.Operations))
 	}
 }

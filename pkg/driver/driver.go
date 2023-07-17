@@ -27,6 +27,10 @@ func New(config *config.Config) (*mongoload, error) {
 	load := new(mongoload)
 	load.config = config
 
+  // todo: now all jobs will be executed in a parallel, 
+  // change this to be execexuted as queue or in a parallel depending on type
+	load.wg.Add(len(config.Jobs))
+
 	fmt.Println("Initializing workers")
 	for _, job := range config.Jobs {
 		worker, error := NewWorker(config, job)
@@ -42,9 +46,13 @@ func New(config *config.Config) (*mongoload, error) {
 
 func (ml *mongoload) Torment() {
 	for _, worker := range ml.workers {
-		go worker.Work()
+		go func(worker *Worker) {
+			defer ml.wg.Done()
+			worker.Work()
+		}(worker)
 	}
-	fmt.Println("Workers started")
+
+	fmt.Println("Workers executed")
 	ml.start = time.Now() // add progress bar if running with limit
 
 	ml.wg.Wait()
@@ -64,6 +72,8 @@ func (ml *mongoload) Cancel() {
 }
 
 type Worker struct {
+	cfg         *config.Config
+	job         *config.Job
 	wg          sync.WaitGroup
 	db          database.Client
 	handler     JobHandler
@@ -81,6 +91,8 @@ func NewWorker(cfg *config.Config, job *config.Job) (*Worker, error) {
 
 	// todo: check errors
 	worker := new(Worker)
+	worker.cfg = cfg
+	worker.job = job
 	worker.wg.Add(int(job.Connections))
 	worker.Statistic = NewStatistics(job)
 	worker.pool = NewJobPool(job)
@@ -100,22 +112,27 @@ func (w *Worker) Work() {
 		w.Cancel()
 	}()
 
-	defer w.wg.Done()
-	for w.pool.SpawnJob() {
-		w.rateLimiter.Take()
-		// perform operation
-		start := time.Now()
-		// do sth with is error
-		_, error := w.handler.Handle()
-		elapsed := time.Since(start)
-		w.Statistic.Add(float64(elapsed.Milliseconds()), error)
-		// add debug of some kind
-		if error != nil {
-			// todo: debug
-			log.Debug(error)
-		}
-		w.pool.MarkJobDone()
+	for i := 0; i < int(w.job.Connections); i++ {
+		go func() {
+			defer w.wg.Done()
+			for w.pool.SpawnJob() {
+				w.rateLimiter.Take()
+				// perform operation
+				start := time.Now()
+				// do sth with is error
+				_, error := w.handler.Handle()
+				elapsed := time.Since(start)
+				w.Statistic.Add(float64(elapsed.Milliseconds()), error)
+				// add debug of some kind
+				if error != nil {
+					// todo: debug
+					log.Debug(error)
+				}
+				w.pool.MarkJobDone()
+			}
+		}()
 	}
+	w.wg.Wait()
 }
 
 func (w *Worker) Summary() {

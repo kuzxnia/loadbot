@@ -95,6 +95,7 @@ func ParseCommandLineArgs(cli interface{}) *config.Config {
 		ConnectionString: CLI.ConnectionString,
 		Debug:            CLI.Debug,
 	}
+  // todo: move building relationships to different layer
 	for _, job := range jobs {
 		job.Parent = &cfg
 	}

@@ -1,8 +1,6 @@
 package main
 
 import (
-	"fmt"
-
 	"github.com/kuzxnia/mongoload/pkg/args"
 	"github.com/kuzxnia/mongoload/pkg/driver"
 	"github.com/kuzxnia/mongoload/pkg/logger"
@@ -10,8 +8,6 @@ import (
 
 func main() {
 	// maxprocs.Set()
-	fmt.Println("hello")
-
 	config, err := args.Parse()
 	if err != nil {
 		panic(err)

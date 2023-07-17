@@ -26,7 +26,7 @@ func NewJobHandler(cfg *config.Job, client database.Client) JobHandler {
 		return JobHandler(&BulkWriteHandler{BaseHandler: &handler})
 	default:
 		// todo change
-		panic("Invalid job type")
+    panic("Invalid job type: " + cfg.Type)
 	}
 }
 

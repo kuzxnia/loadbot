@@ -29,6 +29,9 @@ func (c *Config) validateAllJobTemplatesAreProvided() error {
 	return nil
 }
 
+// todo: validation job type
+// todo: validation duration and opertions cannot be set together
+
 func Contains[T comparable, X comparable](array []T, comparator X, predicate func(T, X) bool) bool {
 	for _, elem := range array {
 		if predicate(elem, comparator) {
