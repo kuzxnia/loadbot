@@ -37,4 +37,3 @@ func Contains[T comparable, X comparable](array []T, comparator X, predicate fun
 	}
 	return false
 }
-

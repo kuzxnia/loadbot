@@ -107,12 +107,16 @@ func ParseFileConfigArgs(filePath string, cli interface{}) (*config.Config, erro
 		return nil, err
 	}
 
-	var config config.Config
-	err = json.Unmarshal(content, &config)
+	var cfg config.Config
+	err = json.Unmarshal(content, &cfg)
 
 	if err != nil {
 		return nil, errors.New("Error during Unmarshal(): " + err.Error())
 	}
 
-	return &config, err
+	for _, job := range cfg.Jobs {
+		job.Parent = &cfg
+	}
+
+	return &cfg, err
 }
