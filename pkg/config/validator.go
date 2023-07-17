@@ -1,11 +1,10 @@
 package config
 
-
 import "errors"
 
 func (c *Config) Validate() error {
 	validators := []func() error{
-		c.validateAllJobTemplatesAreProvided,
+		c.validateJobs,
 	}
 
 	for _, validate := range validators {
@@ -16,15 +15,35 @@ func (c *Config) Validate() error {
 	return nil
 }
 
-func (c *Config) validateAllJobTemplatesAreProvided() error {
+func (c *Config) validateJobs() error {
+	for _, job := range c.Jobs {
+		if error := job.Validate(); error != nil {
+			return error
+		}
+	}
+	return nil
+}
+
+func (job *Job) Validate() error {
+	validators := []func() error{
+		job.validateTemplate,
+	}
+
+	for _, validate := range validators {
+		if error := validate(); error != nil {
+			return error
+		}
+	}
+	return nil
+}
+
+func (job *Job) validateTemplate() error {
 	isSchemaName := func(schema *Schema, comparator string) bool {
 		return schema.Name == comparator
 	}
 
-	for _, job := range c.Jobs {
-		if !Contains[*Schema, string](c.Schemas, job.Template, isSchemaName) {
-			return errors.New("Job: " + job.Name + " have invalid template \"" + job.Template + "\"")
-		}
+	if !Contains[*Schema, string](job.Parent.Schemas, job.Template, isSchemaName) {
+		return errors.New("Job: " + job.Name + " have invalid template \"" + job.Template + "\"")
 	}
 	return nil
 }

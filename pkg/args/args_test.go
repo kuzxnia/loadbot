@@ -8,18 +8,21 @@ import (
 )
 
 func TestParseConfigFileNoFileFoundError(t *testing.T) {
-	filePath := "dummy_file.json"
+	cli := CLI{}
+	cli.ConfigFile = "dummy_file.json"
 
-	_, err := ParseFileConfigArgs(filePath, &CLI)
+	_, err := ParseFileConfigArgs(&cli)
 
 	assert.EqualError(t, err, "open dummy_file.json: no such file or directory")
 }
 
 func TestParseConfigFileMarshalError(t *testing.T) {
+	cli := CLI{}
 	tempFile, _ := os.CreateTemp("", "")
-	defer os.Remove(tempFile.Name())
+	cli.ConfigFile = tempFile.Name()
+	defer os.Remove(cli.ConfigFile)
 
-	_, err := ParseFileConfigArgs(tempFile.Name(), &CLI)
+	_, err := ParseFileConfigArgs(&cli)
 
 	assert.EqualError(t, err, "Error during Unmarshal(): unexpected end of JSON input")
 }

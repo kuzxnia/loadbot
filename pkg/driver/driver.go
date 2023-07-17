@@ -140,7 +140,7 @@ func (w *Worker) Summary() {
 	requestsDone := w.pool.GetRequestsDone()
 	rps := float64(requestsDone) / elapsed.Seconds()
 
-	fmt.Printf("\nTime took %f s\n", elapsed.Seconds())
+  fmt.Printf("\nJob: \"%s\" took %f s\n", w.job.Name, elapsed.Seconds())
 	fmt.Printf("Total operations: %d\n", requestsDone)
 	fmt.Printf("Requests per second: %f rp/s\n", rps)
 	w.Statistic.Summary()

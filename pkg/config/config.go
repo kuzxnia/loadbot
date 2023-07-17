@@ -25,6 +25,14 @@ type Config struct {
 	DebugFile        string    `json:"debug_file"`
 }
 
+func NewConfigFromArgs() *Config {
+	return nil
+}
+
+func NewConfigFromJson([]byte) *Config {
+	return nil
+}
+
 type Job struct {
 	Parent      *Config
 	Name        string
