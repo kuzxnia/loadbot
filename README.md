@@ -27,41 +27,47 @@ This tool offers two ways to access it: one through CLI arguments and the other 
 
 
 ### Config file usage:
-    You can execute the program using --config-file <file-path> or -f <file-path>. The file should be in JSON format. 
-    Example file:
+You can execute the program using `--config-file <file-path>` or `-f <file-path>`. The file should be in JSON format. 
+Example file:
 
-    ```json
+```json
+{
+  "connection_string": "mongodb://localhost:27017",
+  "debug": true,
+  "jobs": [
     {
-      "connection_string": "mongodb://localhost:27017",
-      "debug": true,
-      "jobs": [
-        {
-          "name": "default job",
-          "type": "write",
-          "template": "default",
-          "connections": 100,
-          "pace": 0,
-          "data_size": 0,
-          "batch_size": 0,
-          "duration": "0s",
-          "operations": 1000,
-          "timeout": "1s"
-        }
-      ],
-      "schemas": [
-        {
-          "name": "default",
-          "database": "load_test",
-          "collection": "load_test",
-          "schema": {
-            "_id": "#_id",
-            "name": "#string",
-            "lastname": "#string"
-          }
-        }
-      ]
+      "name": "default job",
+      "type": "write",
+      "template": "default",
+      "connections": 100,
+      "pace": 0,
+      "data_size": 0,
+      "batch_size": 0,
+      "duration": "0s",
+      "operations": 1000,
+      "timeout": "1s"
     }
-    ```
+  ],
+  "schemas": [
+    {
+      "name": "default",
+      "database": "load_test",
+      "collection": "load_test",
+      "schema": {
+        "_id": "#_id",
+        "name": "#string",
+        "lastname": "#string"
+      }
+    }
+  ]
+}
+```
+<details>
+<summary>Defining Jobs</summary>
+
+</details>
+
+
 
 > Note:
 > If you don't provide the requests amount or duration limit program will continue running 
