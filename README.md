@@ -8,40 +8,61 @@ The purpose of this tool is to simulate workloads to facilitate testing the fail
 1. Build image - `docker build -t mload .`
 2. Run - `docker run mload -uri=http://localhost:21017 -req=10000`
 
-### Usage:
+This tool offers two ways to access it: one through CLI arguments and the other via a configuration file. Utilizing the configuration file provides additional functionalities for the tool.
+
+### CLI usage:
     Arguments:
-        [<mongo-uri>]    Database hostname url
+      [<connection-string>]    Database connection string
 
     Flags:
-    -h, --help                                 Show context-sensitive help.
-        --mongo-database="load_test"           Database name
-        --mongo-collection="load_test_coll"    Collection name
-        --pool-size=0                          Active connections pool size(default: 0 - no limit)
-    -c, --concurrent-connections=100           Concurrent connections amount
-        --rps=UINT-64                          RPS limit
-    -d, --duration=DURATION                    Duration limit (ex. 10s, 5m, 1h)
-    -o, --operations=UINT-64                   Operations (read/write/update) to perform
-    -b, --batch-size=UINT-64                   Batch size
-    -s, --data-lenght=100                      Lenght of single item data(chars)
-    -w, --write-ratio=UINT-64                  Write ratio
-    -r, --read-ratio=UINT-64                   Read ratio
-    -u, --update-ratio=UINT-64                 Update ratio
-    -t, --timeout=5s                           Timeout for requests
-        --debug                                Displaying additional diagnostic information
-        --debug-file=STRING                    Redirection debug information to file
+    -h, --help                  Show context-sensitive help.
+    -c, --connections=10        Number of concurrent connections
+    -p, --pace=UINT-64          Pace - RPS limit
+    -d, --duration=DURATION     Duration (ex. 10s, 5m, 1h)
+    -o, --operations=UINT-64    Operations (read/write/update) to perform
+    -b, --batch-size=UINT-64    Batch size
+    -t, --timeout=5s            Timeout for requests
+    -f, --config-file=STRING    Config file path
+        --debug                 Displaying additional diagnostic information
 
 
-    Note:
-    If you don't provide the requests amount or duration limit program will continue running 
-    indefinitely unless it is manually stopped by pressing `ctrl-c`. 
+### Config file usage:
+    You can execute the program using --config-file <file-path> or -f <file-path>. The file should be in JSON format. 
+    Example file:
 
+    ```json
+    {
+      "connection_string": "mongodb://localhost:27017",
+      "debug": true,
+      "jobs": [
+        {
+          "name": "default job",
+          "type": "write",
+          "template": "default",
+          "connections": 100,
+          "pace": 0,
+          "data_size": 0,
+          "batch_size": 0,
+          "duration": "0s",
+          "operations": 1000,
+          "timeout": "1s"
+        }
+      ],
+      "schemas": [
+        {
+          "name": "default",
+          "database": "load_test",
+          "collection": "load_test",
+          "schema": {
+            "_id": "#_id",
+            "name": "#string",
+            "lastname": "#string"
+          }
+        }
+      ]
+    }
+    ```
 
-## What's next - TODO:
-
-- write/read/update data in more real format
-- speed improvements: 
-    - overwrite mongodb-go client to use faster http client, https://github.com/valyala/fasthttp
-
-known issues:
-- rate limit accuracy, current have 30ops deviation with bigger rps's
-- deviation of write/read ration ~up to 3ops, better ratio distribution
+> Note:
+> If you don't provide the requests amount or duration limit program will continue running 
+> indefinitely unless it is manually stopped by pressing `ctrl-c`. 

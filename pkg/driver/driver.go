@@ -27,6 +27,8 @@ func New(config *config.Config) (*mongoload, error) {
 	load := new(mongoload)
 	load.config = config
 
+  // todo: ping db, before workers init
+
   // todo: now all jobs will be executed in a parallel, 
   // change this to be execexuted as queue or in a parallel depending on type
 	load.wg.Add(len(config.Jobs))
@@ -68,6 +70,12 @@ func (ml *mongoload) Summary() {
 func (ml *mongoload) Cancel() {
 	for _, worker := range ml.workers {
 		worker.Cancel()
+	}
+}
+
+func (ml *mongoload) Close() {
+	for _, worker := range ml.workers {
+		worker.Close()
 	}
 }
 

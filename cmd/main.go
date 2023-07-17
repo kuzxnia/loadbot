@@ -20,5 +20,7 @@ func main() {
 	if error != nil {
 		panic(error)
 	}
+	defer driver.Close()
+
 	driver.Torment()
 }
