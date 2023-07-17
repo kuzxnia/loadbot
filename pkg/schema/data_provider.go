@@ -2,7 +2,6 @@ package schema
 
 import (
 	"github.com/kuzxnia/mongoload/pkg/config"
-	"go.mongodb.org/mongo-driver/bson"
 )
 
 type DataProvider interface {
@@ -11,29 +10,34 @@ type DataProvider interface {
 	GetFilter() interface{}
 }
 
-func NewDataProvider(schema *config.Schema) DataProvider {
-	return DataProvider(NewSimpleDataProvider(100, 100))
+func NewDataProvider(job *config.Job) DataProvider {
+	return DataProvider(
+		NewSimpleDataProvider(job.BatchSize, job.DataSize, job.GetTemplateSchema()),
+	)
 }
 
 // here i need to create pool of items to be taken to insert/update
 // also here is place to store keys which needs to be saved
 
 type SimpleDataProvider struct {
-	singleItem   *bson.M
-	batchOfItems *[]interface{}
+	dataGenerator DataGenerator
+	singleItem    *interface{}
+	batchOfItems  *[]interface{}
 }
 
-func NewSimpleDataProvider(batchSize, dataLenght uint64) *SimpleDataProvider {
-	generator := NewDataGenerator()
+// generate upfront - better for workload test not for leading data
+func NewSimpleDataProvider(batchSize, dataSize uint64, schema *config.Schema) *SimpleDataProvider {
+	generator := NewDataGenerator(schema, dataSize)
 	batchOfData := make([]interface{}, batchSize)
 
 	for i := 0; i < int(batchSize); i++ {
-		batchOfData[i] = generator.Generate(nil, dataLenght)
+		batchOfData[i], _ = generator.Generate()
 	}
 
 	return &SimpleDataProvider{
-		batchOfItems: &batchOfData,
-		singleItem:   &bson.M{"data": randStringBytes(dataLenght)},
+		dataGenerator: generator,
+		batchOfItems:  &batchOfData,
+		singleItem:    &batchOfData[0],
 	}
 }
 
@@ -42,7 +46,7 @@ func (d *SimpleDataProvider) GetSingleItem() interface{} {
 }
 
 func (d *SimpleDataProvider) GetFilter() interface{} {
-  // todo: 
+	// todo:
 	return d.singleItem
 }
 
@@ -50,3 +54,6 @@ func (d *SimpleDataProvider) GetBatch(batchSize uint64) []interface{} {
 	// todo: add slice
 	return *d.batchOfItems
 }
+
+// todo: generate on file and take from pool
+// type PoolDataProvider struct { }

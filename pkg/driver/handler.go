@@ -10,12 +10,13 @@ type JobHandler interface {
 	Handle() (bool, error)
 }
 
-func NewJobHandler(cfg *config.Job, client database.Client) JobHandler {
+func NewJobHandler(job *config.Job, client database.Client) JobHandler {
+	// todo: move provider to outside of this to use generated data in all workers
 	handler := BaseHandler{
-		client: client,
-    provider: schema.NewDataProvider(cfg.GetTemplateSchema()),
+		client:   client,
+		provider: schema.NewDataProvider(job),
 	}
-	switch cfg.Type {
+	switch job.Type {
 	case string(config.Write):
 		return JobHandler(&WriteHandler{BaseHandler: &handler})
 	case string(config.Read):
@@ -26,7 +27,7 @@ func NewJobHandler(cfg *config.Job, client database.Client) JobHandler {
 		return JobHandler(&BulkWriteHandler{BaseHandler: &handler})
 	default:
 		// todo change
-    panic("Invalid job type: " + cfg.Type)
+		panic("Invalid job type: " + job.Type)
 	}
 }
 
