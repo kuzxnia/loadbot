@@ -11,9 +11,9 @@ func HTTPClient(cfg *config.Job) *http.Client {
 	transport := &http.Transport{
 		Proxy:                 http.ProxyFromEnvironment,
 		MaxIdleConns:          int(cfg.Connections),
-		IdleConnTimeout:       90 * time.Second,
-		TLSHandshakeTimeout:   10 * time.Second,
-		ExpectContinueTimeout: 1 * time.Second,
+		IdleConnTimeout:       cfg.Timeout,
+		TLSHandshakeTimeout:   cfg.Timeout,
+		ExpectContinueTimeout: cfg.Timeout,
 	}
 	return &http.Client{
 		Transport: transport,

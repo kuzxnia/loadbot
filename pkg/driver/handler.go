@@ -1,13 +1,15 @@
 package driver
 
 import (
+	"time"
+
 	"github.com/kuzxnia/mongoload/pkg/config"
 	"github.com/kuzxnia/mongoload/pkg/database"
 	"github.com/kuzxnia/mongoload/pkg/schema"
 )
 
 type JobHandler interface {
-	Handle() (bool, error)
+	Handle() (time.Duration, error)
 }
 
 func NewJobHandler(job *config.Job, client database.Client) JobHandler {
@@ -40,30 +42,42 @@ type WriteHandler struct {
 	*BaseHandler
 }
 
-func (h *WriteHandler) Handle() (bool, error) {
-	return h.client.InsertOne(h.provider.GetSingleItem())
+func (h *WriteHandler) Handle() (time.Duration, error) {
+	start := time.Now()
+	_, error := h.client.InsertOne(h.provider.GetSingleItem())
+	elapsed := time.Since(start)
+	return elapsed, error
 }
 
 type BulkWriteHandler struct {
 	*BaseHandler
 }
 
-func (h *BulkWriteHandler) Handle() (bool, error) {
-	return h.client.InsertMany(h.provider.GetBatch(100))
+func (h *BulkWriteHandler) Handle() (time.Duration, error) {
+	start := time.Now()
+	_, error := h.client.InsertMany(h.provider.GetBatch(100))
+	elapsed := time.Since(start)
+	return elapsed, error
 }
 
 type ReadHandler struct {
 	*BaseHandler
 }
 
-func (h *ReadHandler) Handle() (bool, error) {
-	return h.client.ReadOne(h.provider.GetFilter())
+func (h *ReadHandler) Handle() (time.Duration, error) {
+	start := time.Now()
+	_, error := h.client.ReadOne(h.provider.GetFilter())
+	elapsed := time.Since(start)
+	return elapsed, error
 }
 
 type UpdateHandler struct {
 	*BaseHandler
 }
 
-func (h *UpdateHandler) Handle() (bool, error) {
-	return h.client.UpdateOne(h.provider.GetFilter(), h.provider.GetSingleItem())
+func (h *UpdateHandler) Handle() (time.Duration, error) {
+	start := time.Now()
+	_, error := h.client.UpdateOne(h.provider.GetFilter(), h.provider.GetSingleItem())
+	elapsed := time.Since(start)
+	return elapsed, error
 }

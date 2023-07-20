@@ -126,11 +126,8 @@ func (w *Worker) Work() {
 			for w.pool.SpawnJob() {
 				w.rateLimiter.Take()
 				// perform operation
-				start := time.Now()
-				// do sth with is error
-				_, error := w.handler.Handle()
-				elapsed := time.Since(start)
-				w.Statistic.Add(float64(elapsed.Milliseconds()), error)
+				duration, error := w.handler.Handle()
+				w.Statistic.Add(duration, error)
 				// add debug of some kind
 				if error != nil {
 					// todo: debug

@@ -3,6 +3,7 @@ package driver
 import (
 	"fmt"
 	"sync"
+	"time"
 
 	"github.com/kuzxnia/mongoload/pkg/config"
 	"github.com/montanaflynn/stats"
@@ -15,66 +16,62 @@ type Stats interface {
 	Max() (float64, error)
 	Mean() (float64, error)
 	Percentile(float64) (float64, error)
+	Percentiles(input ...float64) (percentiles []float64, err error)
 
-	Add(float64, error)
+	Add(time.Duration, error)
 
 	Summary()
 }
 
 func NewStatistics(job *config.Job) Stats {
+	stats := BaseStats{data: make([]time.Duration, 0)}
 	switch job.Type {
 	case string(config.Write):
-		return Stats(
-			&WriteStats{
-				BaseStats: BaseStats{
-					data: make([]float64, 0),
-				},
-			},
-		)
+		return Stats(&WriteStats{BaseStats: stats})
 	case string(config.BulkWrite):
-		return Stats(
-			&WriteStats{
-				BaseStats: BaseStats{
-					data: make([]float64, 0),
-				},
-			},
-		)
+		return Stats(&WriteStats{BaseStats: stats})
 	case string(config.Read):
-		return Stats(
-			&ReadStats{
-				BaseStats: BaseStats{
-					data: make([]float64, 0),
-				},
-			},
-		)
+		return Stats(&ReadStats{BaseStats: stats})
 	case string(config.Update):
-		return Stats(
-			&UpdateStats{
-				BaseStats: BaseStats{
-					data: make([]float64, 0),
-				},
-			},
-		)
+		return Stats(&UpdateStats{BaseStats: stats})
 	default:
 		// todo change
 		panic("Invalid job type")
 	}
-	return nil
 }
 
 type BaseStats struct {
-	mutex         sync.RWMutex
-	data          []float64
+	mutex         *sync.RWMutex
+	data          []time.Duration
+	rawData       []float64
 	timeoutErrors uint64
 	otherErrors   uint64
 }
 
 func (s *BaseStats) Len() int               { return len(s.data) }
-func (s *BaseStats) Min() (float64, error)  { return stats.Min(s.data) }
-func (s *BaseStats) Max() (float64, error)  { return stats.Max(s.data) }
-func (s *BaseStats) Mean() (float64, error) { return stats.Mean(s.data) }
+func (s *BaseStats) Min() (float64, error)  { return stats.Min(*s.GetRawData()) }
+func (s *BaseStats) Max() (float64, error)  { return stats.Max(*s.GetRawData()) }
+func (s *BaseStats) Mean() (float64, error) { return stats.Mean(*s.GetRawData()) }
 func (s *BaseStats) Percentile(percentile float64) (float64, error) {
-	return stats.Percentile(s.data, percentile)
+	return stats.Percentile(*s.GetRawData(), percentile)
+}
+
+func (s *BaseStats) Percentiles(input ...float64) (percentiles []float64, err error) {
+	percentiles = make([]float64, len(input))
+	for i, percentile := range input {
+		percentiles[i], err = stats.Percentile(*s.GetRawData(), percentile)
+	}
+	return
+}
+
+func (s *BaseStats) GetRawData() *[]float64 {
+	// need to lock this for
+	if len(s.data) != len(s.rawData) {
+		for i := len(s.rawData); i < len(s.data); i++ {
+			s.rawData = append(s.rawData, float64(s.data[i].Seconds()))
+		}
+	}
+	return &s.rawData
 }
 
 type ReadStats struct {
@@ -82,7 +79,7 @@ type ReadStats struct {
 	noDocumentsFoundError uint64
 }
 
-func (s *ReadStats) Add(interval float64, err error) {
+func (s *ReadStats) Add(interval time.Duration, err error) {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 
@@ -105,14 +102,12 @@ func (s *ReadStats) Summary() {
 	if len := s.Len(); len != 0 {
 		errors := int(s.timeoutErrors + s.otherErrors + s.noDocumentsFoundError)
 		wmean, _ := s.Mean()
-		wp50, _ := s.Percentile(50)
-		wp90, _ := s.Percentile(90)
-		wp99, _ := s.Percentile(99)
+		p, _ := s.Percentiles(50, 90, 99)
 		fmt.Printf(
 			"Total read ops: %d, successful: %d, errors: (timeout: %d, noDataFound: %d, other: %d), error rate: %.2f%% \n",
 			len, len-errors, s.timeoutErrors, s.noDocumentsFoundError, s.otherErrors, float64(errors)/float64(len)*100,
 		)
-		fmt.Printf("Read AVG: %.2fms, P50: %.2fms, P90: %.2fms P99: %.2fms\n", wmean, wp50, wp90, wp99)
+		fmt.Printf("Read AVG: %.2fms, P50: %.2fms, P90: %.2fms P99: %.2fms\n", wmean, p[0], p[1], p[2])
 	}
 }
 
@@ -120,7 +115,7 @@ type WriteStats struct {
 	BaseStats
 }
 
-func (s *WriteStats) Add(interval float64, err error) {
+func (s *WriteStats) Add(interval time.Duration, err error) {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 
@@ -141,14 +136,12 @@ func (s *WriteStats) Summary() {
 	if len := s.Len(); len != 0 {
 		errors := int(s.timeoutErrors + s.otherErrors)
 		wmean, _ := s.Mean()
-		wp50, _ := s.Percentile(50)
-		wp90, _ := s.Percentile(90)
-		wp99, _ := s.Percentile(99)
+		p, _ := s.Percentiles(50, 90, 99)
 		fmt.Printf(
 			"Total write ops: %d, successful: %d, errors: (timeout: %d, other: %d), error rate: %.2f%% \n",
 			len, len-errors, s.timeoutErrors, s.otherErrors, float64(errors)/float64(len)*100,
 		)
-		fmt.Printf("Write AVG: %.2fms, P50: %.2fms, P90: %.2fms P99: %.2fms\n", wmean, wp50, wp90, wp99)
+		fmt.Printf("Write AVG: %.2fms, P50: %.2fms, P90: %.2fms P99: %.2fms\n", wmean, p[0], p[1], p[2])
 	}
 }
 
@@ -156,7 +149,7 @@ type UpdateStats struct {
 	BaseStats
 }
 
-func (s *UpdateStats) Add(interval float64, err error) {
+func (s *UpdateStats) Add(interval time.Duration, err error) {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 
@@ -177,14 +170,12 @@ func (s *UpdateStats) Summary() {
 	if len := s.Len(); len != 0 {
 		errors := int(s.timeoutErrors + s.otherErrors)
 		wmean, _ := s.Mean()
-		wp50, _ := s.Percentile(50)
-		wp90, _ := s.Percentile(90)
-		wp99, _ := s.Percentile(99)
+		p, _ := s.Percentiles(50, 90, 99)
 		fmt.Printf(
 			"Total Update ops: %d, successful: %d, errors: (timeout: %d, other: %d), error rate: %.2f%% \n",
 			len, len-errors, s.timeoutErrors, s.otherErrors, float64(errors)/float64(len)*100,
 		)
-		fmt.Printf("Update AVG: %.2fms, P50: %.2fms, P90: %.2fms P99: %.2fms\n", wmean, wp50, wp90, wp99)
+		fmt.Printf("Update AVG: %.2fms, P50: %.2fms, P90: %.2fms P99: %.2fms\n", wmean, p[0], p[1], p[2])
 	}
 }
 

@@ -42,8 +42,8 @@ func NewDataGenerator(schema *config.Schema, dataSize uint64) DataGenerator {
 	if schema != nil {
 		return DataGenerator(
 			&StructuralizableDataGenerator{
-				schema:   schema,
-        // add support for custom byte size
+				schema: schema,
+				// add support for custom byte size
 			},
 		)
 	}
@@ -75,11 +75,12 @@ func randStringBytes(n uint64) string {
 }
 
 type StructuralizableDataGenerator struct {
-	schema   *config.Schema
+	schema *config.Schema
 }
 
 func (g *StructuralizableDataGenerator) Generate() (interface{}, error) {
-	return g.generate(g.schema.Schema)
+	result, error := g.generate(g.schema.Schema)
+	return result, error
 }
 
 // recurent func for parsing with building nested bson
