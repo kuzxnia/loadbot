@@ -26,7 +26,7 @@ This tool offers two ways to access it: one through CLI arguments and the other 
         --debug                 Displaying additional diagnostic information
 
 
-### Configuration file approach:
+### Configuration file:
 Due to the limited functionalities of the CLI, in order to fully harness the capabilities of this tool, it is advisable to utilize a configuration file. The program can be executed by specifying the configuration file with `--config-file <file-path>` or `-f <file-path>`. For instance, the command `docker run mload -f path/to/config/file.json` demonstrates how to use this approach.
 
 Example file:
