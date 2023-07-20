@@ -71,12 +71,13 @@ Example file:
 - `name` - unique name, used in jobs (see job.schema) for determining which template use
 - `database` - database name
 - `collection` - collection name
+- `schema` - actual document template
 
-**Schema generation mapper fields:**
+**Schema document template fields:**
 
 General
 - `#id` - ex. ``
-- `#string`` - ex. ``
+- `#string` - ex. ``
 - `#word`` - ex. ``
 
 Internet
@@ -107,3 +108,10 @@ Person
 > Note:
 > If you don't provide the requests amount or duration limit program will continue running 
 > indefinitely unless it is manually stopped by pressing `ctrl-c`. 
+
+Limitations:
+
+
+Known issue:
+
+
