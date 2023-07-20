@@ -6,7 +6,7 @@ The purpose of this tool is to simulate workloads to facilitate testing the fail
 
 ## How to use:
 1. Build image - `docker build -t mload .`
-2. Run - `docker run mload -uri=http://localhost:21017 -req=10000`
+2. Run - `docker run mload -c 10 -o 10000 http://localhost:21017`
 
 This tool offers two ways to access it: one through CLI arguments and the other via a configuration file. Utilizing the configuration file provides additional functionalities for the tool.
 
@@ -109,9 +109,8 @@ Person
 > If you don't provide the requests amount or duration limit program will continue running 
 > indefinitely unless it is manually stopped by pressing `ctrl-c`. 
 
-Limitations:
-
 
 Known issue:
+* srv not working with k8s 1.17 - it is golang 1.13+ issue see (this)[https://github.com/golang/go/issues/37362]
 
 
