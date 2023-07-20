@@ -28,18 +28,17 @@ func NewLogger(config *config.Config, out io.Writer, prefix string, flag int) *L
 	}
 }
 
-
 func (l *Logger) SetConfig(config *config.Config) {
 	l.config = config
 
-	if filePath := l.config.DebugFilePath; filePath != "" {
+	if filePath := l.config.DebugFile; filePath != "" {
 		if _, err := os.Stat(filePath); errors.Is(err, os.ErrNotExist) {
 			l.outputFile, err = os.Create(filePath)
 			if err != nil {
 				panic("Cannot create file with given path " + filePath + " error " + err.Error())
 			}
 		} else if err == nil {
-			l.outputFile, err = os.OpenFile(filePath, os.O_APPEND|os.O_WRONLY, 0644)
+			l.outputFile, err = os.OpenFile(filePath, os.O_APPEND|os.O_WRONLY, 0o644)
 			if err != nil {
 				panic("Cannot open file with given path " + filePath + " error " + err.Error())
 			}
@@ -67,7 +66,7 @@ func (l *Logger) Error(msg ...any) {
 func (l *Logger) CloseOutputFile() {
 	if l.outputFile != nil {
 		if err := l.outputFile.Close(); err != nil {
-			panic("Cannot close log file: " + l.config.DebugFilePath)
+			panic("Cannot close log file: " + l.config.DebugFile)
 		}
 	}
 }

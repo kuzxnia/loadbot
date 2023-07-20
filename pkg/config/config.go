@@ -1,48 +1,67 @@
 package config
 
 import (
-	"fmt"
 	"time"
 )
 
-// to refactor
+// global config -- to rename as config
+type JobType string
+
+const (
+	Write      JobType = "write"
+	BulkWrite  JobType = "bulk_write"
+	Read       JobType = "read"
+	Update     JobType = "update"
+	Sleep      JobType = "sleep"
+	Paralel    JobType = "parallel"
+	BuildIndex JobType = "parallel"
+)
+
 type Config struct {
-	MongoURI              string
-	MongoDatabase         string
-	MongoCollection       string
-	ConcurrentConnections uint64
-	PoolSize              uint64
-	RpsLimit              uint64
-	DurationLimit         time.Duration
-	OpsAmount             uint64
-	BatchSize             uint64
-	DataLenght            uint64
-	WriteRatio            uint64
-	ReadRatio             uint64
-	UpdateRatio           uint64
-	Timeout               time.Duration
-	Debug                 bool
-	DebugFilePath         string
+	ConnectionString string    `json:"connection_string"`
+	Jobs             []*Job    `json:"jobs"`
+	Schemas          []*Schema `json:"schemas"`
+	Debug            bool      `json:"debug"`
+	DebugFile        string    `json:"debug_file"`
 }
 
-func (c *Config) Validate() error {
-	validators := []func() error{
-		// c.validateWriteRatio,
-	}
+func NewConfigFromArgs() *Config {
+	return nil
+}
 
-	for _, validate := range validators {
-		if error := validate(); error != nil {
-			return error
+func NewConfigFromJson([]byte) *Config {
+	return nil
+}
+
+type Job struct {
+	Parent      *Config
+	Name        string
+	Type        string
+	Template    string // validate required, or use default
+	Connections uint64 // Maximum number of concurrent connections
+	Pace        uint64 // rps limit / peace - if not set max
+	DataSize    uint64 // data size in bytes
+	BatchSize   uint64
+	Duration    time.Duration
+	Operations  uint64
+	Timeout     time.Duration // if not set, default
+	// Params ex. for read / update
+	//     * filter: { "_id": "#_id"}
+}
+
+func (j *Job) GetTemplateSchema() *Schema {
+	for _, schema := range j.Parent.Schemas {
+		if schema.Name == j.Template {
+			return schema
 		}
 	}
 	return nil
 }
 
-func (c *Config) validateWriteRatio() error {
-	if c.WriteRatio < 0.0 || c.WriteRatio > 1.0 {
-		return fmt.Errorf("Write ratio must be in range 0..1")
-	}
-	return nil
+type Schema struct {
+	Name       string `json:"name"`
+	Database   string `json:"database"`
+	Collection string `json:"collection"`
+	// todo: introducte new type and parse
+	Schema map[string]interface{} `json:"schema"`
 }
-
-// add more validators

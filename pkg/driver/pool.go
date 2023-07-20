@@ -1,19 +1,33 @@
-package worker
+package driver
 
 import (
+	"fmt"
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/kuzxnia/mongoload/pkg/config"
 )
 
 type JobPool interface {
 	SpawnJob() bool
 	MarkJobDone()
-
 	Cancel()
-
 	GetRequestsStarted() uint64
 	GetRequestsDone() uint64
+}
+
+func NewJobPool(cfg *config.Job) JobPool {
+	if cfg.Duration == 0 && cfg.Operations == 0 {
+		fmt.Println("no limit")
+		return JobPool(NewNoLimitTimerJobPool())
+	} else if cfg.Duration != 0 {
+		fmt.Println("duration", cfg.Duration)
+		return JobPool(NewTimerJobPool(cfg.Duration))
+	} else {
+		fmt.Println("operations", cfg.Operations)
+		return JobPool(NewDeductionJobPool(cfg.Operations))
+	}
 }
 
 type deductionJobPool struct {

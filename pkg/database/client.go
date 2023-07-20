@@ -14,35 +14,30 @@ import (
 )
 
 type Client interface {
-	InsertOne() (bool, error)
-	InsertMany() (bool, error)
-	InsertOneOrMany() (bool, error)
-	ReadOne() (bool, error)
-	ReadMany() (bool, error)
-	UpdateOne() (bool, error)
-
-	GetBatchSize() uint64
+	InsertOne(interface{}) (bool, error)
+	InsertMany([]interface{}) (bool, error)
+	ReadOne(interface{}) (bool, error)
+	ReadMany(interface{}) (bool, error)
+	UpdateOne(interface{}, interface{}) (bool, error)
+  Disconnect() error
 }
 
 type MongoClient struct {
-	ctx           context.Context
-	client        *mongo.Client
-	collection    *mongo.Collection
-	batchProvider *DataProvider
+	ctx        context.Context
+	client     *mongo.Client
+	collection *mongo.Collection
 }
 
-func NewMongoClient(config *config.Config) (*MongoClient, error) {
+func NewMongoClient(connectionString string, cfg *config.Job, schema *config.Schema) (*MongoClient, error) {
 	opts := &options.ClientOptions{
-		HTTPClient: HTTPClient(config),
+		HTTPClient: HTTPClient(cfg),
 	}
 	opts = opts.
-		ApplyURI(config.MongoURI).
+		ApplyURI(connectionString).
 		SetReadPreference(readpref.SecondaryPreferred()).
-		SetAppName("test").
-		SetMaxPoolSize(config.PoolSize).
 		SetMaxConnecting(100).
 		SetMaxConnIdleTime(90 * time.Second).
-		SetTimeout(config.Timeout)
+		SetTimeout(cfg.Timeout)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -59,41 +54,27 @@ func NewMongoClient(config *config.Config) (*MongoClient, error) {
 		fmt.Println("Successfully connected to database server")
 	}
 
-	collection := client.Database(config.MongoDatabase).Collection(config.MongoCollection)
-
-	batchProvider := NewDataProvider(config.BatchSize, config.DataLenght)
-
-	return &MongoClient{ctx: ctx, client: client, collection: collection, batchProvider: batchProvider}, err
+	collection := client.Database(schema.Database).Collection(schema.Collection)
+	return &MongoClient{ctx: ctx, client: client, collection: collection}, err
 }
 
 func (c *MongoClient) Disconnect() error {
 	return c.client.Disconnect(c.ctx)
 }
 
-func (c *MongoClient) InsertOne() (bool, error) {
-	_, err := c.collection.InsertOne(context.TODO(), c.batchProvider.singleItem)
+func (c *MongoClient) InsertOne(data interface{}) (bool, error) {
+	_, err := c.collection.InsertOne(context.TODO(), data)
 	return bool(err == nil), err
 }
 
-func (c *MongoClient) InsertMany() (bool, error) {
-	_, err := c.collection.InsertMany(context.TODO(), *c.batchProvider.batchOfItems)
+func (c *MongoClient) InsertMany(data []interface{}) (bool, error) {
+	_, err := c.collection.InsertMany(context.TODO(), data)
 	return bool(err == nil), err
 }
 
-func (c *MongoClient) InsertOneOrMany() (bool, error) {
-	err := error(nil)
-	if c.batchProvider.batchSize == 0 {
-		_, err = c.InsertOne()
-	} else {
-		_, err = c.InsertMany()
-	}
-
-	return bool(err == nil), err
-}
-
-func (c *MongoClient) ReadOne() (bool, error) {
+func (c *MongoClient) ReadOne(filter interface{}) (bool, error) {
 	var result bson.M
-	err := c.collection.FindOne(context.TODO(), c.batchProvider.singleItem).Decode(&result)
+	err := c.collection.FindOne(context.TODO(), filter).Decode(&result)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
 			return true, err
@@ -103,7 +84,7 @@ func (c *MongoClient) ReadOne() (bool, error) {
 	return true, nil
 }
 
-func (c *MongoClient) ReadMany() (bool, error) {
+func (c *MongoClient) ReadMany(filter interface{}) (bool, error) {
 	// start := time.Now()
 	batch_size := int32(1000)
 
@@ -141,9 +122,9 @@ func (c *MongoClient) ReadMany() (bool, error) {
 	return true, nil
 }
 
-func (c *MongoClient) UpdateOne() (bool, error) {
-  // todo: only for now
-  _, err := c.collection.UpdateOne(context.TODO(), c.batchProvider.singleItem, c.batchProvider.singleItemToUpdate)
+func (c *MongoClient) UpdateOne(filter interface{}, data interface{}) (bool, error) {
+	// todo: only for now
+	_, err := c.collection.UpdateOne(context.TODO(), filter, data)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
 			return true, err
@@ -151,8 +132,4 @@ func (c *MongoClient) UpdateOne() (bool, error) {
 		return false, err
 	}
 	return true, nil
-}
-
-func (c *MongoClient) GetBatchSize() uint64 {
-	return c.batchProvider.batchSize
 }

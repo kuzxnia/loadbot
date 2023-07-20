@@ -1,18 +1,20 @@
-package rps
+package driver 
 
 import (
+	"github.com/kuzxnia/mongoload/pkg/config"
 	"go.uber.org/ratelimit"
 )
 
-// type token uint64
-
-// const (
-// 	limiterDone token = iota
-// 	limiterContinue
-// )
-
 type Limiter interface {
 	Take()
+}
+
+func NewLimiter(cfg *config.Job) Limiter {
+	if cfg.Pace == 0 {
+		return Limiter(NewNoLimitLimiter())
+	} else {
+		return Limiter(NewSimpleLimiter(cfg.Pace))
+	}
 }
 
 type NoLimitLimiter struct{}

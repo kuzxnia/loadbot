@@ -6,43 +6,111 @@ The purpose of this tool is to simulate workloads to facilitate testing the fail
 
 ## How to use:
 1. Build image - `docker build -t mload .`
-2. Run - `docker run mload -uri=http://localhost:21017 -req=10000`
+2. Run - `docker run mload -c 10 -o 10000 http://localhost:21017`
 
-### Usage:
+This tool offers two ways to access it: one through CLI arguments and the other via a configuration file. Utilizing the configuration file provides additional functionalities for the tool.
+
+### CLI usage:
     Arguments:
-        [<mongo-uri>]    Database hostname url
+      [<connection-string>]     Database connection string
 
     Flags:
-    -h, --help                                 Show context-sensitive help.
-        --mongo-database="load_test"           Database name
-        --mongo-collection="load_test_coll"    Collection name
-        --pool-size=0                          Active connections pool size(default: 0 - no limit)
-    -c, --concurrent-connections=100           Concurrent connections amount
-        --rps=UINT-64                          RPS limit
-    -d, --duration=DURATION                    Duration limit (ex. 10s, 5m, 1h)
-    -o, --operations=UINT-64                   Operations (read/write/update) to perform
-    -b, --batch-size=UINT-64                   Batch size
-    -s, --data-lenght=100                      Lenght of single item data(chars)
-    -w, --write-ratio=UINT-64                  Write ratio
-    -r, --read-ratio=UINT-64                   Read ratio
-    -u, --update-ratio=UINT-64                 Update ratio
-    -t, --timeout=5s                           Timeout for requests
-        --debug                                Displaying additional diagnostic information
-        --debug-file=STRING                    Redirection debug information to file
+    -h, --help                  Show context-sensitive help.
+    -c, --connections=10        Number of concurrent connections
+    -p, --pace=UINT-64          Pace - RPS limit
+    -d, --duration=DURATION     Duration (ex. 10s, 5m, 1h)
+    -o, --operations=UINT-64    Operations (read/write/update) to perform
+    -b, --batch-size=UINT-64    Batch size
+    -t, --timeout=5s            Timeout for requests
+    -f, --config-file=STRING    Config file path
+        --debug                 Displaying additional diagnostic information
 
 
-    Note:
-    If you don't provide the requests amount or duration limit program will continue running 
-    indefinitely unless it is manually stopped by pressing `ctrl-c`. 
+### Simple config-file example:
+You can execute the program using `--config-file <file-path>` or `-f <file-path>`. The file should be in JSON format. 
+Example file:
+
+```json
+{
+  "connection_string": "mongodb://localhost:27017",
+  "debug": true,
+  "jobs": [
+    {
+      "name": "default job",
+      "type": "write",
+      "template": "default",
+      "connections": 100,
+      "pace": 0,
+      "data_size": 0,
+      "batch_size": 0,
+      "duration": "0s",
+      "operations": 1000,
+      "timeout": "1s"
+    }
+  ],
+  "schemas": [
+    {
+      "name": "default",
+      "database": "load_test",
+      "collection": "load_test",
+      "schema": {
+        "_id": "#_id",
+        "name": "#string",
+        "lastname": "#string"
+      }
+    }
+  ]
+}
+```
+<details>
+<summary>Defining schemas</summary>
 
 
-## What's next - TODO:
+**Schema fields**
 
-- write/read/update data in more real format
-- speed improvements: 
-    - overwrite mongodb-go client to use faster http client, https://github.com/valyala/fasthttp
-    - leverage automaxprocs to give better performance, https://github.com/uber-go/automaxprocs
+- `name` - unique name, used in jobs (see job.schema) for determining which template use
+- `database` - database name
+- `collection` - collection name
+- `schema` - actual document template
 
-known issues:
-- rate limit accuracy, current have 30ops deviation with bigger rps's
-- deviation of write/read ration ~up to 3ops, better ratio distribution
+**Schema document template fields:**
+
+General
+- `#id` - ex. ``
+- `#string` - ex. ``
+- `#word`` - ex. ``
+
+Internet
+- `#email`` - ex. ``
+- `#username`` - ex. ``
+- `#password`` - ex. ``
+ 
+Person
+- `#name`` - ex. ``
+- `#first_name`` - ex. ``
+- `#first_name_male`` - ex. ``
+- `#first_name_female`` - ex. ``
+- `#last_name`` - ex. ``
+- `#title_male`` - ex. ``
+- `#title_female`` - ex. ``
+- `#phone_number`` - ex. ``
+
+**More examples**
+
+</details>
+
+<details>
+<summary>Defining Jobs</summary>
+</details>
+
+
+
+> Note:
+> If you don't provide the requests amount or duration limit program will continue running 
+> indefinitely unless it is manually stopped by pressing `ctrl-c`. 
+
+
+Known issue:
+* srv not working with k8s 1.17 - it is golang 1.13+ issue see (this)[https://github.com/golang/go/issues/37362]
+
+
