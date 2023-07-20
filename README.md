@@ -26,8 +26,9 @@ This tool offers two ways to access it: one through CLI arguments and the other 
         --debug                 Displaying additional diagnostic information
 
 
-### Simple config-file example:
-You can execute the program using `--config-file <file-path>` or `-f <file-path>`. The file should be in JSON format. 
+### Configuration file approach:
+Due to the limited functionalities of the CLI, in order to fully harness the capabilities of this tool, it is advisable to utilize a configuration file. The program can be executed by specifying the configuration file with `--config-file <file-path>` or `-f <file-path>`. For instance, the command `docker run mload -f path/to/config/file.json` demonstrates how to use this approach.
+
 Example file:
 
 ```json
@@ -65,7 +66,7 @@ Example file:
 <details>
 <summary>Defining schemas</summary>
 
-
+</br>
 **Schema fields**
 
 - `name` - unique name, used in jobs (see job.schema) for determining which template use
@@ -76,24 +77,24 @@ Example file:
 **Schema document template fields:**
 
 General
-- `#id` - ex. ``
-- `#string` - ex. ``
-- `#word`` - ex. ``
+- `#id` 
+- `#string`
+- `#word`
 
 Internet
-- `#email`` - ex. ``
-- `#username`` - ex. ``
-- `#password`` - ex. ``
+- `#email`
+- `#username`
+- `#password`
  
 Person
-- `#name`` - ex. ``
-- `#first_name`` - ex. ``
-- `#first_name_male`` - ex. ``
-- `#first_name_female`` - ex. ``
-- `#last_name`` - ex. ``
-- `#title_male`` - ex. ``
-- `#title_female`` - ex. ``
-- `#phone_number`` - ex. ``
+- `#name`
+- `#first_name`
+- `#first_name_male`
+- `#first_name_female`
+- `#last_name`
+- `#title_male`
+- `#title_female`
+- `#phone_number`
 
 **More examples**
 
@@ -103,6 +104,39 @@ Person
 <summary>Defining Jobs</summary>
 </details>
 
+<br>
+**Simple job example**
+
+```json
+{
+  "jobs": [
+    {
+      "name": "default job",
+      "type": "write",
+      "template": "default",
+      "connections": 100,
+      "pace": 0,
+      "data_size": 0,
+      "batch_size": 0,
+      "duration": "0s",
+      "operations": 1000,
+      "timeout": "1s"
+    }
+  ],
+}
+```
+
+**Jobs fields:**
+
+* `name`(string) - job name
+* `type`(enum `write|bulk_write|read|update`) - operation type
+* `template`(string) - schema name, if you will not provide schema data will be inserted in `{'data': <generate_data>}` format
+* `connection`(unsigned int) - number of concurrent connections, number is not limited to physical threads number
+* `data_size`(unsigned int) - data size inserted (currently only works for default schema)
+* `batch_size`(unsigned int) - insert batch size (only applicable for `bulk_write` job type)
+* `duration`(string) - duration time ex. 1h, 15m, 10s
+* `operations`(unsigned int) - number of requests to perform, ex. 100 reads, 100 bulk_writes
+* `timeout`(string) - connection timeout ex. 1h, 15m, 10s
 
 
 > Note:
