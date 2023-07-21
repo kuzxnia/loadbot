@@ -20,6 +20,8 @@ func (c *Job) UnmarshalJSON(data []byte) (err error) {
 		// Params ex. for read / update
 		//     * filter: { "_id": "#_id"}
 	}
+	// default values
+	tmp.Connections = 1
 
 	if err = json.Unmarshal(data, &tmp); err != nil {
 		return err
@@ -32,12 +34,19 @@ func (c *Job) UnmarshalJSON(data []byte) (err error) {
 	c.Pace = tmp.Pace
 	c.DataSize = tmp.DataSize
 	c.BatchSize = tmp.BatchSize
-	if c.Duration, err = time.ParseDuration(tmp.Duration); err != nil {
-		return err
+
+	if tmp.Duration != "" {
+		if c.Duration, err = time.ParseDuration(tmp.Duration); err != nil {
+			return err
+		}
 	}
+
 	c.Operations = tmp.Operations
-	if c.Timeout, err = time.ParseDuration(tmp.Timeout); err != nil {
-		return err
+
+	if tmp.Timeout != "" {
+		if c.Timeout, err = time.ParseDuration(tmp.Timeout); err != nil {
+			return err
+		}
 	}
 
 	return

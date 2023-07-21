@@ -14,7 +14,7 @@ var defaultArgsParser = NewArgsParser()
 
 type CLI struct {
 	ConnectionString string        `arg:"" help:"Database connection string" default:"mongodb://localhost:27017"`
-	Connections      uint64        `short:"c" help:"Number of concurrent connections" default:"10"`
+	Connections      uint64        `short:"c" help:"Number of concurrent connections" default:"1"`
 	Pace             uint64        `short:"p" name:"pace" help:"Pace - RPS limit"`
 	Duration         time.Duration `short:"d" name:"duration" help:"Duration (ex. 10s, 5m, 1h)"`
 	Operations       uint64        `short:"o" name:"operations" help:"Operations (read/write/update) to perform"`
