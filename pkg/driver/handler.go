@@ -27,6 +27,10 @@ func NewJobHandler(job *config.Job, client database.Client) JobHandler {
 		return JobHandler(&UpdateHandler{BaseHandler: &handler})
 	case string(config.BulkWrite):
 		return JobHandler(&BulkWriteHandler{BaseHandler: &handler})
+	case string(config.DropCollection):
+		return JobHandler(&DropCollection{BaseHandler: &handler})
+	case string(config.Sleep):
+		return JobHandler(&SleepHandler{Duration: job.Duration})
 	default:
 		// todo change
 		panic("Invalid job type: " + job.Type)
@@ -80,4 +84,24 @@ func (h *UpdateHandler) Handle() (time.Duration, error) {
 	_, error := h.client.UpdateOne(h.provider.GetFilter(), h.provider.GetSingleItem())
 	elapsed := time.Since(start)
 	return elapsed, error
+}
+
+type DropCollection struct {
+	*BaseHandler
+}
+
+func (h *DropCollection) Handle() (time.Duration, error) {
+	start := time.Now()
+	error := h.client.DropCollection()
+	elapsed := time.Since(start)
+	return elapsed, error
+}
+
+type SleepHandler struct {
+	Duration time.Duration
+}
+
+func (h *SleepHandler) Handle() (time.Duration, error) {
+	time.Sleep(h.Duration)
+	return h.Duration, nil
 }

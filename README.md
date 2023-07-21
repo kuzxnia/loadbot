@@ -67,6 +67,7 @@ Example file:
 <summary>Defining schemas</summary>
 
 </br>
+
 **Schema fields**
 
 - `name` - unique name, used in jobs (see job.schema) for determining which template use
@@ -102,35 +103,71 @@ Person
 
 <details>
 <summary>Defining Jobs</summary>
-</details>
 
 <br>
-**Simple job example**
+
+**Example write with schema 100ops**
 
 ```json
 {
-  "jobs": [
-    {
-      "name": "default job",
-      "type": "write",
-      "template": "default",
-      "connections": 100,
-      "pace": 0,
-      "data_size": 0,
-      "batch_size": 0,
-      "duration": "0s",
-      "operations": 1000,
-      "timeout": "1s"
-    }
-  ],
+  "name": "insert with schema",
+  "type": "write",
+  "template": "user_schema",
+  "connections": 10,
+  "operations": 100
+}
+```
+
+**Write without schema 20s**
+
+```json
+{
+  "name": "insert without schema",
+  "type": "write",
+  "database": "load_test",
+  "collection": "load_test",
+  "connections": 10,
+  "data_size": 100,
+  "duration": "20s",
+  "timeout": "1s"
+}
+```
+
+**Let the database rest**
+
+```json
+{
+  "type": "sleep",
+  "duration": "5s"
+}
+```
+
+**Drop collection**
+
+```json
+{
+  "type": "drop_collection",
+  "database": "load_test",
+  "collection": "load_test",
+  "operations": 1
+}
+```
+or with schema
+```json
+{
+  "type": "drop_collection",
+  "template": "example_schema",
+  "operations": 1
 }
 ```
 
 **Jobs fields:**
 
-* `name`(string) - job name
-* `type`(enum `write|bulk_write|read|update`) - operation type
+* `name`(string, optional) - job name
+* `type`(enum `write|bulk_write|read|update|drop_collection|sleep`) - operation type
 * `template`(string) - schema name, if you will not provide schema data will be inserted in `{'data': <generate_data>}` format
+* `database`(string, required if schema is not set) - database name
+* `collection`(string, required if schema is not set) - collection name
 * `connection`(unsigned int) - number of concurrent connections, number is not limited to physical threads number
 * `data_size`(unsigned int) - data size inserted (currently only works for default schema)
 * `batch_size`(unsigned int) - insert batch size (only applicable for `bulk_write` job type)
@@ -138,6 +175,7 @@ Person
 * `operations`(unsigned int) - number of requests to perform, ex. 100 reads, 100 bulk_writes
 * `timeout`(string) - connection timeout ex. 1h, 15m, 10s
 
+</details>
 
 > Note:
 > If you don't provide the requests amount or duration limit program will continue running 

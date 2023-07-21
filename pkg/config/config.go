@@ -8,13 +8,14 @@ import (
 type JobType string
 
 const (
-	Write      JobType = "write"
-	BulkWrite  JobType = "bulk_write"
-	Read       JobType = "read"
-	Update     JobType = "update"
-	Sleep      JobType = "sleep"
-	Paralel    JobType = "parallel"
-	BuildIndex JobType = "parallel"
+	Write          JobType = "write"
+	BulkWrite      JobType = "bulk_write"
+	Read           JobType = "read"
+	Update         JobType = "update"
+	Sleep          JobType = "sleep"
+	Paralel        JobType = "parallel"
+	BuildIndex     JobType = "parallel"
+	DropCollection JobType = "drop_collection"
 )
 
 type Config struct {
@@ -36,6 +37,8 @@ func NewConfigFromJson([]byte) *Config {
 type Job struct {
 	Parent      *Config
 	Name        string
+	Database    string
+	Collection  string
 	Type        string
 	Template    string // validate required, or use default
 	Connections uint64 // Maximum number of concurrent connections

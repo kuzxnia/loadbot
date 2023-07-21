@@ -27,10 +27,10 @@ func New(config *config.Config) (*mongoload, error) {
 	load := new(mongoload)
 	load.config = config
 
-  // todo: ping db, before workers init
+	// todo: ping db, before workers init
 
-  // todo: now all jobs will be executed in a parallel, 
-  // change this to be execexuted as queue or in a parallel depending on type
+	// todo: now all jobs will be executed in a parallel,
+	// change this to be execexuted as queue or in a parallel depending on type
 	load.wg.Add(len(config.Jobs))
 
 	fmt.Println("Initializing workers")
@@ -48,7 +48,7 @@ func New(config *config.Config) (*mongoload, error) {
 
 func (ml *mongoload) Torment() {
 	for _, worker := range ml.workers {
-		go func(worker *Worker) {
+		func(worker *Worker) {
 			defer ml.wg.Done()
 			worker.Work()
 		}(worker)
@@ -89,14 +89,10 @@ type Worker struct {
 	pool        JobPool
 	Statistic   Stats
 	startTime   time.Time
+	elapsedTime time.Duration
 }
 
 func NewWorker(cfg *config.Config, job *config.Job) (*Worker, error) {
-	db, err := database.NewMongoClient(cfg.ConnectionString, job, job.GetTemplateSchema())
-	if err != nil {
-		return nil, err
-	}
-
 	// todo: check errors
 	worker := new(Worker)
 	worker.cfg = cfg
@@ -105,14 +101,24 @@ func NewWorker(cfg *config.Config, job *config.Job) (*Worker, error) {
 	worker.Statistic = NewStatistics(job)
 	worker.pool = NewJobPool(job)
 	worker.rateLimiter = NewLimiter(job)
-	worker.startTime = time.Now()
-	worker.db = db
-	worker.handler = NewJobHandler(job, db)
+
+	// introduce no db worker
+	if job.Type != string(config.Sleep) {
+		db, err := database.NewMongoClient(cfg.ConnectionString, job, job.GetTemplateSchema())
+		if err != nil {
+			return nil, err
+		}
+		worker.db = db
+	}
+
+	worker.handler = NewJobHandler(job, worker.db)
 	// todo: init db
 	return worker, nil
 }
 
 func (w *Worker) Work() {
+	w.startTime = time.Now()
+
 	interruptChan := make(chan os.Signal, 1)
 	signal.Notify(interruptChan, os.Interrupt)
 	go func() {
@@ -138,14 +144,19 @@ func (w *Worker) Work() {
 		}()
 	}
 	w.wg.Wait()
+	w.elapsedTime = time.Since(w.startTime)
 }
 
 func (w *Worker) Summary() {
-	elapsed := time.Since(w.startTime)
 	requestsDone := w.pool.GetRequestsDone()
-	rps := float64(requestsDone) / elapsed.Seconds()
+	rps := float64(requestsDone) / w.elapsedTime.Seconds()
 
-  fmt.Printf("\nJob: \"%s\" took %f s\n", w.job.Name, elapsed.Seconds())
+	// todo: introduce new string type with isEmpty func
+	if w.job.Name == "" {
+		fmt.Printf("\nJob type: \"%s\" took %f s\n", w.job.Type, w.elapsedTime.Seconds())
+	} else {
+		fmt.Printf("\nJob: \"%s\" took %f s\n", w.job.Name, w.elapsedTime.Seconds())
+	}
 	fmt.Printf("Total operations: %d\n", requestsDone)
 	fmt.Printf("Requests per second: %f rp/s\n", rps)
 	w.Statistic.Summary()
@@ -161,7 +172,9 @@ func (w *Worker) Cancel() {
 }
 
 func (w *Worker) Close() {
-	if err := w.db.Disconnect(); err != nil {
-		panic(err)
+	if w.job.Type != string(config.Sleep) {
+		if err := w.db.Disconnect(); err != nil {
+			panic(err)
+		}
 	}
 }

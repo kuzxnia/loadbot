@@ -9,6 +9,8 @@ func (c *Job) UnmarshalJSON(data []byte) (err error) {
 	var tmp struct {
 		Name        string `json:"name"`
 		Type        string `json:"type"`
+		Database    string `json:"database"`
+		Collection  string `json:"collection"`
 		Template    string `json:"template"`
 		Connections uint64 `json:"connections"`
 		Pace        uint64 `json:"pace"`
@@ -20,24 +22,35 @@ func (c *Job) UnmarshalJSON(data []byte) (err error) {
 		// Params ex. for read / update
 		//     * filter: { "_id": "#_id"}
 	}
+	// default values
+	tmp.Connections = 1
 
 	if err = json.Unmarshal(data, &tmp); err != nil {
 		return err
 	}
 
 	c.Name = tmp.Name
+	c.Database = tmp.Database
+	c.Collection = tmp.Collection
 	c.Type = tmp.Type
 	c.Template = tmp.Template
 	c.Connections = tmp.Connections
 	c.Pace = tmp.Pace
 	c.DataSize = tmp.DataSize
 	c.BatchSize = tmp.BatchSize
-	if c.Duration, err = time.ParseDuration(tmp.Duration); err != nil {
-		return err
+
+	if tmp.Duration != "" {
+		if c.Duration, err = time.ParseDuration(tmp.Duration); err != nil {
+			return err
+		}
 	}
+
 	c.Operations = tmp.Operations
-	if c.Timeout, err = time.ParseDuration(tmp.Timeout); err != nil {
-		return err
+
+	if tmp.Timeout != "" {
+		if c.Timeout, err = time.ParseDuration(tmp.Timeout); err != nil {
+			return err
+		}
 	}
 
 	return
