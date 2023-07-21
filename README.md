@@ -102,7 +102,6 @@ Person
 
 <details>
 <summary>Defining Jobs</summary>
-</details>
 
 <br>
 **Simple job example**
@@ -138,6 +137,7 @@ Person
 * `operations`(unsigned int) - number of requests to perform, ex. 100 reads, 100 bulk_writes
 * `timeout`(string) - connection timeout ex. 1h, 15m, 10s
 
+</details>
 
 > Note:
 > If you don't provide the requests amount or duration limit program will continue running 

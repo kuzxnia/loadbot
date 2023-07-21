@@ -8,13 +8,14 @@ import (
 type JobType string
 
 const (
-	Write      JobType = "write"
-	BulkWrite  JobType = "bulk_write"
-	Read       JobType = "read"
-	Update     JobType = "update"
-	Sleep      JobType = "sleep"
-	Paralel    JobType = "parallel"
-	BuildIndex JobType = "parallel"
+	Write          JobType = "write"
+	BulkWrite      JobType = "bulk_write"
+	Read           JobType = "read"
+	Update         JobType = "update"
+	Sleep          JobType = "sleep"
+	Paralel        JobType = "parallel"
+	BuildIndex     JobType = "parallel"
+	DropCollection JobType = "drop_collection"
 )
 
 type Config struct {

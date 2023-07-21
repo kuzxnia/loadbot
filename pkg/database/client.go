@@ -19,7 +19,8 @@ type Client interface {
 	ReadOne(interface{}) (bool, error)
 	ReadMany(interface{}) (bool, error)
 	UpdateOne(interface{}, interface{}) (bool, error)
-  Disconnect() error
+	DropCollection() error
+	Disconnect() error
 }
 
 type MongoClient struct {
@@ -132,4 +133,8 @@ func (c *MongoClient) UpdateOne(filter interface{}, data interface{}) (bool, err
 		return false, err
 	}
 	return true, nil
+}
+
+func (c *MongoClient) DropCollection() error {
+	return c.collection.Drop(context.TODO())
 }
