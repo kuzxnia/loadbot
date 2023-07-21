@@ -112,7 +112,7 @@ Person
 {
   "name": "insert with schema",
   "type": "write",
-  "template": "default",
+  "template": "user_schema",
   "connections": 10,
   "operations": 100
 }
@@ -139,6 +139,25 @@ Person
 {
   "type": "sleep",
   "duration": "5s"
+}
+```
+
+**Drop collection**
+
+```json
+{
+  "type": "drop_collection",
+  "database": "load_test",
+  "collection": "load_test",
+  "operations": 1
+}
+```
+or with schema
+```json
+{
+  "type": "drop_collection",
+  "template": "example_schema",
+  "operations": 1
 }
 ```
 

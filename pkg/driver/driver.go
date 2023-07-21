@@ -89,6 +89,7 @@ type Worker struct {
 	pool        JobPool
 	Statistic   Stats
 	startTime   time.Time
+	elapsedTime time.Duration
 }
 
 func NewWorker(cfg *config.Config, job *config.Job) (*Worker, error) {
@@ -100,7 +101,6 @@ func NewWorker(cfg *config.Config, job *config.Job) (*Worker, error) {
 	worker.Statistic = NewStatistics(job)
 	worker.pool = NewJobPool(job)
 	worker.rateLimiter = NewLimiter(job)
-	worker.startTime = time.Now()
 
 	// introduce no db worker
 	if job.Type != string(config.Sleep) {
@@ -117,6 +117,8 @@ func NewWorker(cfg *config.Config, job *config.Job) (*Worker, error) {
 }
 
 func (w *Worker) Work() {
+	w.startTime = time.Now()
+
 	interruptChan := make(chan os.Signal, 1)
 	signal.Notify(interruptChan, os.Interrupt)
 	go func() {
@@ -142,18 +144,18 @@ func (w *Worker) Work() {
 		}()
 	}
 	w.wg.Wait()
+	w.elapsedTime = time.Since(w.startTime)
 }
 
 func (w *Worker) Summary() {
-	elapsed := time.Since(w.startTime)
 	requestsDone := w.pool.GetRequestsDone()
-	rps := float64(requestsDone) / elapsed.Seconds()
+	rps := float64(requestsDone) / w.elapsedTime.Seconds()
 
 	// todo: introduce new string type with isEmpty func
 	if w.job.Name == "" {
-		fmt.Printf("\nJob type: \"%s\" took %f s\n", w.job.Type, elapsed.Seconds())
+		fmt.Printf("\nJob type: \"%s\" took %f s\n", w.job.Type, w.elapsedTime.Seconds())
 	} else {
-		fmt.Printf("\nJob: \"%s\" took %f s\n", w.job.Name, elapsed.Seconds())
+		fmt.Printf("\nJob: \"%s\" took %f s\n", w.job.Name, w.elapsedTime.Seconds())
 	}
 	fmt.Printf("Total operations: %d\n", requestsDone)
 	fmt.Printf("Requests per second: %f rp/s\n", rps)
