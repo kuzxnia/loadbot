@@ -27,6 +27,8 @@ func (c *Config) validateJobs() error {
 func (job *Job) Validate() error {
 	validators := []func() error{
 		job.validateTemplate,
+		job.validateDatabase,
+		job.validateCollection,
 		job.validateType,
 		job.validateDuration,
 		job.validatePace,
@@ -45,7 +47,7 @@ func (job *Job) Validate() error {
 }
 
 func (job *Job) validateTemplate() error {
-	if string(Sleep) == job.Type {
+	if string(Sleep) == job.Type || job.Template == "" {
 		return nil
 	}
 
@@ -54,7 +56,7 @@ func (job *Job) validateTemplate() error {
 	}
 
 	if !Contains[*Schema, string](job.Parent.Schemas, job.Template, isSchemaName) {
-		return errors.New("Job: " + job.Name + " have invalid template \"" + job.Template + "\"")
+		return errors.New("JobValidationError: job \"" + job.Name + "\" have invalid template \"" + job.Template + "\"")
 	}
 	return nil
 }
@@ -69,6 +71,26 @@ func (job *Job) validateType() (err error) {
 	case string(Sleep):
 	default:
 		err = errors.New("Job type: " + job.Type + " ")
+	}
+	return
+}
+
+func (job *Job) validateDatabase() (err error) {
+	if job.Template != "" || job.Type == string(Sleep) {
+		return
+	}
+	if job.Database == "" {
+		err = errors.New("JobValidationError: field 'database' is required if 'template' or 'type' is not set")
+	}
+	return
+}
+
+func (job *Job) validateCollection() (err error) {
+	if job.Template != "" || job.Type == string(Sleep) {
+		return
+	}
+	if job.Collection == "" {
+		err = errors.New("JobValidationError: field 'collection' is required if 'template' or 'type' is not set")
 	}
 	return
 }

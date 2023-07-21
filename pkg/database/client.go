@@ -55,7 +55,12 @@ func NewMongoClient(connectionString string, cfg *config.Job, schema *config.Sch
 		fmt.Println("Successfully connected to database server")
 	}
 
-	collection := client.Database(schema.Database).Collection(schema.Collection)
+	var collection *mongo.Collection
+	if schema != nil {
+		collection = client.Database(schema.Database).Collection(schema.Collection)
+	} else {
+		collection = client.Database(cfg.Database).Collection(cfg.Collection)
+	}
 	return &MongoClient{ctx: ctx, client: client, collection: collection}, err
 }
 

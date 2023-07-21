@@ -9,6 +9,8 @@ func (c *Job) UnmarshalJSON(data []byte) (err error) {
 	var tmp struct {
 		Name        string `json:"name"`
 		Type        string `json:"type"`
+		Database    string `json:"database"`
+		Collection  string `json:"collection"`
 		Template    string `json:"template"`
 		Connections uint64 `json:"connections"`
 		Pace        uint64 `json:"pace"`
@@ -28,6 +30,8 @@ func (c *Job) UnmarshalJSON(data []byte) (err error) {
 	}
 
 	c.Name = tmp.Name
+	c.Database = tmp.Database
+	c.Collection = tmp.Collection
 	c.Type = tmp.Type
 	c.Template = tmp.Template
 	c.Connections = tmp.Connections

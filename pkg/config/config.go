@@ -37,6 +37,8 @@ func NewConfigFromJson([]byte) *Config {
 type Job struct {
 	Parent      *Config
 	Name        string
+	Database    string
+	Collection  string
 	Type        string
 	Template    string // validate required, or use default
 	Connections uint64 // Maximum number of concurrent connections
