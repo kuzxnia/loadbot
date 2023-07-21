@@ -35,13 +35,12 @@ func NewStatistics(job *config.Job) Stats {
 	case string(config.Update):
 		return Stats(&UpdateStats{BaseStats: stats})
 	default:
-		// todo change
-		panic("Invalid job type")
+		return Stats(&DefaultStats{BaseStats: stats})
 	}
 }
 
 type BaseStats struct {
-	mutex         *sync.RWMutex
+	mutex         sync.RWMutex
 	data          []time.Duration
 	rawData       []float64
 	timeoutErrors uint64
@@ -72,6 +71,40 @@ func (s *BaseStats) GetRawData() *[]float64 {
 		}
 	}
 	return &s.rawData
+}
+
+type DefaultStats struct {
+	BaseStats
+}
+
+func (s *DefaultStats) Add(interval time.Duration, err error) {
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+
+	s.data = append(s.data, interval)
+	if err != nil {
+		if mongo.IsTimeout(err) {
+			s.timeoutErrors++
+		} else {
+			s.otherErrors++
+		}
+	}
+}
+
+func (s *DefaultStats) Summary() {
+	s.mutex.RLock()
+	defer s.mutex.RUnlock()
+
+	if len := s.Len(); len != 0 {
+		errors := int(s.timeoutErrors + s.otherErrors)
+		wmean, _ := s.Mean()
+		p, _ := s.Percentiles(50, 90, 99)
+		fmt.Printf(
+			"Total ops: %d, successful: %d, errors: (timeout: %d, other: %d), error rate: %.2f%% \n",
+			len, len-errors, s.timeoutErrors, s.otherErrors, float64(errors)/float64(len)*100,
+		)
+		fmt.Printf("Ops AVG: %.2fms, P50: %.2fms, P90: %.2fms P99: %.2fms\n", wmean, p[0], p[1], p[2])
+	}
 }
 
 type ReadStats struct {
