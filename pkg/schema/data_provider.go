@@ -12,7 +12,7 @@ type DataProvider interface {
 
 func NewDataProvider(job *config.Job) DataProvider {
 	return DataProvider(
-		NewLiveDataProvider(job.BatchSize, job.DataSize, job.GetTemplateSchema()),
+		NewLiveDataProvider(job.BatchSize, job.DataSize, job.GetSchema()),
 	)
 }
 

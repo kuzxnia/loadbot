@@ -16,7 +16,7 @@ This tool offers two ways to access it: one through CLI arguments and the other 
 
     Flags:
     -h, --help                  Show context-sensitive help.
-    -c, --connections=10        Number of concurrent connections
+    -c, --connections=1         Number of concurrent connections
     -p, --pace=UINT-64          Pace - RPS limit
     -d, --duration=DURATION     Duration (ex. 10s, 5m, 1h)
     -o, --operations=UINT-64    Operations (read/write/update) to perform
@@ -39,7 +39,7 @@ Example file:
     {
       "name": "default job",
       "type": "write",
-      "template": "default",
+      "schema": "user_schema",
       "connections": 100,
       "pace": 0,
       "data_size": 0,
@@ -51,7 +51,7 @@ Example file:
   ],
   "schemas": [
     {
-      "name": "default",
+      "name": "user_schema",
       "database": "load_test",
       "collection": "load_test",
       "schema": {
@@ -59,6 +59,13 @@ Example file:
         "name": "#string",
         "lastname": "#string"
       }
+    },
+  ],
+  "reporting_formats": [
+    {
+      "name": "simple",
+      "interval": "5s",
+      "template": "Job: {{.JobType}}, total reqs: {{.TotalReqs}}, RPS {{f2 .Rps}} success: {{.SuccessReqs}}\n\n"
     }
   ]
 }
@@ -112,7 +119,7 @@ Person
 {
   "name": "insert with schema",
   "type": "write",
-  "template": "user_schema",
+  "schema": "user_schema",
   "connections": 10,
   "operations": 100
 }
@@ -156,7 +163,7 @@ or with schema
 ```json
 {
   "type": "drop_collection",
-  "template": "example_schema",
+  "schema": "example_schema",
   "operations": 1
 }
 ```
@@ -174,6 +181,38 @@ or with schema
 * `duration`(string) - duration time ex. 1h, 15m, 10s
 * `operations`(unsigned int) - number of requests to perform, ex. 100 reads, 100 bulk_writes
 * `timeout`(string) - connection timeout ex. 1h, 15m, 10s
+
+</details>
+
+<details>
+<summary>Custom reporting format</summary>
+
+<br>
+
+**Example reporting format**
+
+```json
+{
+  "name": "simple",
+  "interval": "5s",
+  "template": "Job: {{.JobType}}, total reqs: {{.TotalReqs}}, RPS {{f2 .Rps}} success: {{.SuccessReqs}}\n\n"
+}
+```
+
+**Template fields**
+
+`JobName`, `JobType`, `SuccessReqs`, `ErrorReqs`, `TotalReqs`, `TimeoutErr`, `NoDataErr`, `OtherErr`, `ErrorRate`
+
+**Math fields**
+
+`Min`, `Max`, `Avg`, `Rps` and `P<number>` ex. `P90` - percentiles
+
+**Floating point fields formatters**
+
+`f<number>` - format number to n places (1 to 4) ex. `{{f2 .Rps}}` 
+
+`msf<number>` - format number to n places (1 to 4) and convert to milliseconds ex. `{{msf2 .P99}}` 
+
 
 </details>
 

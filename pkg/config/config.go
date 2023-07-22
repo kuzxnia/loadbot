@@ -19,43 +19,46 @@ const (
 )
 
 type Config struct {
-	ConnectionString string    `json:"connection_string"`
-	Jobs             []*Job    `json:"jobs"`
-	Schemas          []*Schema `json:"schemas"`
-	Debug            bool      `json:"debug"`
-	DebugFile        string    `json:"debug_file"`
-}
-
-func NewConfigFromArgs() *Config {
-	return nil
-}
-
-func NewConfigFromJson([]byte) *Config {
-	return nil
+	ConnectionString string             `json:"connection_string"`
+	Jobs             []*Job             `json:"jobs"`
+	Schemas          []*Schema          `json:"schemas"`
+	ReportingFormats []*ReportingFormat `json:"reporting_formats"`
+	Debug            bool               `json:"debug"`
+	DebugFile        string             `json:"debug_file"`
 }
 
 type Job struct {
-	Parent      *Config
-	Name        string
-	Database    string
-	Collection  string
-	Type        string
-	Template    string // validate required, or use default
-	Connections uint64 // Maximum number of concurrent connections
-	Pace        uint64 // rps limit / peace - if not set max
-	DataSize    uint64 // data size in bytes
-	BatchSize   uint64
-	Duration    time.Duration
-	Operations  uint64
-	Timeout     time.Duration // if not set, default
+	Parent          *Config
+	Name            string
+	Database        string
+	Collection      string
+	Type            string
+	Schema          string
+	ReportingFormat string
+	Connections     uint64 // Maximum number of concurrent connections
+	Pace            uint64 // rps limit / peace - if not set max
+	DataSize        uint64 // data size in bytes
+	BatchSize       uint64
+	Duration        time.Duration
+	Operations      uint64
+	Timeout         time.Duration // if not set, default
 	// Params ex. for read / update
 	//     * filter: { "_id": "#_id"}
 }
 
-func (j *Job) GetTemplateSchema() *Schema {
+func (j *Job) GetSchema() *Schema {
 	for _, schema := range j.Parent.Schemas {
-		if schema.Name == j.Template {
+		if schema.Name == j.Schema {
 			return schema
+		}
+	}
+	return nil
+}
+
+func (j *Job) GetReport() *ReportingFormat {
+	for _, report := range j.Parent.ReportingFormats {
+		if report.Name == j.ReportingFormat {
+			return report
 		}
 	}
 	return nil
@@ -67,4 +70,20 @@ type Schema struct {
 	Collection string `json:"collection"`
 	// todo: introducte new type and parse
 	Schema map[string]interface{} `json:"schema"`
+}
+
+type ReportingFormat struct {
+	Name     string
+	Interval time.Duration
+	Template string
+}
+
+type ReportingFormatType string
+
+func NewConfigFromArgs() *Config {
+	return nil
+}
+
+func NewConfigFromJson([]byte) *Config {
+	return nil
 }

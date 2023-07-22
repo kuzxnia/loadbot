@@ -51,14 +51,13 @@ func (ml *mongoload) Torment() {
 		func(worker *Worker) {
 			defer ml.wg.Done()
 			worker.Work()
+      worker.Summary()
 		}(worker)
 	}
 
-	fmt.Println("Workers executed")
 	ml.start = time.Now() // add progress bar if running with limit
 
 	ml.wg.Wait()
-	ml.Summary()
 }
 
 func (ml *mongoload) Summary() {
@@ -87,9 +86,7 @@ type Worker struct {
 	handler     JobHandler
 	rateLimiter Limiter
 	pool        JobPool
-	Statistic   Stats
-	startTime   time.Time
-	elapsedTime time.Duration
+	Report      Report
 }
 
 func NewWorker(cfg *config.Config, job *config.Job) (*Worker, error) {
@@ -98,13 +95,13 @@ func NewWorker(cfg *config.Config, job *config.Job) (*Worker, error) {
 	worker.cfg = cfg
 	worker.job = job
 	worker.wg.Add(int(job.Connections))
-	worker.Statistic = NewStatistics(job)
+	worker.Report = NewReport(job)
 	worker.pool = NewJobPool(job)
 	worker.rateLimiter = NewLimiter(job)
 
 	// introduce no db worker
 	if job.Type != string(config.Sleep) {
-		db, err := database.NewMongoClient(cfg.ConnectionString, job, job.GetTemplateSchema())
+		db, err := database.NewMongoClient(cfg.ConnectionString, job, job.GetSchema())
 		if err != nil {
 			return nil, err
 		}
@@ -117,7 +114,7 @@ func NewWorker(cfg *config.Config, job *config.Job) (*Worker, error) {
 }
 
 func (w *Worker) Work() {
-	w.startTime = time.Now()
+	startTime := time.Now()
 
 	interruptChan := make(chan os.Signal, 1)
 	signal.Notify(interruptChan, os.Interrupt)
@@ -133,7 +130,7 @@ func (w *Worker) Work() {
 				w.rateLimiter.Take()
 				// perform operation
 				duration, error := w.handler.Handle()
-				w.Statistic.Add(duration, error)
+				w.Report.Add(duration, error)
 				// add debug of some kind
 				if error != nil {
 					// todo: debug
@@ -144,26 +141,11 @@ func (w *Worker) Work() {
 		}()
 	}
 	w.wg.Wait()
-	w.elapsedTime = time.Since(w.startTime)
+	w.Report.SetDuration(time.Since(startTime))
 }
 
 func (w *Worker) Summary() {
-	requestsDone := w.pool.GetRequestsDone()
-	rps := float64(requestsDone) / w.elapsedTime.Seconds()
-
-	// todo: introduce new string type with isEmpty func
-	if w.job.Name == "" {
-		fmt.Printf("\nJob type: \"%s\" took %f s\n", w.job.Type, w.elapsedTime.Seconds())
-	} else {
-		fmt.Printf("\nJob: \"%s\" took %f s\n", w.job.Name, w.elapsedTime.Seconds())
-	}
-	fmt.Printf("Total operations: %d\n", requestsDone)
-	fmt.Printf("Requests per second: %f rp/s\n", rps)
-	w.Statistic.Summary()
-
-	// if batch := w.db.GetBatchSize(); batch > 1 {
-	// 	fmt.Printf("Operations per second: %f op/s\n", float64(requestsDone*batch)/elapsed.Seconds())
-	// }
+	w.Report.Summary()
 }
 
 func (w *Worker) Cancel() {

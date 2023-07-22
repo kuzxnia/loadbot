@@ -5,6 +5,8 @@ import "errors"
 func (c *Config) Validate() error {
 	validators := []func() error{
 		c.validateJobs,
+		// c.validateSchemas,
+		c.validateReportingFormats,
 	}
 
 	for _, validate := range validators {
@@ -24,9 +26,19 @@ func (c *Config) validateJobs() error {
 	return nil
 }
 
+func (c *Config) validateReportingFormats() error {
+	for _, reportingFormat := range c.ReportingFormats {
+		if error := reportingFormat.Validate(); error != nil {
+			return error
+		}
+	}
+	return nil
+}
+
 func (job *Job) Validate() error {
 	validators := []func() error{
-		job.validateTemplate,
+		job.validateSchema,
+		job.validateReportFormat,
 		job.validateDatabase,
 		job.validateCollection,
 		job.validateType,
@@ -46,17 +58,24 @@ func (job *Job) Validate() error {
 	return nil
 }
 
-func (job *Job) validateTemplate() error {
-	if string(Sleep) == job.Type || job.Template == "" {
+func (job *Job) validateSchema() error {
+	if string(Sleep) == job.Type || job.Schema == "" {
 		return nil
 	}
 
-	isSchemaName := func(schema *Schema, comparator string) bool {
-		return schema.Name == comparator
+	if !Contains(job.Parent.Schemas, func(s *Schema) bool { return s.Name == job.Schema }) {
+		return errors.New("JobValidationError: job \"" + job.Name + "\" have invalid template \"" + job.Schema + "\"")
+	}
+	return nil
+}
+
+func (job *Job) validateReportFormat() error {
+	if job.ReportingFormat == "" {
+		return nil
 	}
 
-	if !Contains[*Schema, string](job.Parent.Schemas, job.Template, isSchemaName) {
-		return errors.New("JobValidationError: job \"" + job.Name + "\" have invalid template \"" + job.Template + "\"")
+	if !Contains(job.Parent.ReportingFormats, func(s *ReportingFormat) bool { return s.Name == job.ReportingFormat }) {
+		return errors.New("JobValidationError: job \"" + job.Name + "\" have invalid report_format \"" + job.ReportingFormat + "\"")
 	}
 	return nil
 }
@@ -76,7 +95,7 @@ func (job *Job) validateType() (err error) {
 }
 
 func (job *Job) validateDatabase() (err error) {
-	if job.Template != "" || job.Type == string(Sleep) {
+	if job.Schema != "" || job.Type == string(Sleep) {
 		return
 	}
 	if job.Database == "" {
@@ -86,7 +105,7 @@ func (job *Job) validateDatabase() (err error) {
 }
 
 func (job *Job) validateCollection() (err error) {
-	if job.Template != "" || job.Type == string(Sleep) {
+	if job.Schema != "" || job.Type == string(Sleep) {
 		return
 	}
 	if job.Collection == "" {
@@ -152,12 +171,38 @@ func (job *Job) validateOperations() (err error) {
 	return
 }
 
+func (rp *ReportingFormat) Validate() error {
+	validators := []func() error{
+		rp.validateReportingFormat,
+	}
+
+	for _, validate := range validators {
+		if error := validate(); error != nil {
+			return error
+		}
+	}
+	return nil
+}
+
+func (rpt *ReportingFormat) validateReportingFormat() (err error) {
+	return nil
+}
+
 // todo: validation job type
 // todo: validation duration and opertions cannot be set together
 
-func Contains[T comparable, X comparable](array []T, comparator X, predicate func(T, X) bool) bool {
+// func Contains[T comparable, X comparable](array []T, comparator X, predicate func(T, X) bool) bool {
+// 	for _, elem := range array {
+// 		if predicate(elem, comparator) {
+// 			return true
+// 		}
+// 	}
+// 	return false
+// }
+
+func Contains[T comparable](array []T, predicate func(T) bool) bool {
 	for _, elem := range array {
-		if predicate(elem, comparator) {
+		if predicate(elem) {
 			return true
 		}
 	}
