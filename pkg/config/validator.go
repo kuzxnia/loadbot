@@ -5,6 +5,8 @@ import "errors"
 func (c *Config) Validate() error {
 	validators := []func() error{
 		c.validateJobs,
+		// c.validateSchemas,
+		c.validateReportingFormats,
 	}
 
 	for _, validate := range validators {
@@ -18,6 +20,15 @@ func (c *Config) Validate() error {
 func (c *Config) validateJobs() error {
 	for _, job := range c.Jobs {
 		if error := job.Validate(); error != nil {
+			return error
+		}
+	}
+	return nil
+}
+
+func (c *Config) validateReportingFormats() error {
+	for _, reportingFormat := range c.ReportingFormats {
+		if error := reportingFormat.Validate(); error != nil {
 			return error
 		}
 	}
@@ -157,6 +168,32 @@ func (job *Job) validateOperations() (err error) {
 			err = errors.New("JobValidationError: field 'operations' must be equal 0 or must be not set for job with 'sleep' type ")
 		}
 	}
+	return
+}
+
+func (rp *ReportingFormat) Validate() error {
+	validators := []func() error{
+		rp.validateReportingFormats,
+	}
+
+	for _, validate := range validators {
+		if error := validate(); error != nil {
+			return error
+		}
+	}
+	return nil
+}
+
+func (rpt *ReportingFormat) validateReportingFormats() (err error) {
+	for _, template := range rpt.Templates {
+		if error := template.Validate(); error != nil {
+			return error
+		}
+	}
+	return nil
+}
+
+func (rpt *ReportingFormatType) Validate() (err error) {
 	return
 }
 

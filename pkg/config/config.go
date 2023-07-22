@@ -73,10 +73,12 @@ type Schema struct {
 }
 
 type ReportingFormat struct {
-	Name     string
-	Interval time.Duration
-	Template string
+	Name      string
+	Interval  time.Duration
+	Templates []ReportingFormatType
 }
+
+type ReportingFormatType string
 
 func NewConfigFromArgs() *Config {
 	return nil

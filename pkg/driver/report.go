@@ -2,7 +2,9 @@ package driver
 
 import (
 	"fmt"
+	"os"
 	"sync"
+	"text/template"
 	"time"
 
 	"github.com/kuzxnia/mongoload/pkg/config"
@@ -10,8 +12,42 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
+var (
+	ReportFormatKeys            = NewReportFormatKeys()
+	DefaultReportFormatTemplate = `{{if .JobName -}} Job: "{{.JobName}}" {{else -}} Job type: "{{.JobType}}"{{end}}
+Total reqs: {{.TotalReqs}}, RPS {{f2 .Rps}} success: {{.SuccessReqs}}, errors: {{.ErrorReqs}} timeout: {{.TimeoutErr}}, error rate: {{f1 .ErrorRate}}
+AVG: {{f3 .Avg}}s P50: {{f3 .P50}}s, P90: {{f3 .P90}}s P99: {{f3 .P99}}s
+
+`
+)
+
+func NewReportFormatKeys() []string {
+	keys := []string{
+		"{{.SuccessReqs}}",
+		"{{.TotalReqs}}",
+		"{{.ErrorReqs}}",
+		"{{.TimeoutErr}}",
+		"{{.NoDataErr}}",
+		"{{.OtherErr}}",
+		"{{.ErrorRate}}",
+		"{{.Min}}",
+		"{{.Max}}",
+		"{{.Avg}}",
+		"{{.Rps}}",
+    // if batch := w.db.GetBatchSize(); batch > 1 {
+    // 	fmt.Printf("Operations per second: %f op/s\n", float64(requestsDone*batch)/elapsed.Seconds())
+    // }
+		// ops
+	}
+	for i := 1; i < 100; i++ {
+		keys = append(keys, fmt.Sprintf("{{.P%v}}", i))
+	}
+	return keys
+}
+
 type Report interface {
 	Len() int
+	Sum() (float64, error)
 	Min() (float64, error)
 	Max() (float64, error)
 	Mean() (float64, error)
@@ -19,43 +55,40 @@ type Report interface {
 	Percentiles(input ...float64) (percentiles []float64, err error)
 
 	Add(time.Duration, error)
-
+	SetDuration(time.Duration)
 	Summary()
 }
 
 func NewReport(job *config.Job) Report {
-	report := BaseReport{data: make([]time.Duration, 0)}
-	switch job.Type {
-	case string(config.Write):
-		return Report(&WriteReport{BaseReport: report})
-	case string(config.BulkWrite):
-		return Report(&WriteReport{BaseReport: report})
-	case string(config.Read):
-		return Report(&ReadReport{BaseReport: report})
-	case string(config.Update):
-		return Report(&UpdateReport{BaseReport: report})
-	default:
-		return Report(&DefaultReport{BaseReport: report})
-	}
+	return Report(
+		&TemplateReport{
+			job:  job,
+			data: make([]time.Duration, 0),
+		},
+	)
 }
 
-type BaseReport struct {
-	mutex         sync.RWMutex
-	data          []time.Duration
-	rawData       []float64
-	timeoutErrors uint64
-	otherErrors   uint64
+type TemplateReport struct {
+	job                   *config.Job
+	mutex                 sync.RWMutex
+	data                  []time.Duration
+	rawData               []float64
+	errorsReqs            uint64
+	timeoutErrors         uint64
+	noDocumentsFoundError uint64
+	duration              time.Duration
 }
 
-func (s *BaseReport) Len() int               { return len(s.data) }
-func (s *BaseReport) Min() (float64, error)  { return stats.Min(*s.GetRawData()) }
-func (s *BaseReport) Max() (float64, error)  { return stats.Max(*s.GetRawData()) }
-func (s *BaseReport) Mean() (float64, error) { return stats.Mean(*s.GetRawData()) }
-func (s *BaseReport) Percentile(percentile float64) (float64, error) {
+func (s *TemplateReport) Len() int               { return len(s.data) }
+func (s *TemplateReport) Sum() (float64, error)  { return stats.Sum(*s.GetRawData()) }
+func (s *TemplateReport) Min() (float64, error)  { return stats.Min(*s.GetRawData()) }
+func (s *TemplateReport) Max() (float64, error)  { return stats.Max(*s.GetRawData()) }
+func (s *TemplateReport) Mean() (float64, error) { return stats.Mean(*s.GetRawData()) }
+func (s *TemplateReport) Percentile(percentile float64) (float64, error) {
 	return stats.Percentile(*s.GetRawData(), percentile)
 }
 
-func (s *BaseReport) Percentiles(input ...float64) (percentiles []float64, err error) {
+func (s *TemplateReport) Percentiles(input ...float64) (percentiles []float64, err error) {
 	percentiles = make([]float64, len(input))
 	for i, percentile := range input {
 		percentiles[i], err = stats.Percentile(*s.GetRawData(), percentile)
@@ -63,8 +96,9 @@ func (s *BaseReport) Percentiles(input ...float64) (percentiles []float64, err e
 	return
 }
 
-func (s *BaseReport) GetRawData() *[]float64 {
+func (s *TemplateReport) GetRawData() *[]float64 {
 	// need to lock this for
+	// readlock s.data, lock rawData
 	if len(s.data) != len(s.rawData) {
 		for i := len(s.rawData); i < len(s.data); i++ {
 			s.rawData = append(s.rawData, float64(s.data[i].Seconds()))
@@ -73,143 +107,75 @@ func (s *BaseReport) GetRawData() *[]float64 {
 	return &s.rawData
 }
 
-type DefaultReport struct {
-	BaseReport
+func (s *TemplateReport) SetDuration(duration time.Duration) {
+	s.duration = duration
 }
 
-func (s *DefaultReport) Add(interval time.Duration, err error) {
-	s.mutex.Lock()
-	defer s.mutex.Unlock()
-
-	s.data = append(s.data, interval)
-	if err != nil {
-		if mongo.IsTimeout(err) {
-			s.timeoutErrors++
-		} else {
-			s.otherErrors++
-		}
-	}
-}
-
-func (s *DefaultReport) Summary() {
+func (s *TemplateReport) GetReportData() map[string]any {
 	s.mutex.RLock()
 	defer s.mutex.RUnlock()
 
-	if len := s.Len(); len != 0 {
-		errors := int(s.timeoutErrors + s.otherErrors)
-		wmean, _ := s.Mean()
-		p, _ := s.Percentiles(50, 90, 99)
-		fmt.Printf(
-			"Total ops: %d, successful: %d, errors: (timeout: %d, other: %d), error rate: %.2f%% \n",
-			len, len-errors, s.timeoutErrors, s.otherErrors, float64(errors)/float64(len)*100,
-		)
-		fmt.Printf("Ops AVG: %.2fms, P50: %.2fms, P90: %.2fms P99: %.2fms\n", wmean, p[0], p[1], p[2])
+	// handle errors
+	totalReqs := s.Len()
+	min, _ := s.Min()
+	max, _ := s.Max()
+	avg, _ := s.Mean()
+
+	mapping := map[string]any{
+		"JobName":     s.job.Name,
+		"JobType":     s.job.Type,
+		"SuccessReqs": totalReqs - int(s.errorsReqs),
+		"TotalReqs":   totalReqs,
+		"ErrorReqs":   s.errorsReqs,
+		"TimeoutErr":  s.timeoutErrors,
+		"noDataErr":   s.noDocumentsFoundError,
+		"OtherErr":    s.errorsReqs - s.timeoutErrors - s.noDocumentsFoundError,
+		"ErrorRate":   IfElse(totalReqs != 0, float64(s.errorsReqs)/float64(totalReqs)*100, 0),
+		"Min":         min,
+		"Max":         max,
+		"Avg":         avg,
+		"Rps":         IfElse(s.duration != 0, float64(totalReqs)/float64(s.duration.Seconds()), 0),
 	}
+	var key string
+	for i := 1; i < 100; i++ {
+		key = fmt.Sprintf("P%v", i)
+		p, _ := s.Percentile(float64(i))
+		mapping[key] = p
+	}
+	return mapping
 }
 
-type ReadReport struct {
-	BaseReport
-	noDocumentsFoundError uint64
-}
-
-func (s *ReadReport) Add(interval time.Duration, err error) {
+func (s *TemplateReport) Add(interval time.Duration, err error) {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 
 	s.data = append(s.data, interval)
 	if err != nil {
+		s.errorsReqs++
 		if mongo.IsTimeout(err) {
 			s.timeoutErrors++
 		} else if err == mongo.ErrNoDocuments {
 			s.noDocumentsFoundError++
-		} else {
-			s.otherErrors++
 		}
 	}
 }
 
-func (s *ReadReport) Summary() {
-	s.mutex.RLock()
-	defer s.mutex.RUnlock()
+func (s *TemplateReport) Summary() {
+	// todo: handle error, by default Must panics
+	outputTemplate := template.Must(template.New("").Funcs(template.FuncMap{
+		"f1": func(f float64) string { return fmt.Sprintf("%.1f", f) },
+		"f2": func(f float64) string { return fmt.Sprintf("%.2f", f) },
+		"f3": func(f float64) string { return fmt.Sprintf("%.3f", f) },
+		"f4": func(f float64) string { return fmt.Sprintf("%.4f", f) },
+	}).Parse(DefaultReportFormatTemplate))
+	outputTemplate.Execute(os.Stdout, s.GetReportData())
+}
 
-	if len := s.Len(); len != 0 {
-		errors := int(s.timeoutErrors + s.otherErrors + s.noDocumentsFoundError)
-		wmean, _ := s.Mean()
-		p, _ := s.Percentiles(50, 90, 99)
-		fmt.Printf(
-			"Total read ops: %d, successful: %d, errors: (timeout: %d, noDataFound: %d, other: %d), error rate: %.2f%% \n",
-			len, len-errors, s.timeoutErrors, s.noDocumentsFoundError, s.otherErrors, float64(errors)/float64(len)*100,
-		)
-		fmt.Printf("Read AVG: %.2fms, P50: %.2fms, P90: %.2fms P99: %.2fms\n", wmean, p[0], p[1], p[2])
+func IfElse[T comparable](condition bool, a T, b T) T {
+	if condition {
+		return a
 	}
-}
-
-type WriteReport struct {
-	BaseReport
-}
-
-func (s *WriteReport) Add(interval time.Duration, err error) {
-	s.mutex.Lock()
-	defer s.mutex.Unlock()
-
-	s.data = append(s.data, interval)
-	if err != nil {
-		if mongo.IsTimeout(err) {
-			s.timeoutErrors++
-		} else {
-			s.otherErrors++
-		}
-	}
-}
-
-func (s *WriteReport) Summary() {
-	s.mutex.RLock()
-	defer s.mutex.RUnlock()
-
-	if len := s.Len(); len != 0 {
-		errors := int(s.timeoutErrors + s.otherErrors)
-		wmean, _ := s.Mean()
-		p, _ := s.Percentiles(50, 90, 99)
-		fmt.Printf(
-			"Total write ops: %d, successful: %d, errors: (timeout: %d, other: %d), error rate: %.2f%% \n",
-			len, len-errors, s.timeoutErrors, s.otherErrors, float64(errors)/float64(len)*100,
-		)
-		fmt.Printf("Write AVG: %.2fms, P50: %.2fms, P90: %.2fms P99: %.2fms\n", wmean, p[0], p[1], p[2])
-	}
-}
-
-type UpdateReport struct {
-	BaseReport
-}
-
-func (s *UpdateReport) Add(interval time.Duration, err error) {
-	s.mutex.Lock()
-	defer s.mutex.Unlock()
-
-	s.data = append(s.data, interval)
-	if err != nil {
-		if mongo.IsTimeout(err) {
-			s.timeoutErrors++
-		} else {
-			s.otherErrors++
-		}
-	}
-}
-
-func (s *UpdateReport) Summary() {
-	s.mutex.RLock()
-	defer s.mutex.RUnlock()
-
-	if len := s.Len(); len != 0 {
-		errors := int(s.timeoutErrors + s.otherErrors)
-		wmean, _ := s.Mean()
-		p, _ := s.Percentiles(50, 90, 99)
-		fmt.Printf(
-			"Total Update ops: %d, successful: %d, errors: (timeout: %d, other: %d), error rate: %.2f%% \n",
-			len, len-errors, s.timeoutErrors, s.otherErrors, float64(errors)/float64(len)*100,
-		)
-		fmt.Printf("Update AVG: %.2fms, P50: %.2fms, P90: %.2fms P99: %.2fms\n", wmean, p[0], p[1], p[2])
-	}
+	return b
 }
 
 // var ErrNoDocuments = errors.New("mongo: no documents in result")

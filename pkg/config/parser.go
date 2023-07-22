@@ -58,9 +58,9 @@ func (c *Job) UnmarshalJSON(data []byte) (err error) {
 
 func (c *ReportingFormat) UnmarshalJSON(data []byte) (err error) {
 	var tmp struct {
-		Name     string `json:"name"`
-		Interval string `json:"interval"`
-		Template string `json:"template"`
+		Name      string   `json:"name"`
+		Interval  string   `json:"interval"`
+		Templates []string `json:"templates"`
 	}
 
 	if err = json.Unmarshal(data, &tmp); err != nil {
@@ -68,7 +68,10 @@ func (c *ReportingFormat) UnmarshalJSON(data []byte) (err error) {
 	}
 
 	c.Name = tmp.Name
-	c.Template = tmp.Template
+	c.Templates = make([]ReportingFormatType, len(tmp.Templates))
+	for i, templ := range tmp.Templates {
+		c.Templates[i] = ReportingFormatType(templ)
+	}
 
 	if tmp.Interval != "" {
 		if c.Interval, err = time.ParseDuration(tmp.Interval); err != nil {
