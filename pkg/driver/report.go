@@ -23,6 +23,8 @@ AVG: {{msf3 .Avg}}ms P50: {{msf3 .P50}}ms, P90: {{msf3 .P90}}ms P99: {{msf3 .P99
 
 func NewReportFormatKeys() []string {
 	keys := []string{
+		"{{.JobName}}",
+		"{{.JobType}}",
 		"{{.SuccessReqs}}",
 		"{{.TotalReqs}}",
 		"{{.ErrorReqs}}",
@@ -164,6 +166,12 @@ func (s *TemplateReport) Add(interval time.Duration, err error) {
 
 func (s *TemplateReport) Summary() {
 	// todo: handle error, by default Must panics
+	var reportTemplate string
+	if s.reportingFormat != nil {
+		reportTemplate = s.reportingFormat.Template
+	} else {
+		reportTemplate = DefaultReportFormatTemplate
+	}
 	outputTemplate := template.Must(template.New("").Funcs(template.FuncMap{
 		"f1":   func(f float64) string { return fmt.Sprintf("%.1f", f) },
 		"f2":   func(f float64) string { return fmt.Sprintf("%.2f", f) },
@@ -173,7 +181,7 @@ func (s *TemplateReport) Summary() {
 		"msf2": func(f float64) string { return fmt.Sprintf("%.2f", f*1000) },
 		"msf3": func(f float64) string { return fmt.Sprintf("%.3f", f*1000) },
 		"msf4": func(f float64) string { return fmt.Sprintf("%.4f", f*1000) },
-	}).Parse(IfElse(s.reportingFormat != nil, s.reportingFormat.Template, DefaultReportFormatTemplate)))
+	}).Parse(reportTemplate))
 	outputTemplate.Execute(os.Stdout, s.GetReportData())
 }
 

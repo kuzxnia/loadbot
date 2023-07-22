@@ -7,18 +7,19 @@ import (
 
 func (c *Job) UnmarshalJSON(data []byte) (err error) {
 	var tmp struct {
-		Name        string `json:"name"`
-		Type        string `json:"type"`
-		Database    string `json:"database"`
-		Collection  string `json:"collection"`
-		Schema      string `json:"template"`
-		Connections uint64 `json:"connections"`
-		Pace        uint64 `json:"pace"`
-		DataSize    uint64 `json:"data_size"`
-		BatchSize   uint64 `json:"batch_size"`
-		Duration    string `json:"duration"`
-		Operations  uint64 `json:"operations"`
-		Timeout     string `json:"timeout"` // if not set, default
+		Name            string `json:"name"`
+		Type            string `json:"type"`
+		Database        string `json:"database"`
+		Collection      string `json:"collection"`
+		Schema          string `json:"template"`
+		ReportingFormat string `json:"format"`
+		Connections     uint64 `json:"connections"`
+		Pace            uint64 `json:"pace"`
+		DataSize        uint64 `json:"data_size"`
+		BatchSize       uint64 `json:"batch_size"`
+		Duration        string `json:"duration"`
+		Operations      uint64 `json:"operations"`
+		Timeout         string `json:"timeout"` // if not set, default
 		// Params ex. for read / update
 		//     * filter: { "_id": "#_id"}
 	}
@@ -34,6 +35,7 @@ func (c *Job) UnmarshalJSON(data []byte) (err error) {
 	c.Collection = tmp.Collection
 	c.Type = tmp.Type
 	c.Schema = tmp.Schema
+	c.ReportingFormat = tmp.ReportingFormat
 	c.Connections = tmp.Connections
 	c.Pace = tmp.Pace
 	c.DataSize = tmp.DataSize

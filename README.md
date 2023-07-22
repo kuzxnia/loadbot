@@ -59,6 +59,13 @@ Example file:
         "name": "#string",
         "lastname": "#string"
       }
+    },
+  ],
+  "reporting_formats": [
+    {
+      "name": "simple",
+      "interval": "5s",
+      "template": "Job: {{.JobType}}, total reqs: {{.TotalReqs}}, RPS {{f2 .Rps}} success: {{.SuccessReqs}}\n\n"
     }
   ]
 }
@@ -174,6 +181,38 @@ or with schema
 * `duration`(string) - duration time ex. 1h, 15m, 10s
 * `operations`(unsigned int) - number of requests to perform, ex. 100 reads, 100 bulk_writes
 * `timeout`(string) - connection timeout ex. 1h, 15m, 10s
+
+</details>
+
+<details>
+<summary>Custom reporting format</summary>
+
+<br>
+
+**Example reporting format**
+
+```json
+{
+  "name": "simple",
+  "interval": "5s",
+  "template": "Job: {{.JobType}}, total reqs: {{.TotalReqs}}, RPS {{f2 .Rps}} success: {{.SuccessReqs}}\n\n"
+}
+```
+
+**Template fields**
+
+`JobName`, `JobType`, `SuccessReqs`, `ErrorReqs`, `TotalReqs`, `TimeoutErr`, `NoDataErr`, `OtherErr`, `ErrorRate`
+
+**Math fields**
+
+`Min`, `Max`, `Avg`, `Rps` and `P<number>` ex. `P90` - percentiles
+
+**Floating point fields formatters**
+
+`f<number>` - format number to n places (1 to 4) ex. `{{f2 .Rps}}` 
+
+`msf<number>` - format number to n places (1 to 4) and convert to milliseconds ex. `{{msf2 .P99}}` 
+
 
 </details>
 

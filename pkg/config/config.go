@@ -22,7 +22,7 @@ type Config struct {
 	ConnectionString string             `json:"connection_string"`
 	Jobs             []*Job             `json:"jobs"`
 	Schemas          []*Schema          `json:"schemas"`
-	ReportingFormats []*ReportingFormat `json:"reports"`
+	ReportingFormats []*ReportingFormat `json:"reporting_formats"`
 	Debug            bool               `json:"debug"`
 	DebugFile        string             `json:"debug_file"`
 }
