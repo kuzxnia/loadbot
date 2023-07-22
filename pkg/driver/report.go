@@ -16,7 +16,7 @@ var (
 	ReportFormatKeys            = NewReportFormatKeys()
 	DefaultReportFormatTemplate = `{{if .JobName -}} Job: "{{.JobName}}" {{else -}} Job type: "{{.JobType}}"{{end}}
 Total reqs: {{.TotalReqs}}, RPS {{f2 .Rps}} success: {{.SuccessReqs}}, errors: {{.ErrorReqs}} timeout: {{.TimeoutErr}}, error rate: {{f1 .ErrorRate}}
-AVG: {{f3 .Avg}}s P50: {{f3 .P50}}s, P90: {{f3 .P90}}s P99: {{f3 .P99}}s
+AVG: {{msf3 .Avg}}ms P50: {{msf3 .P50}}ms, P90: {{msf3 .P90}}ms P99: {{msf3 .P99}}ms
 
 `
 )
@@ -34,9 +34,9 @@ func NewReportFormatKeys() []string {
 		"{{.Max}}",
 		"{{.Avg}}",
 		"{{.Rps}}",
-    // if batch := w.db.GetBatchSize(); batch > 1 {
-    // 	fmt.Printf("Operations per second: %f op/s\n", float64(requestsDone*batch)/elapsed.Seconds())
-    // }
+		// if batch := w.db.GetBatchSize(); batch > 1 {
+		// 	fmt.Printf("Operations per second: %f op/s\n", float64(requestsDone*batch)/elapsed.Seconds())
+		// }
 		// ops
 	}
 	for i := 1; i < 100; i++ {
@@ -163,10 +163,14 @@ func (s *TemplateReport) Add(interval time.Duration, err error) {
 func (s *TemplateReport) Summary() {
 	// todo: handle error, by default Must panics
 	outputTemplate := template.Must(template.New("").Funcs(template.FuncMap{
-		"f1": func(f float64) string { return fmt.Sprintf("%.1f", f) },
-		"f2": func(f float64) string { return fmt.Sprintf("%.2f", f) },
-		"f3": func(f float64) string { return fmt.Sprintf("%.3f", f) },
-		"f4": func(f float64) string { return fmt.Sprintf("%.4f", f) },
+		"f1":   func(f float64) string { return fmt.Sprintf("%.1f", f) },
+		"f2":   func(f float64) string { return fmt.Sprintf("%.2f", f) },
+		"f3":   func(f float64) string { return fmt.Sprintf("%.3f", f) },
+		"f4":   func(f float64) string { return fmt.Sprintf("%.4f", f) },
+		"msf1": func(f float64) string { return fmt.Sprintf("%.1f", f*1000) },
+		"msf2": func(f float64) string { return fmt.Sprintf("%.2f", f*1000) },
+		"msf3": func(f float64) string { return fmt.Sprintf("%.3f", f*1000) },
+		"msf4": func(f float64) string { return fmt.Sprintf("%.4f", f*1000) },
 	}).Parse(DefaultReportFormatTemplate))
 	outputTemplate.Execute(os.Stdout, s.GetReportData())
 }
