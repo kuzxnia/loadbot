@@ -62,14 +62,16 @@ type Report interface {
 func NewReport(job *config.Job) Report {
 	return Report(
 		&TemplateReport{
-			job:  job,
-			data: make([]time.Duration, 0),
+			job:             job,
+			reportingFormat: job.GetReport(),
+			data:            make([]time.Duration, 0),
 		},
 	)
 }
 
 type TemplateReport struct {
 	job                   *config.Job
+	reportingFormat       *config.ReportingFormat
 	mutex                 sync.RWMutex
 	data                  []time.Duration
 	rawData               []float64
@@ -171,7 +173,7 @@ func (s *TemplateReport) Summary() {
 		"msf2": func(f float64) string { return fmt.Sprintf("%.2f", f*1000) },
 		"msf3": func(f float64) string { return fmt.Sprintf("%.3f", f*1000) },
 		"msf4": func(f float64) string { return fmt.Sprintf("%.4f", f*1000) },
-	}).Parse(DefaultReportFormatTemplate))
+	}).Parse(IfElse(s.reportingFormat != nil, s.reportingFormat.Template, DefaultReportFormatTemplate)))
 	outputTemplate.Execute(os.Stdout, s.GetReportData())
 }
 

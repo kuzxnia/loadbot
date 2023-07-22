@@ -173,7 +173,7 @@ func (job *Job) validateOperations() (err error) {
 
 func (rp *ReportingFormat) Validate() error {
 	validators := []func() error{
-		rp.validateReportingFormats,
+		rp.validateReportingFormat,
 	}
 
 	for _, validate := range validators {
@@ -184,17 +184,8 @@ func (rp *ReportingFormat) Validate() error {
 	return nil
 }
 
-func (rpt *ReportingFormat) validateReportingFormats() (err error) {
-	for _, template := range rpt.Templates {
-		if error := template.Validate(); error != nil {
-			return error
-		}
-	}
+func (rpt *ReportingFormat) validateReportingFormat() (err error) {
 	return nil
-}
-
-func (rpt *ReportingFormatType) Validate() (err error) {
-	return
 }
 
 // todo: validation job type

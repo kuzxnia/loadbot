@@ -73,9 +73,9 @@ type Schema struct {
 }
 
 type ReportingFormat struct {
-	Name      string
-	Interval  time.Duration
-	Templates []ReportingFormatType
+	Name     string
+	Interval time.Duration
+	Template string
 }
 
 type ReportingFormatType string
