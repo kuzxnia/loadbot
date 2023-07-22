@@ -56,4 +56,25 @@ func (c *Job) UnmarshalJSON(data []byte) (err error) {
 	return
 }
 
-// type parser
+func (c *ReportingFormat) UnmarshalJSON(data []byte) (err error) {
+	var tmp struct {
+		Name     string `json:"name"`
+		Interval string `json:"interval"`
+		Template string `json:"template"`
+	}
+
+	if err = json.Unmarshal(data, &tmp); err != nil {
+		return err
+	}
+
+	c.Name = tmp.Name
+	c.Template = tmp.Template
+
+	if tmp.Interval != "" {
+		if c.Interval, err = time.ParseDuration(tmp.Interval); err != nil {
+			return err
+		}
+	}
+
+	return
+}

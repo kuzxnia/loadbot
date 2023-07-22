@@ -87,7 +87,7 @@ type Worker struct {
 	handler     JobHandler
 	rateLimiter Limiter
 	pool        JobPool
-	Statistic   Stats
+	Statistic   Report
 	startTime   time.Time
 	elapsedTime time.Duration
 }
@@ -98,7 +98,7 @@ func NewWorker(cfg *config.Config, job *config.Job) (*Worker, error) {
 	worker.cfg = cfg
 	worker.job = job
 	worker.wg.Add(int(job.Connections))
-	worker.Statistic = NewStatistics(job)
+	worker.Statistic = NewReport(job)
 	worker.pool = NewJobPool(job)
 	worker.rateLimiter = NewLimiter(job)
 

@@ -10,7 +10,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-type Stats interface {
+type Report interface {
 	Len() int
 	Min() (float64, error)
 	Max() (float64, error)
@@ -23,23 +23,23 @@ type Stats interface {
 	Summary()
 }
 
-func NewStatistics(job *config.Job) Stats {
-	stats := BaseStats{data: make([]time.Duration, 0)}
+func NewReport(job *config.Job) Report {
+	report := BaseReport{data: make([]time.Duration, 0)}
 	switch job.Type {
 	case string(config.Write):
-		return Stats(&WriteStats{BaseStats: stats})
+		return Report(&WriteReport{BaseReport: report})
 	case string(config.BulkWrite):
-		return Stats(&WriteStats{BaseStats: stats})
+		return Report(&WriteReport{BaseReport: report})
 	case string(config.Read):
-		return Stats(&ReadStats{BaseStats: stats})
+		return Report(&ReadReport{BaseReport: report})
 	case string(config.Update):
-		return Stats(&UpdateStats{BaseStats: stats})
+		return Report(&UpdateReport{BaseReport: report})
 	default:
-		return Stats(&DefaultStats{BaseStats: stats})
+		return Report(&DefaultReport{BaseReport: report})
 	}
 }
 
-type BaseStats struct {
+type BaseReport struct {
 	mutex         sync.RWMutex
 	data          []time.Duration
 	rawData       []float64
@@ -47,15 +47,15 @@ type BaseStats struct {
 	otherErrors   uint64
 }
 
-func (s *BaseStats) Len() int               { return len(s.data) }
-func (s *BaseStats) Min() (float64, error)  { return stats.Min(*s.GetRawData()) }
-func (s *BaseStats) Max() (float64, error)  { return stats.Max(*s.GetRawData()) }
-func (s *BaseStats) Mean() (float64, error) { return stats.Mean(*s.GetRawData()) }
-func (s *BaseStats) Percentile(percentile float64) (float64, error) {
+func (s *BaseReport) Len() int               { return len(s.data) }
+func (s *BaseReport) Min() (float64, error)  { return stats.Min(*s.GetRawData()) }
+func (s *BaseReport) Max() (float64, error)  { return stats.Max(*s.GetRawData()) }
+func (s *BaseReport) Mean() (float64, error) { return stats.Mean(*s.GetRawData()) }
+func (s *BaseReport) Percentile(percentile float64) (float64, error) {
 	return stats.Percentile(*s.GetRawData(), percentile)
 }
 
-func (s *BaseStats) Percentiles(input ...float64) (percentiles []float64, err error) {
+func (s *BaseReport) Percentiles(input ...float64) (percentiles []float64, err error) {
 	percentiles = make([]float64, len(input))
 	for i, percentile := range input {
 		percentiles[i], err = stats.Percentile(*s.GetRawData(), percentile)
@@ -63,7 +63,7 @@ func (s *BaseStats) Percentiles(input ...float64) (percentiles []float64, err er
 	return
 }
 
-func (s *BaseStats) GetRawData() *[]float64 {
+func (s *BaseReport) GetRawData() *[]float64 {
 	// need to lock this for
 	if len(s.data) != len(s.rawData) {
 		for i := len(s.rawData); i < len(s.data); i++ {
@@ -73,11 +73,11 @@ func (s *BaseStats) GetRawData() *[]float64 {
 	return &s.rawData
 }
 
-type DefaultStats struct {
-	BaseStats
+type DefaultReport struct {
+	BaseReport
 }
 
-func (s *DefaultStats) Add(interval time.Duration, err error) {
+func (s *DefaultReport) Add(interval time.Duration, err error) {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 
@@ -91,7 +91,7 @@ func (s *DefaultStats) Add(interval time.Duration, err error) {
 	}
 }
 
-func (s *DefaultStats) Summary() {
+func (s *DefaultReport) Summary() {
 	s.mutex.RLock()
 	defer s.mutex.RUnlock()
 
@@ -107,12 +107,12 @@ func (s *DefaultStats) Summary() {
 	}
 }
 
-type ReadStats struct {
-	BaseStats
+type ReadReport struct {
+	BaseReport
 	noDocumentsFoundError uint64
 }
 
-func (s *ReadStats) Add(interval time.Duration, err error) {
+func (s *ReadReport) Add(interval time.Duration, err error) {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 
@@ -128,7 +128,7 @@ func (s *ReadStats) Add(interval time.Duration, err error) {
 	}
 }
 
-func (s *ReadStats) Summary() {
+func (s *ReadReport) Summary() {
 	s.mutex.RLock()
 	defer s.mutex.RUnlock()
 
@@ -144,11 +144,11 @@ func (s *ReadStats) Summary() {
 	}
 }
 
-type WriteStats struct {
-	BaseStats
+type WriteReport struct {
+	BaseReport
 }
 
-func (s *WriteStats) Add(interval time.Duration, err error) {
+func (s *WriteReport) Add(interval time.Duration, err error) {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 
@@ -162,7 +162,7 @@ func (s *WriteStats) Add(interval time.Duration, err error) {
 	}
 }
 
-func (s *WriteStats) Summary() {
+func (s *WriteReport) Summary() {
 	s.mutex.RLock()
 	defer s.mutex.RUnlock()
 
@@ -178,11 +178,11 @@ func (s *WriteStats) Summary() {
 	}
 }
 
-type UpdateStats struct {
-	BaseStats
+type UpdateReport struct {
+	BaseReport
 }
 
-func (s *UpdateStats) Add(interval time.Duration, err error) {
+func (s *UpdateReport) Add(interval time.Duration, err error) {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 
@@ -196,7 +196,7 @@ func (s *UpdateStats) Add(interval time.Duration, err error) {
 	}
 }
 
-func (s *UpdateStats) Summary() {
+func (s *UpdateReport) Summary() {
 	s.mutex.RLock()
 	defer s.mutex.RUnlock()
 
@@ -214,7 +214,7 @@ func (s *UpdateStats) Summary() {
 
 // var ErrNoDocuments = errors.New("mongo: no documents in result")
 // type ActorHistogram struct {
-// 	Stats
+// 	Report
 // 	datach chan float64
 // }
 

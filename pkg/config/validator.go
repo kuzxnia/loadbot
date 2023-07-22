@@ -27,6 +27,7 @@ func (c *Config) validateJobs() error {
 func (job *Job) Validate() error {
 	validators := []func() error{
 		job.validateSchema,
+		job.validateReportFormat,
 		job.validateDatabase,
 		job.validateCollection,
 		job.validateType,
@@ -51,12 +52,19 @@ func (job *Job) validateSchema() error {
 		return nil
 	}
 
-	isSchemaName := func(schema *Schema, comparator string) bool {
-		return schema.Name == comparator
+	if !Contains(job.Parent.Schemas, func(s *Schema) bool { return s.Name == job.Schema }) {
+		return errors.New("JobValidationError: job \"" + job.Name + "\" have invalid template \"" + job.Schema + "\"")
+	}
+	return nil
+}
+
+func (job *Job) validateReportFormat() error {
+	if job.ReportingFormat == "" {
+		return nil
 	}
 
-	if !Contains[*Schema, string](job.Parent.Schemas, job.Schema, isSchemaName) {
-		return errors.New("JobValidationError: job \"" + job.Name + "\" have invalid template \"" + job.Schema + "\"")
+	if !Contains(job.Parent.ReportingFormats, func(s *ReportingFormat) bool { return s.Name == job.ReportingFormat }) {
+		return errors.New("JobValidationError: job \"" + job.Name + "\" have invalid report_format \"" + job.ReportingFormat + "\"")
 	}
 	return nil
 }
@@ -155,9 +163,18 @@ func (job *Job) validateOperations() (err error) {
 // todo: validation job type
 // todo: validation duration and opertions cannot be set together
 
-func Contains[T comparable, X comparable](array []T, comparator X, predicate func(T, X) bool) bool {
+// func Contains[T comparable, X comparable](array []T, comparator X, predicate func(T, X) bool) bool {
+// 	for _, elem := range array {
+// 		if predicate(elem, comparator) {
+// 			return true
+// 		}
+// 	}
+// 	return false
+// }
+
+func Contains[T comparable](array []T, predicate func(T) bool) bool {
 	for _, elem := range array {
-		if predicate(elem, comparator) {
+		if predicate(elem) {
 			return true
 		}
 	}
