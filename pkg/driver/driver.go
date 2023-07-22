@@ -104,7 +104,7 @@ func NewWorker(cfg *config.Config, job *config.Job) (*Worker, error) {
 
 	// introduce no db worker
 	if job.Type != string(config.Sleep) {
-		db, err := database.NewMongoClient(cfg.ConnectionString, job, job.GetTemplateSchema())
+		db, err := database.NewMongoClient(cfg.ConnectionString, job, job.GetSchema())
 		if err != nil {
 			return nil, err
 		}

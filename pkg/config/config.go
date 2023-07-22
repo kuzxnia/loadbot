@@ -40,7 +40,7 @@ type Job struct {
 	Database    string
 	Collection  string
 	Type        string
-	Template    string // validate required, or use default
+	Schema      string // validate required, or use default
 	Connections uint64 // Maximum number of concurrent connections
 	Pace        uint64 // rps limit / peace - if not set max
 	DataSize    uint64 // data size in bytes
@@ -52,9 +52,9 @@ type Job struct {
 	//     * filter: { "_id": "#_id"}
 }
 
-func (j *Job) GetTemplateSchema() *Schema {
+func (j *Job) GetSchema() *Schema {
 	for _, schema := range j.Parent.Schemas {
-		if schema.Name == j.Template {
+		if schema.Name == j.Schema {
 			return schema
 		}
 	}

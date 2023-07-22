@@ -16,7 +16,7 @@ This tool offers two ways to access it: one through CLI arguments and the other 
 
     Flags:
     -h, --help                  Show context-sensitive help.
-    -c, --connections=10        Number of concurrent connections
+    -c, --connections=1         Number of concurrent connections
     -p, --pace=UINT-64          Pace - RPS limit
     -d, --duration=DURATION     Duration (ex. 10s, 5m, 1h)
     -o, --operations=UINT-64    Operations (read/write/update) to perform
@@ -39,7 +39,7 @@ Example file:
     {
       "name": "default job",
       "type": "write",
-      "template": "default",
+      "schema": "user_schema",
       "connections": 100,
       "pace": 0,
       "data_size": 0,
@@ -51,7 +51,7 @@ Example file:
   ],
   "schemas": [
     {
-      "name": "default",
+      "name": "user_schema",
       "database": "load_test",
       "collection": "load_test",
       "schema": {
@@ -112,7 +112,7 @@ Person
 {
   "name": "insert with schema",
   "type": "write",
-  "template": "user_schema",
+  "schema": "user_schema",
   "connections": 10,
   "operations": 100
 }
@@ -156,7 +156,7 @@ or with schema
 ```json
 {
   "type": "drop_collection",
-  "template": "example_schema",
+  "schema": "example_schema",
   "operations": 1
 }
 ```

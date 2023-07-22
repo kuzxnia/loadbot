@@ -26,7 +26,7 @@ func (c *Config) validateJobs() error {
 
 func (job *Job) Validate() error {
 	validators := []func() error{
-		job.validateTemplate,
+		job.validateSchema,
 		job.validateDatabase,
 		job.validateCollection,
 		job.validateType,
@@ -46,8 +46,8 @@ func (job *Job) Validate() error {
 	return nil
 }
 
-func (job *Job) validateTemplate() error {
-	if string(Sleep) == job.Type || job.Template == "" {
+func (job *Job) validateSchema() error {
+	if string(Sleep) == job.Type || job.Schema == "" {
 		return nil
 	}
 
@@ -55,8 +55,8 @@ func (job *Job) validateTemplate() error {
 		return schema.Name == comparator
 	}
 
-	if !Contains[*Schema, string](job.Parent.Schemas, job.Template, isSchemaName) {
-		return errors.New("JobValidationError: job \"" + job.Name + "\" have invalid template \"" + job.Template + "\"")
+	if !Contains[*Schema, string](job.Parent.Schemas, job.Schema, isSchemaName) {
+		return errors.New("JobValidationError: job \"" + job.Name + "\" have invalid template \"" + job.Schema + "\"")
 	}
 	return nil
 }
@@ -76,7 +76,7 @@ func (job *Job) validateType() (err error) {
 }
 
 func (job *Job) validateDatabase() (err error) {
-	if job.Template != "" || job.Type == string(Sleep) {
+	if job.Schema != "" || job.Type == string(Sleep) {
 		return
 	}
 	if job.Database == "" {
@@ -86,7 +86,7 @@ func (job *Job) validateDatabase() (err error) {
 }
 
 func (job *Job) validateCollection() (err error) {
-	if job.Template != "" || job.Type == string(Sleep) {
+	if job.Schema != "" || job.Type == string(Sleep) {
 		return
 	}
 	if job.Collection == "" {
