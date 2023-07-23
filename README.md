@@ -174,6 +174,8 @@ or with schema
 * `type`(enum `write|bulk_write|read|update|drop_collection|sleep`) - operation type
 * `template`(string) - schema name, if you will not provide schema data will be inserted in `{'data': <generate_data>}` format
 * `database`(string, required if schema is not set) - database name
+* `schema`(string, optional) - string foreign-key to schemas list
+* `format`(string, optional) - string foreign-key to reporting_formats list
 * `collection`(string, required if schema is not set) - collection name
 * `connection`(unsigned int) - number of concurrent connections, number is not limited to physical threads number
 * `data_size`(unsigned int) - data size inserted (currently only works for default schema)
@@ -198,6 +200,10 @@ or with schema
   "template": "Job: {{.JobType}}, total reqs: {{.TotalReqs}}, RPS {{f2 .Rps}} success: {{.SuccessReqs}}\n\n"
 }
 ```
+- `name` - used to determine which template to use (see section job.format)
+- `interval` - if set, tests reports/summaries will be displayed at set time intervals
+- `template` - report format
+
 
 **Template fields**
 

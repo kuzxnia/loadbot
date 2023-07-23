@@ -1,6 +1,7 @@
 package driver
 
 import (
+	"fmt"
 	"os"
 	"os/signal"
 	"sync"
@@ -16,8 +17,7 @@ var log = logger.Default()
 func Torment(config *config.Config) {
 	// todo: ping db, before workers init
 
-	// todo: now all jobs will be executed in a parallel,
-	// change this to be execexuted as queue or in a parallel depending on type
+	// todo: in a parallel depending on type
 	for _, job := range config.Jobs {
 		func() {
 			worker, error := NewWorker(config, job)
@@ -25,6 +25,7 @@ func Torment(config *config.Config) {
 				panic("Worker initialization error")
 			}
 			defer worker.Close()
+			worker.InitIntervalReportingSummary()
 			worker.Work()
 			worker.Summary()
 		}()
@@ -40,10 +41,13 @@ type Worker struct {
 	rateLimiter Limiter
 	pool        JobPool
 	Report      Report
+	ticker      *time.Ticker
+	startTime   time.Time
 }
 
 func NewWorker(cfg *config.Config, job *config.Job) (*Worker, error) {
 	// todo: check errors
+	fmt.Printf("Starting job: %s\n", IfElse(job.Name != "", job.Name, job.Type))
 	worker := new(Worker)
 	worker.cfg = cfg
 	worker.job = job
@@ -62,12 +66,11 @@ func NewWorker(cfg *config.Config, job *config.Job) (*Worker, error) {
 	}
 
 	worker.handler = NewJobHandler(job, worker.db)
-	// todo: init db
 	return worker, nil
 }
 
 func (w *Worker) Work() {
-	startTime := time.Now()
+	w.startTime = time.Now()
 
 	interruptChan := make(chan os.Signal, 1)
 	signal.Notify(interruptChan, os.Interrupt)
@@ -94,7 +97,23 @@ func (w *Worker) Work() {
 		}()
 	}
 	w.wg.Wait()
-	w.Report.SetDuration(time.Since(startTime))
+	w.Report.SetDuration(time.Since(w.startTime))
+}
+
+func (w *Worker) InitIntervalReportingSummary() {
+	reportingFormat := w.job.GetReport()
+	if reportingFormat == nil || reportingFormat.Interval == 0 {
+		log.Info("Interval reporting skipped")
+		return
+	}
+
+	w.ticker = time.NewTicker(reportingFormat.Interval)
+	go func(worker *Worker) {
+		for range w.ticker.C {
+			worker.Report.SetDuration(time.Since(w.startTime))
+			worker.Report.Summary()
+		}
+	}(w)
 }
 
 func (w *Worker) Summary() {
@@ -111,5 +130,8 @@ func (w *Worker) Close() {
 		if err := w.db.Disconnect(); err != nil {
 			panic(err)
 		}
+	}
+	if w.ticker != nil {
+		w.ticker.Stop()
 	}
 }
