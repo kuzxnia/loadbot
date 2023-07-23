@@ -201,7 +201,7 @@ or with schema
 
 **Template fields**
 
-`JobName`, `JobType`, `SuccessReqs`, `ErrorReqs`, `TotalReqs`, `TimeoutErr`, `NoDataErr`, `OtherErr`, `ErrorRate`
+`JobName`, `JobType`, `JobBatchSize`,`SuccessReqs`, `ErrorReqs`, `TotalReqs`, `TotalOps`, `TimeoutErr`, `NoDataErr`, `OtherErr`, `ErrorRate`, `Rps`, `Ops`
 
 **Math fields**
 
@@ -222,6 +222,6 @@ or with schema
 
 
 Known issue:
-* srv not working with k8s 1.17 - it is golang 1.13+ issue see (this)[https://github.com/golang/go/issues/37362]
+* srv not working with some DNS servers - golang 1.13+ issue see (this)[https://github.com/golang/go/issues/37362]
 
 
