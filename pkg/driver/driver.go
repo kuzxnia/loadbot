@@ -1,7 +1,6 @@
 package driver
 
 import (
-	"fmt"
 	"os"
 	"os/signal"
 	"sync"
@@ -14,67 +13,21 @@ import (
 
 var log = logger.Default()
 
-type mongoload struct {
-	config  *config.Config
-	wg      sync.WaitGroup
-	workers []*Worker
-	start   time.Time
-}
-
-// todo: change params to options struct
-// todo: move database part to worker
-func New(config *config.Config) (*mongoload, error) {
-	load := new(mongoload)
-	load.config = config
-
+func Torment(config *config.Config) {
 	// todo: ping db, before workers init
 
 	// todo: now all jobs will be executed in a parallel,
 	// change this to be execexuted as queue or in a parallel depending on type
-	load.wg.Add(len(config.Jobs))
-
-	fmt.Println("Initializing workers")
 	for _, job := range config.Jobs {
-		worker, error := NewWorker(config, job)
-		if error != nil {
-			panic("Worker initialization error")
-		}
-		load.workers = append(load.workers, worker)
-	}
-	fmt.Println("Workers initialized")
-
-	return load, nil
-}
-
-func (ml *mongoload) Torment() {
-	for _, worker := range ml.workers {
-		func(worker *Worker) {
-			defer ml.wg.Done()
+		func() {
+			worker, error := NewWorker(config, job)
+			if error != nil {
+				panic("Worker initialization error")
+			}
+			defer worker.Close()
 			worker.Work()
-      worker.Summary()
-		}(worker)
-	}
-
-	ml.start = time.Now() // add progress bar if running with limit
-
-	ml.wg.Wait()
-}
-
-func (ml *mongoload) Summary() {
-	for _, worker := range ml.workers {
-		worker.Summary()
-	}
-}
-
-func (ml *mongoload) Cancel() {
-	for _, worker := range ml.workers {
-		worker.Cancel()
-	}
-}
-
-func (ml *mongoload) Close() {
-	for _, worker := range ml.workers {
-		worker.Close()
+			worker.Summary()
+		}()
 	}
 }
 
