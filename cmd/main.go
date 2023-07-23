@@ -16,11 +16,5 @@ func main() {
 	log.SetConfig(config)
 	defer log.CloseOutputFile()
 
-	driver, error := driver.New(config)
-	if error != nil {
-		panic(error)
-	}
-	defer driver.Close()
-
-	driver.Torment()
+	driver.Torment(config)
 }

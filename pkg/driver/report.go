@@ -25,8 +25,10 @@ func NewReportFormatKeys() []string {
 	keys := []string{
 		"{{.JobName}}",
 		"{{.JobType}}",
+		"{{.JobBatchSize}}",
 		"{{.SuccessReqs}}",
 		"{{.TotalReqs}}",
+		"{{.TotalOps}}",
 		"{{.ErrorReqs}}",
 		"{{.TimeoutErr}}",
 		"{{.NoDataErr}}",
@@ -36,6 +38,7 @@ func NewReportFormatKeys() []string {
 		"{{.Max}}",
 		"{{.Avg}}",
 		"{{.Rps}}",
+		"{{.Ops}}",
 		// if batch := w.db.GetBatchSize(); batch > 1 {
 		// 	fmt.Printf("Operations per second: %f op/s\n", float64(requestsDone*batch)/elapsed.Seconds())
 		// }
@@ -126,19 +129,22 @@ func (s *TemplateReport) GetReportData() map[string]any {
 	avg, _ := s.Mean()
 
 	mapping := map[string]any{
-		"JobName":     s.job.Name,
-		"JobType":     s.job.Type,
-		"SuccessReqs": totalReqs - int(s.errorsReqs),
-		"TotalReqs":   totalReqs,
-		"ErrorReqs":   s.errorsReqs,
-		"TimeoutErr":  s.timeoutErrors,
-		"noDataErr":   s.noDocumentsFoundError,
-		"OtherErr":    s.errorsReqs - s.timeoutErrors - s.noDocumentsFoundError,
-		"ErrorRate":   IfElse(totalReqs != 0, float64(s.errorsReqs)/float64(totalReqs)*100, 0),
-		"Min":         min,
-		"Max":         max,
-		"Avg":         avg,
-		"Rps":         IfElse(s.duration != 0, float64(totalReqs)/float64(s.duration.Seconds()), 0),
+		"JobName":      s.job.Name,
+		"JobType":      s.job.Type,
+		"JobBatchSize": s.job.BatchSize,
+		"SuccessReqs":  totalReqs - int(s.errorsReqs),
+		"TotalReqs":    totalReqs,
+		"TotalOps":     totalReqs * int(s.job.BatchSize),
+		"ErrorReqs":    s.errorsReqs,
+		"TimeoutErr":   s.timeoutErrors,
+		"noDataErr":    s.noDocumentsFoundError,
+		"OtherErr":     s.errorsReqs - s.timeoutErrors - s.noDocumentsFoundError,
+		"ErrorRate":    IfElse(totalReqs != 0, float64(s.errorsReqs)/float64(totalReqs)*100, 0),
+		"Min":          min,
+		"Max":          max,
+		"Avg":          avg,
+		"Rps":          IfElse(s.duration != 0, float64(totalReqs)/float64(s.duration.Seconds()), 0),
+		"Ops":          IfElse(s.duration != 0, float64(totalReqs*int(s.job.BatchSize))/float64(s.duration.Seconds()), 0),
 	}
 	var key string
 	for i := 1; i < 100; i++ {

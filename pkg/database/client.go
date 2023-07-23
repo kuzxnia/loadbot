@@ -2,16 +2,17 @@ package database
 
 import (
 	"context"
-	"fmt"
-	"log"
 	"time"
 
 	"github.com/kuzxnia/mongoload/pkg/config"
+	"github.com/kuzxnia/mongoload/pkg/logger"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
 )
+
+var log = logger.Default()
 
 type Client interface {
 	InsertOne(interface{}) (bool, error)
@@ -50,9 +51,9 @@ func NewMongoClient(connectionString string, cfg *config.Job, schema *config.Sch
 	err = client.Ping(ctx, readpref.Primary())
 
 	if err != nil {
-		fmt.Println("error in ping to mongo")
+		log.Error("error in ping to mongo")
 	} else {
-		fmt.Println("Successfully connected to database server")
+		log.Info("Successfully connected to database server")
 	}
 
 	var collection *mongo.Collection
@@ -64,8 +65,14 @@ func NewMongoClient(connectionString string, cfg *config.Job, schema *config.Sch
 	return &MongoClient{ctx: ctx, client: client, collection: collection}, err
 }
 
-func (c *MongoClient) Disconnect() error {
-	return c.client.Disconnect(c.ctx)
+func (c *MongoClient) Disconnect() (err error) {
+	err = c.client.Disconnect(c.ctx)
+	if err != nil {
+		log.Error("Error tring to disconnect from database", err)
+	} else {
+		log.Info("Successfully disconnected from database server")
+	}
+	return
 }
 
 func (c *MongoClient) InsertOne(data interface{}) (bool, error) {
@@ -96,7 +103,7 @@ func (c *MongoClient) ReadMany(filter interface{}) (bool, error) {
 
 	cursor, err := c.collection.Find(context.TODO(), bson.M{"author": "Franz Kafkaaa"}, &options.FindOptions{BatchSize: &batch_size})
 	if err != nil {
-		log.Fatal(err)
+		log.Error(err)
 	}
 
 	defer cursor.Close(context.TODO())
@@ -118,7 +125,7 @@ func (c *MongoClient) ReadMany(filter interface{}) (bool, error) {
 		var data bson.M
 
 		if err = cursor.Decode(&data); err != nil {
-			log.Fatal(err)
+			log.Error(err)
 		}
 		totalFound++
 	}

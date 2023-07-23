@@ -8,6 +8,7 @@ import (
 
 	"github.com/alecthomas/kong"
 	"github.com/kuzxnia/mongoload/pkg/config"
+	"github.com/tailscale/hujson"
 )
 
 var defaultArgsParser = NewArgsParser()
@@ -86,8 +87,13 @@ func ParseCommandLineArgs(cli *CLI) *config.Config {
 	return &cfg
 }
 
+// todo: move to parser or config
 func ParseFileConfigArgs(cli *CLI) (*config.Config, error) {
 	content, err := os.ReadFile(cli.ConfigFile)
+	if err != nil {
+		return nil, err
+	}
+  content, err = standardizeJSON(content)
 	if err != nil {
 		return nil, err
 	}
@@ -104,4 +110,13 @@ func ParseFileConfigArgs(cli *CLI) (*config.Config, error) {
 	}
 
 	return &cfg, err
+}
+
+func standardizeJSON(b []byte) ([]byte, error) {
+	ast, err := hujson.Parse(b)
+	if err != nil {
+		return b, err
+	}
+	ast.Standardize()
+	return ast.Pack(), nil
 }

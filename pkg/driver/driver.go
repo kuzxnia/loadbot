@@ -14,67 +14,21 @@ import (
 
 var log = logger.Default()
 
-type mongoload struct {
-	config  *config.Config
-	wg      sync.WaitGroup
-	workers []*Worker
-	start   time.Time
-}
-
-// todo: change params to options struct
-// todo: move database part to worker
-func New(config *config.Config) (*mongoload, error) {
-	load := new(mongoload)
-	load.config = config
-
+func Torment(config *config.Config) {
 	// todo: ping db, before workers init
 
-	// todo: now all jobs will be executed in a parallel,
-	// change this to be execexuted as queue or in a parallel depending on type
-	load.wg.Add(len(config.Jobs))
-
-	fmt.Println("Initializing workers")
+	// todo: in a parallel depending on type
 	for _, job := range config.Jobs {
-		worker, error := NewWorker(config, job)
-		if error != nil {
-			panic("Worker initialization error")
-		}
-		load.workers = append(load.workers, worker)
-	}
-	fmt.Println("Workers initialized")
-
-	return load, nil
-}
-
-func (ml *mongoload) Torment() {
-	for _, worker := range ml.workers {
-		func(worker *Worker) {
-			defer ml.wg.Done()
+		func() {
+			worker, error := NewWorker(config, job)
+			if error != nil {
+				panic("Worker initialization error")
+			}
+			defer worker.Close()
+			worker.InitIntervalReportingSummary()
 			worker.Work()
-      worker.Summary()
-		}(worker)
-	}
-
-	ml.start = time.Now() // add progress bar if running with limit
-
-	ml.wg.Wait()
-}
-
-func (ml *mongoload) Summary() {
-	for _, worker := range ml.workers {
-		worker.Summary()
-	}
-}
-
-func (ml *mongoload) Cancel() {
-	for _, worker := range ml.workers {
-		worker.Cancel()
-	}
-}
-
-func (ml *mongoload) Close() {
-	for _, worker := range ml.workers {
-		worker.Close()
+			worker.Summary()
+		}()
 	}
 }
 
@@ -87,10 +41,13 @@ type Worker struct {
 	rateLimiter Limiter
 	pool        JobPool
 	Report      Report
+	ticker      *time.Ticker
+	startTime   time.Time
 }
 
 func NewWorker(cfg *config.Config, job *config.Job) (*Worker, error) {
 	// todo: check errors
+	fmt.Printf("Starting job: %s\n", IfElse(job.Name != "", job.Name, job.Type))
 	worker := new(Worker)
 	worker.cfg = cfg
 	worker.job = job
@@ -109,12 +66,11 @@ func NewWorker(cfg *config.Config, job *config.Job) (*Worker, error) {
 	}
 
 	worker.handler = NewJobHandler(job, worker.db)
-	// todo: init db
 	return worker, nil
 }
 
 func (w *Worker) Work() {
-	startTime := time.Now()
+	w.startTime = time.Now()
 
 	interruptChan := make(chan os.Signal, 1)
 	signal.Notify(interruptChan, os.Interrupt)
@@ -141,7 +97,23 @@ func (w *Worker) Work() {
 		}()
 	}
 	w.wg.Wait()
-	w.Report.SetDuration(time.Since(startTime))
+	w.Report.SetDuration(time.Since(w.startTime))
+}
+
+func (w *Worker) InitIntervalReportingSummary() {
+	reportingFormat := w.job.GetReport()
+	if reportingFormat == nil || reportingFormat.Interval == 0 {
+		log.Info("Interval reporting skipped")
+		return
+	}
+
+	w.ticker = time.NewTicker(reportingFormat.Interval)
+	go func(worker *Worker) {
+		for range w.ticker.C {
+			worker.Report.SetDuration(time.Since(w.startTime))
+			worker.Report.Summary()
+		}
+	}(w)
 }
 
 func (w *Worker) Summary() {
@@ -158,5 +130,8 @@ func (w *Worker) Close() {
 		if err := w.db.Disconnect(); err != nil {
 			panic(err)
 		}
+	}
+	if w.ticker != nil {
+		w.ticker.Stop()
 	}
 }

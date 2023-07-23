@@ -174,6 +174,8 @@ or with schema
 * `type`(enum `write|bulk_write|read|update|drop_collection|sleep`) - operation type
 * `template`(string) - schema name, if you will not provide schema data will be inserted in `{'data': <generate_data>}` format
 * `database`(string, required if schema is not set) - database name
+* `schema`(string, optional) - string foreign-key to schemas list
+* `format`(string, optional) - string foreign-key to reporting_formats list
 * `collection`(string, required if schema is not set) - collection name
 * `connection`(unsigned int) - number of concurrent connections, number is not limited to physical threads number
 * `data_size`(unsigned int) - data size inserted (currently only works for default schema)
@@ -198,10 +200,14 @@ or with schema
   "template": "Job: {{.JobType}}, total reqs: {{.TotalReqs}}, RPS {{f2 .Rps}} success: {{.SuccessReqs}}\n\n"
 }
 ```
+- `name` - used to determine which template to use (see section job.format)
+- `interval` - if set, tests reports/summaries will be displayed at set time intervals
+- `template` - report format
+
 
 **Template fields**
 
-`JobName`, `JobType`, `SuccessReqs`, `ErrorReqs`, `TotalReqs`, `TimeoutErr`, `NoDataErr`, `OtherErr`, `ErrorRate`
+`JobName`, `JobType`, `JobBatchSize`,`SuccessReqs`, `ErrorReqs`, `TotalReqs`, `TotalOps`, `TimeoutErr`, `NoDataErr`, `OtherErr`, `ErrorRate`, `Rps`, `Ops`
 
 **Math fields**
 
@@ -216,12 +222,41 @@ or with schema
 
 </details>
 
+<details>
+<summary>Other features</summary>
+
+<br>
+
+**Features**
+
+- JSON standardization - comments and trailing commas support ex.
+```json
+{
+    "jobs": [
+        {
+          "type": "drop_collection",
+          "database": "load_test",
+          "collection": "load_test",
+          "operations": 1
+        },
+        /*{
+          "type": "sleep",
+          "duration": "5s",
+          "format": "simple"
+        },*/
+    ]
+}
+```
+
+
+</details>
+
 > Note:
 > If you don't provide the requests amount or duration limit program will continue running 
 > indefinitely unless it is manually stopped by pressing `ctrl-c`. 
 
 
 Known issue:
-* srv not working with k8s 1.17 - it is golang 1.13+ issue see (this)[https://github.com/golang/go/issues/37362]
+* srv not working with some DNS servers - golang 1.13+ issue see (this)[https://github.com/golang/go/issues/37362]
 
 

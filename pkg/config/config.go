@@ -78,8 +78,6 @@ type ReportingFormat struct {
 	Template string
 }
 
-type ReportingFormatType string
-
 func NewConfigFromArgs() *Config {
 	return nil
 }
