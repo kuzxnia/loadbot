@@ -20,6 +20,7 @@ type Client interface {
 	ReadOne(interface{}) (bool, error)
 	ReadMany(interface{}) (bool, error)
 	UpdateOne(interface{}, interface{}) (bool, error)
+	CreateIndexes([]*config.Index) error
 	DropCollection() error
 	Disconnect() error
 }
@@ -145,6 +146,42 @@ func (c *MongoClient) UpdateOne(filter interface{}, data interface{}) (bool, err
 		return false, err
 	}
 	return true, nil
+}
+
+func (c *MongoClient) CreateIndexes(indexes []*config.Index) error {
+	idxs := make([]mongo.IndexModel, len(indexes))
+
+	for i, index := range indexes {
+		idxs[i] = mongo.IndexModel{
+			Keys: index.Keys,
+			Options: &options.IndexOptions{
+				Background:              index.Options.Background,
+				ExpireAfterSeconds:      index.Options.ExpireAfterSeconds,
+				Name:                    index.Options.Name,
+				Sparse:                  index.Options.Sparse,
+				StorageEngine:           index.Options.StorageEngine,
+				Unique:                  index.Options.Unique,
+				Version:                 index.Options.Version,
+				DefaultLanguage:         index.Options.DefaultLanguage,
+				LanguageOverride:        index.Options.LanguageOverride,
+				TextVersion:             index.Options.TextVersion,
+				Weights:                 index.Options.Weights,
+				SphereVersion:           index.Options.SphereVersion,
+				Bits:                    index.Options.Bits,
+				Max:                     index.Options.Max,
+				Min:                     index.Options.Min,
+				BucketSize:              index.Options.BucketSize,
+				PartialFilterExpression: index.Options.PartialFilterExpression,
+				Collation:               index.Options.Collation,
+				WildcardProjection:      index.Options.WildcardProjection,
+				Hidden:                  index.Options.Hidden,
+			},
+		}
+	}
+
+	_, err := c.collection.Indexes().CreateMany(context.TODO(), idxs)
+
+	return err
 }
 
 func (c *MongoClient) DropCollection() error {

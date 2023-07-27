@@ -15,6 +15,7 @@ type JobHandler interface {
 func NewJobHandler(job *config.Job, client database.Client) JobHandler {
 	// todo: move provider to outside of this to use generated data in all workers
 	handler := BaseHandler{
+		job:      job,
 		client:   client,
 		provider: schema.NewDataProvider(job),
 	}
@@ -27,6 +28,8 @@ func NewJobHandler(job *config.Job, client database.Client) JobHandler {
 		return JobHandler(&UpdateHandler{BaseHandler: &handler})
 	case string(config.BulkWrite):
 		return JobHandler(&BulkWriteHandler{BaseHandler: &handler})
+	case string(config.CreateIndex):
+		return JobHandler(&CreateIndex{BaseHandler: &handler})
 	case string(config.DropCollection):
 		return JobHandler(&DropCollection{BaseHandler: &handler})
 	case string(config.Sleep):
@@ -38,6 +41,7 @@ func NewJobHandler(job *config.Job, client database.Client) JobHandler {
 }
 
 type BaseHandler struct {
+	job      *config.Job
 	client   database.Client
 	provider schema.DataProvider
 }
@@ -82,6 +86,17 @@ type UpdateHandler struct {
 func (h *UpdateHandler) Handle() (time.Duration, error) {
 	start := time.Now()
 	_, error := h.client.UpdateOne(h.provider.GetFilter(), h.provider.GetSingleItem())
+	elapsed := time.Since(start)
+	return elapsed, error
+}
+
+type CreateIndex struct {
+	*BaseHandler
+}
+
+func (h *CreateIndex) Handle() (time.Duration, error) {
+	start := time.Now()
+	error := h.client.CreateIndexes(h.job.Indexes)
 	elapsed := time.Since(start)
 	return elapsed, error
 }

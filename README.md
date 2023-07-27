@@ -171,10 +171,11 @@ or with schema
 **Jobs fields:**
 
 * `name`(string, optional) - job name
-* `type`(enum `write|bulk_write|read|update|drop_collection|sleep`) - operation type
+* `type`(enum `write|bulk_write|read|update|create_index|drop_collection|sleep`) - operation type
 * `template`(string) - schema name, if you will not provide schema data will be inserted in `{'data': <generate_data>}` format
 * `database`(string, required if schema is not set) - database name
 * `schema`(string, optional) - string foreign-key to schemas list
+* `indexes`(list, optional) - list of indexes to create (only for type "create_index") 
 * `format`(string, optional) - string foreign-key to reporting_formats list
 * `collection`(string, required if schema is not set) - collection name
 * `connection`(unsigned int) - number of concurrent connections, number is not limited to physical threads number
@@ -223,6 +224,41 @@ or with schema
 </details>
 
 <details>
+<summary>More examples</summary>
+
+<br>
+
+- Index creation job
+```json
+{
+  "type": "create_index",
+  "template": "default",
+  "indexes": [
+    {
+      "keys": { "name": 1 },
+      "options": { "unique": false, "name": "dummy_name_index_name" },
+    }
+  ]
+}
+```
+or without using schema
+```json
+{
+  "type": "create_index",
+  "database": "load_test",
+  "collection": "load_test",
+  "operations": 1,
+  "indexes": [
+    {
+      "keys": {"name": 1},
+    }
+  ]
+}
+```
+
+</details>
+
+<details>
 <summary>Other features</summary>
 
 <br>
@@ -257,6 +293,7 @@ or with schema
 
 
 Known issue:
-* srv not working with some DNS servers - golang 1.13+ issue see (this)[https://github.com/golang/go/issues/37362]
+* srv not working with some DNS servers - golang 1.13+ issue see (this)[https://github.com/golang/go/issues/37362] and (this)[https://pkg.go.dev/go.mongodb.org/mongo-driver/mongo#hdr-Potential_DNS_Issues]
+    > Old versions of kube-dns and the native DNS resolver (systemd-resolver) on Ubuntu 18.04 are known to be non-compliant in this manner. 
 
 
