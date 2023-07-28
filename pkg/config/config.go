@@ -50,7 +50,7 @@ type Job struct {
 }
 
 type Index struct {
-	Keys interface{}
+	Keys    interface{}
 	Options IndexOptions
 }
 
@@ -100,7 +100,7 @@ type Schema struct {
 	Database   string                 `json:"database"`
 	Collection string                 `json:"collection"`
 	Schema     map[string]interface{} `json:"schema"` // todo: introducte new type and parse
-	Indexes    map[string]interface{} `json:"indexes"`
+	Save       []string               `json:"save"`
 }
 
 type ReportingFormat struct {
