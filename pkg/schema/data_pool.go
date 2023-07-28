@@ -15,10 +15,10 @@ type DataPool interface {
 	SetBatch([]interface{})
 }
 
-func NewDataPool(job *config.Job) DataPool {
+func NewDataPool(schema *config.Schema) DataPool {
 	return DataPool(
 		&InMemoryDataPool{
-			schema: job.GetSchema(),
+			schema: schema,
 			dataPool: make(map[string]struct {
 				pointer uint64
 				data    []interface{}

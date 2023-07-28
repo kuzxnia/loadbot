@@ -44,6 +44,7 @@ type Job struct {
 	Duration        time.Duration
 	Operations      uint64
 	Timeout         time.Duration // if not set, default
+	Filter          map[string]interface{}
 	Indexes         []*Index
 	// Params ex. for read / update
 	//     * filter: { "_id": "#_id"}

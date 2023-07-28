@@ -12,16 +12,12 @@ type JobHandler interface {
 	Handle() (time.Duration, error)
 }
 
-func NewJobHandler(job *config.Job, client database.Client) JobHandler {
-	// todo: move provider to outside of this to use generated data in all workers
+func NewJobHandler(job *config.Job, client database.Client, dataPool schema.DataPool) JobHandler {
 	handler := BaseHandler{
 		job:          job,
 		client:       client,
 		dataProvider: schema.NewDataProvider(job),
-	}
-	jobSchema := job.GetSchema()
-	if jobSchema != nil && len(jobSchema.Save) != 0 {
-		handler.dataPool = schema.NewDataPool(job)
+		dataPool:     dataPool,
 	}
 
 	switch job.Type {
