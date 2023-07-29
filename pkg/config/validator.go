@@ -206,6 +206,10 @@ func (rpt *ReportingFormat) validateReportingFormat() (err error) {
 	return nil
 }
 
+// todo: add schema validation
+// schema keys
+// save key should be in schema
+
 // todo: validation job type
 // todo: validation duration and opertions cannot be set together
 

@@ -10,6 +10,7 @@ import (
 	"github.com/kuzxnia/mongoload/pkg/config"
 	"github.com/kuzxnia/mongoload/pkg/database"
 	"github.com/kuzxnia/mongoload/pkg/logger"
+	"github.com/kuzxnia/mongoload/pkg/schema"
 )
 
 var log = logger.Default()
@@ -17,10 +18,17 @@ var log = logger.Default()
 func Torment(config *config.Config) {
 	// todo: ping db, before workers init
 
+	// init datapools
+	dataPools := make(map[string]schema.DataPool)
+	for _, sh := range config.Schemas {
+		dataPools[sh.Name] = schema.NewDataPool(sh)
+	}
+
 	// todo: in a parallel depending on type
 	for _, job := range config.Jobs {
 		func() {
-			worker, error := NewWorker(config, job)
+			dataPool := dataPools[job.Schema]
+			worker, error := NewWorker(config, job, dataPool)
 			if error != nil {
 				panic("Worker initialization error")
 			}
@@ -28,6 +36,7 @@ func Torment(config *config.Config) {
 			worker.InitIntervalReportingSummary()
 			worker.Work()
 			worker.Summary()
+			worker.ExtendCopySavedFieldsToDataPool()
 		}()
 	}
 }
@@ -40,12 +49,13 @@ type Worker struct {
 	handler     JobHandler
 	rateLimiter Limiter
 	pool        JobPool
+	dataPool    schema.DataPool
 	Report      Report
 	ticker      *time.Ticker
 	startTime   time.Time
 }
 
-func NewWorker(cfg *config.Config, job *config.Job) (*Worker, error) {
+func NewWorker(cfg *config.Config, job *config.Job, dataPool schema.DataPool) (*Worker, error) {
 	// todo: check errors
 	fmt.Printf("Starting job: %s\n", IfElse(job.Name != "", job.Name, job.Type))
 	worker := new(Worker)
@@ -65,7 +75,8 @@ func NewWorker(cfg *config.Config, job *config.Job) (*Worker, error) {
 		worker.db = db
 	}
 
-	worker.handler = NewJobHandler(job, worker.db)
+	worker.dataPool = dataPool
+	worker.handler = NewJobHandler(job, worker.db, dataPool)
 	return worker, nil
 }
 
@@ -114,6 +125,13 @@ func (w *Worker) InitIntervalReportingSummary() {
 			worker.Report.Summary()
 		}
 	}(w)
+}
+
+// todo: fix wrong place invalid
+func (w *Worker) ExtendCopySavedFieldsToDataPool() {
+	if w.job.Type == string(config.Write) {
+		w.dataPool.ExtendGeneratorMapperFields(schema.DefaultGeneratorFieldMapper)
+	}
 }
 
 func (w *Worker) Summary() {

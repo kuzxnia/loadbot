@@ -7,20 +7,21 @@ import (
 
 func (c *Job) UnmarshalJSON(data []byte) (err error) {
 	var tmp struct {
-		Name            string   `json:"name"`
-		Type            string   `json:"type"`
-		Database        string   `json:"database"`
-		Collection      string   `json:"collection"`
-		Schema          string   `json:"template"`
-		ReportingFormat string   `json:"format"`
-		Connections     uint64   `json:"connections"`
-		Pace            uint64   `json:"pace"`
-		DataSize        uint64   `json:"data_size"`
-		BatchSize       uint64   `json:"batch_size"`
-		Duration        string   `json:"duration"`
-		Operations      uint64   `json:"operations"`
-		Timeout         string   `json:"timeout"` // if not set, default
-		Indexes         []*Index `json:"indexes"` // if not set, default
+		Name            string                 `json:"name"`
+		Type            string                 `json:"type"`
+		Database        string                 `json:"database"`
+		Collection      string                 `json:"collection"`
+		Schema          string                 `json:"template"`
+		ReportingFormat string                 `json:"format"`
+		Connections     uint64                 `json:"connections"`
+		Pace            uint64                 `json:"pace"`
+		DataSize        uint64                 `json:"data_size"`
+		BatchSize       uint64                 `json:"batch_size"`
+		Duration        string                 `json:"duration"`
+		Operations      uint64                 `json:"operations"`
+		Timeout         string                 `json:"timeout"` // if not set, default
+		Filter          map[string]interface{} `json:"filter"`
+		Indexes         []*Index               `json:"indexes"` // if not set, default
 	}
 	// default values
 	tmp.Connections = 1
@@ -53,11 +54,13 @@ func (c *Job) UnmarshalJSON(data []byte) (err error) {
 			return err
 		}
 	}
+	c.Filter = tmp.Filter
 	c.Indexes = tmp.Indexes
 
-  if c.Type == string(CreateIndex) {
-    c.Operations = 1
-  }
+  // default values
+	if c.Type == string(CreateIndex) {
+		c.Operations = 1
+	}
 
 	return
 }

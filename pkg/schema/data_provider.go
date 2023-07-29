@@ -6,13 +6,14 @@ import (
 
 type DataProvider interface {
 	GetSingleItem() interface{}
+	GetSingleItemWithout(string) interface{}
 	GetBatch(uint64) []interface{}
 	GetFilter() interface{}
 }
 
 func NewDataProvider(job *config.Job) DataProvider {
 	return DataProvider(
-		NewLiveDataProvider(job.BatchSize, job.DataSize, job.GetSchema()),
+		NewLiveDataProvider(job),
 	)
 }
 
@@ -20,14 +21,16 @@ func NewDataProvider(job *config.Job) DataProvider {
 // also here is place to store keys which needs to be saved
 
 type LiveDataProvider struct {
+	job           *config.Job
 	dataGenerator DataGenerator
 }
 
 // todo: generate on file and take from pool
 // type PoolDataProvider struct { }
-func NewLiveDataProvider(batchSize, dataSize uint64, schema *config.Schema) *LiveDataProvider {
+func NewLiveDataProvider(job *config.Job) *LiveDataProvider {
 	return &LiveDataProvider{
-		dataGenerator: NewDataGenerator(schema, dataSize),
+		job:           job,
+		dataGenerator: NewDataGenerator(job.GetSchema(), job.DataSize),
 	}
 }
 
@@ -36,9 +39,17 @@ func (d *LiveDataProvider) GetSingleItem() interface{} {
 	return singleItem
 }
 
+// todo: remote this, add abstraction with skipped keys or sth like that
+func (d *LiveDataProvider) GetSingleItemWithout(key string) interface{} {
+	singleItem, _ := d.dataGenerator.Generate()
+  v := singleItem.(map[string]interface{})
+	delete(v, key)
+	return v
+}
+
 func (d *LiveDataProvider) GetFilter() interface{} {
-	// todo:
-	return d.GetSingleItem()
+	singleItem, _ := d.dataGenerator.GenerateFromTemplate(d.job.Filter)
+	return singleItem
 }
 
 func (d *LiveDataProvider) GetBatch(batchSize uint64) []interface{} {
