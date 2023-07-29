@@ -36,9 +36,9 @@ func Torment(config *config.Config) {
 			worker.InitIntervalReportingSummary()
 			worker.Work()
 			worker.Summary()
+			worker.ExtendCopySavedFieldsToDataPool()
 		}()
 	}
-  fmt.Println(dataPools["default"].Get("name"))
 }
 
 type Worker struct {
@@ -49,6 +49,7 @@ type Worker struct {
 	handler     JobHandler
 	rateLimiter Limiter
 	pool        JobPool
+	dataPool    schema.DataPool
 	Report      Report
 	ticker      *time.Ticker
 	startTime   time.Time
@@ -74,6 +75,7 @@ func NewWorker(cfg *config.Config, job *config.Job, dataPool schema.DataPool) (*
 		worker.db = db
 	}
 
+	worker.dataPool = dataPool
 	worker.handler = NewJobHandler(job, worker.db, dataPool)
 	return worker, nil
 }
@@ -123,6 +125,13 @@ func (w *Worker) InitIntervalReportingSummary() {
 			worker.Report.Summary()
 		}
 	}(w)
+}
+
+// todo: fix wrong place invalid
+func (w *Worker) ExtendCopySavedFieldsToDataPool() {
+	if w.job.Type == string(config.Write) {
+		w.dataPool.ExtendGeneratorMapperFields(schema.DefaultGeneratorFieldMapper)
+	}
 }
 
 func (w *Worker) Summary() {

@@ -37,16 +37,22 @@ Example file:
   "debug": true,
   "jobs": [
     {
-      "name": "default job",
+      "name": "Write 100c 1k ops",
       "type": "write",
       "schema": "user_schema",
       "connections": 100,
-      "pace": 0,
-      "data_size": 0,
-      "batch_size": 0,
-      "duration": "0s",
       "operations": 1000,
-      "timeout": "1s"
+    },
+    {
+      "name": "Dummy job name/ read 30s 100rps",
+      "type": "read",
+      "schema": "user_schema",
+      "connections": 100,
+      "pace": 100,
+      "duration": "30s",
+      "filter": {
+          "special_name": "#special_name"
+      }
     }
   ],
   "schemas": [
@@ -56,9 +62,12 @@ Example file:
       "collection": "load_test",
       "schema": {
         "_id": "#_id",
-        "name": "#string",
+        "special_name": "#string",
         "lastname": "#string"
-      }
+      },
+      "save": [
+        "special_name"  // will be avaliable in job.filter under "#special_name"
+      ]
     },
   ],
   "reporting_formats": [
@@ -140,6 +149,22 @@ Person
 }
 ```
 
+**Read with schema 20s**
+
+```json
+{
+  "name": "read with schema",
+  "type": "read",
+  "schema": "user_schema",
+  "connections": 10,
+  "operations": 100,
+  "filter": {
+    "user_name": "#user_name",
+    "name": "#generate_value"  // here you can use remember/saved value as well as generated one
+  }
+}
+```
+
 **Let the database rest**
 
 ```json
@@ -175,6 +200,7 @@ or with schema
 * `template`(string) - schema name, if you will not provide schema data will be inserted in `{'data': <generate_data>}` format
 * `database`(string, required if schema is not set) - database name
 * `schema`(string, optional) - string foreign-key to schemas list
+* `filter`(string, required for read and update) - filter schema
 * `indexes`(list, optional) - list of indexes to create (only for type "create_index") 
 * `format`(string, optional) - string foreign-key to reporting_formats list
 * `collection`(string, required if schema is not set) - collection name

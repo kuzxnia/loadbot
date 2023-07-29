@@ -6,6 +6,7 @@ import (
 	"sync"
 	"sync/atomic"
 
+	"github.com/go-faker/faker/v4/pkg/options"
 	"github.com/kuzxnia/mongoload/pkg/config"
 )
 
@@ -13,6 +14,7 @@ type DataPool interface {
 	Get(string) interface{}
 	Set(interface{})
 	SetBatch([]interface{})
+	ExtendGeneratorMapperFields(generator *GeneratorFieldMapper)
 }
 
 func NewDataPool(schema *config.Schema) DataPool {
@@ -92,6 +94,18 @@ func (d *InMemoryDataPool) SetBatch(dataBatch []interface{}) {
 			}
 		}
 		d.dataPool[key] = dataPool
+	}
+}
+
+func (d *InMemoryDataPool) ExtendGeneratorMapperFields(generator *GeneratorFieldMapper) {
+	d.mutex.RLock()
+	defer d.mutex.RUnlock()
+
+	for key := range d.dataPool {
+    // todo: fix problem with same field returned, propably related to go closures
+		generator.Set("#"+key, func(opts ...options.OptionFunc) string {
+			return d.Get(key).(string)
+		})
 	}
 }
 

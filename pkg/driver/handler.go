@@ -6,6 +6,7 @@ import (
 	"github.com/kuzxnia/mongoload/pkg/config"
 	"github.com/kuzxnia/mongoload/pkg/database"
 	"github.com/kuzxnia/mongoload/pkg/schema"
+	"go.mongodb.org/mongo-driver/bson"
 )
 
 type JobHandler interface {
@@ -13,10 +14,11 @@ type JobHandler interface {
 }
 
 func NewJobHandler(job *config.Job, client database.Client, dataPool schema.DataPool) JobHandler {
+	dataProvider := schema.NewDataProvider(job)
 	handler := BaseHandler{
 		job:          job,
 		client:       client,
-		dataProvider: schema.NewDataProvider(job),
+		dataProvider: dataProvider,
 		dataPool:     dataPool,
 	}
 
@@ -87,8 +89,10 @@ type ReadHandler struct {
 }
 
 func (h *ReadHandler) Handle() (time.Duration, error) {
+	filter := h.dataProvider.GetFilter()
+
 	start := time.Now()
-	_, error := h.client.ReadOne(h.dataProvider.GetFilter())
+	_, error := h.client.ReadOne(filter)
 	elapsed := time.Since(start)
 	return elapsed, error
 }
@@ -98,8 +102,11 @@ type UpdateHandler struct {
 }
 
 func (h *UpdateHandler) Handle() (time.Duration, error) {
+	item := h.dataProvider.GetSingleItemWithout("_id")
+	filter := h.dataProvider.GetFilter()
+
 	start := time.Now()
-	_, error := h.client.UpdateOne(h.dataProvider.GetFilter(), h.dataProvider.GetSingleItem())
+	_, error := h.client.UpdateOne(filter, bson.M{"$set": item})
 	elapsed := time.Since(start)
 	return elapsed, error
 }
