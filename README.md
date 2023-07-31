@@ -224,7 +224,7 @@ or with schema
 {
   "name": "simple",
   "interval": "5s",
-  "template": "Job: {{.JobType}}, total reqs: {{.TotalReqs}}, RPS {{f2 .Rps}} success: {{.SuccessReqs}}\n\n"
+  "template": "{{.Now}} Job: {{.JobType}}, total reqs: {{.TotalReqs}}, RPS {{f2 .Rps}} success: {{.SuccessReqs}}\n\n"
 }
 ```
 - `name` - used to determine which template to use (see section job.format)
@@ -234,7 +234,7 @@ or with schema
 
 **Template fields**
 
-`JobName`, `JobType`, `JobBatchSize`,`SuccessReqs`, `ErrorReqs`, `TotalReqs`, `TotalOps`, `TimeoutErr`, `NoDataErr`, `OtherErr`, `ErrorRate`, `Rps`, `Ops`
+`Now`, `JobName`, `JobType`, `JobBatchSize`,`SuccessReqs`, `ErrorReqs`, `TotalReqs`, `TotalOps`, `TimeoutErr`, `NoDataErr`, `OtherErr`, `ErrorRate`, `Rps`, `Ops`
 
 **Math fields**
 

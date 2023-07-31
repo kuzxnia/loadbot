@@ -9,12 +9,13 @@ import (
 
 	"github.com/kuzxnia/mongoload/pkg/config"
 	"github.com/montanaflynn/stats"
+	"github.com/samber/lo"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
 var (
 	ReportFormatKeys            = NewReportFormatKeys()
-	DefaultReportFormatTemplate = `{{if .JobName -}} Job: "{{.JobName}}" {{else -}} Job type: "{{.JobType}}"{{end}}
+	DefaultReportFormatTemplate = `{{.Now}}{{if .JobName -}} Job: "{{.JobName}}" {{else -}} Job type: "{{.JobType}}"{{end}}
 Total reqs: {{.TotalReqs}}, RPS {{f2 .Rps}} success: {{.SuccessReqs}}, errors: {{.ErrorReqs}} timeout: {{.TimeoutErr}}, error rate: {{f1 .ErrorRate}}
 AVG: {{msf3 .Avg}}ms P50: {{msf3 .P50}}ms, P90: {{msf3 .P90}}ms P99: {{msf3 .P99}}ms
 
@@ -23,6 +24,7 @@ AVG: {{msf3 .Avg}}ms P50: {{msf3 .P50}}ms, P90: {{msf3 .P90}}ms P99: {{msf3 .P99
 
 func NewReportFormatKeys() []string {
 	keys := []string{
+		"{{.Now}}",
 		"{{.JobName}}",
 		"{{.JobType}}",
 		"{{.JobBatchSize}}",
@@ -122,13 +124,16 @@ func (s *TemplateReport) GetReportData() map[string]any {
 	s.mutex.RLock()
 	defer s.mutex.RUnlock()
 
-	// handle errors
+	// todo: handle errors
 	totalReqs := s.Len()
 	min, _ := s.Min()
 	max, _ := s.Max()
 	avg, _ := s.Mean()
 
+	now := time.Now()
+
 	mapping := map[string]any{
+		"Now":          now.Format("2006/01/02 15:04:05"),
 		"JobName":      s.job.Name,
 		"JobType":      s.job.Type,
 		"JobBatchSize": s.job.BatchSize,
@@ -139,12 +144,12 @@ func (s *TemplateReport) GetReportData() map[string]any {
 		"TimeoutErr":   s.timeoutErrors,
 		"noDataErr":    s.noDocumentsFoundError,
 		"OtherErr":     s.errorsReqs - s.timeoutErrors - s.noDocumentsFoundError,
-		"ErrorRate":    IfElse(totalReqs != 0, float64(s.errorsReqs)/float64(totalReqs)*100, 0),
+		"ErrorRate":    lo.If(totalReqs != 0, float64(s.errorsReqs)/float64(totalReqs)*100).Else(0),
 		"Min":          min,
 		"Max":          max,
 		"Avg":          avg,
-		"Rps":          IfElse(s.duration != 0, float64(totalReqs)/float64(s.duration.Seconds()), 0),
-		"Ops":          IfElse(s.duration != 0, float64(totalReqs*int(s.job.BatchSize))/float64(s.duration.Seconds()), 0),
+		"Rps":          lo.If(s.duration != 0, float64(totalReqs)/float64(s.duration.Seconds())).Else(0),
+		"Ops":          lo.If(s.duration != 0, float64(totalReqs*int(s.job.BatchSize))/float64(s.duration.Seconds())).Else(0),
 	}
 	var key string
 	for i := 1; i < 100; i++ {
@@ -189,13 +194,6 @@ func (s *TemplateReport) Summary() {
 		"msf4": func(f float64) string { return fmt.Sprintf("%.4f", f*1000) },
 	}).Parse(reportTemplate))
 	outputTemplate.Execute(os.Stdout, s.GetReportData())
-}
-
-func IfElse[T comparable](condition bool, a T, b T) T {
-	if condition {
-		return a
-	}
-	return b
 }
 
 // var ErrNoDocuments = errors.New("mongo: no documents in result")
