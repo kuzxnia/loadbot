@@ -1,4 +1,4 @@
-package driver 
+package driver
 
 import (
 	"github.com/kuzxnia/mongoload/pkg/config"
@@ -13,7 +13,7 @@ func NewLimiter(cfg *config.Job) Limiter {
 	if cfg.Pace == 0 {
 		return Limiter(NewNoLimitLimiter())
 	} else {
-		return Limiter(NewSimpleLimiter(cfg.Pace))
+		return Limiter(NewBucketLeakingLimiter(cfg.Pace))
 	}
 }
 
@@ -25,16 +25,16 @@ func NewNoLimitLimiter() *NoLimitLimiter {
 	return &NoLimitLimiter{}
 }
 
-type SimpleLimiter struct {
+type BucketLeakingLimiter struct {
 	rateLimit ratelimit.Limiter
 }
 
-func NewSimpleLimiter(rps uint64) *SimpleLimiter {
-	return &SimpleLimiter{
-		rateLimit: ratelimit.New(int(rps)),
+func NewBucketLeakingLimiter(rps uint64) *BucketLeakingLimiter {
+	return &BucketLeakingLimiter{
+		rateLimit: ratelimit.New(int(rps), ratelimit.WithSlack(1000)),
 	}
 }
 
-func (limiter *SimpleLimiter) Take() {
+func (limiter *BucketLeakingLimiter) Take() {
 	limiter.rateLimit.Take()
 }
