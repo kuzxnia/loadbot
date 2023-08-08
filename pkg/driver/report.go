@@ -183,6 +183,9 @@ func (s *TemplateReport) Summary() {
 	} else {
 		reportTemplate = DefaultReportFormatTemplate
 	}
+
+  reportData := s.GetReportData()
+
 	outputTemplate := template.Must(template.New("").Funcs(template.FuncMap{
 		"f1":   func(f float64) string { return fmt.Sprintf("%.1f", f) },
 		"f2":   func(f float64) string { return fmt.Sprintf("%.2f", f) },
@@ -193,7 +196,7 @@ func (s *TemplateReport) Summary() {
 		"msf3": func(f float64) string { return fmt.Sprintf("%.3f", f*1000) },
 		"msf4": func(f float64) string { return fmt.Sprintf("%.4f", f*1000) },
 	}).Parse(reportTemplate))
-	outputTemplate.Execute(os.Stdout, s.GetReportData())
+	outputTemplate.Execute(os.Stdout, reportData)
 }
 
 // var ErrNoDocuments = errors.New("mongo: no documents in result")
