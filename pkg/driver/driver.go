@@ -11,6 +11,7 @@ import (
 	"github.com/kuzxnia/mongoload/pkg/database"
 	"github.com/kuzxnia/mongoload/pkg/logger"
 	"github.com/kuzxnia/mongoload/pkg/schema"
+	"github.com/samber/lo"
 )
 
 var log = logger.Default()
@@ -27,6 +28,7 @@ func Torment(config *config.Config) {
 	// todo: in a parallel depending on type
 	for _, job := range config.Jobs {
 		func() {
+			// todo: fix here, no schema data pool will be nill
 			dataPool := dataPools[job.Schema]
 			worker, error := NewWorker(config, job, dataPool)
 			if error != nil {
@@ -57,7 +59,7 @@ type Worker struct {
 
 func NewWorker(cfg *config.Config, job *config.Job, dataPool schema.DataPool) (*Worker, error) {
 	// todo: check errors
-	fmt.Printf("Starting job: %s\n", IfElse(job.Name != "", job.Name, job.Type))
+	fmt.Printf("Starting job: %s\n", lo.If(job.Name != "", job.Name).Else(job.Type))
 	worker := new(Worker)
 	worker.cfg = cfg
 	worker.job = job
@@ -129,7 +131,7 @@ func (w *Worker) InitIntervalReportingSummary() {
 
 // todo: fix wrong place invalid
 func (w *Worker) ExtendCopySavedFieldsToDataPool() {
-	if w.job.Type == string(config.Write) {
+	if w.dataPool != nil && (w.job.Type == string(config.Write) || w.job.Type == string(config.BulkWrite)) {
 		w.dataPool.ExtendGeneratorMapperFields(schema.DefaultGeneratorFieldMapper)
 	}
 }
