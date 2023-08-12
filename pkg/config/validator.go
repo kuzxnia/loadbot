@@ -1,6 +1,8 @@
 package config
 
-import "errors"
+import (
+	"errors"
+)
 
 func (c *Config) Validate() error {
 	validators := []func() error{
@@ -75,7 +77,8 @@ func (job *Job) validateReportFormat() error {
 		return nil
 	}
 
-	if !Contains(job.Parent.ReportingFormats, func(s *ReportingFormat) bool { return s.Name == job.ReportingFormat }) {
+	reportingFormats := append(job.Parent.ReportingFormats, DefaultReportFormats...)
+	if !Contains(reportingFormats, func(s *ReportingFormat) bool { return s.Name == job.ReportingFormat }) {
 		return errors.New("JobValidationError: job \"" + job.Name + "\" have invalid report_format \"" + job.ReportingFormat + "\"")
 	}
 	return nil
@@ -185,7 +188,7 @@ func (job *Job) validateIndexes() (err error) {
 }
 
 func (rp *Index) Validate() error {
-  // todo:
+	// todo:
 	return nil
 }
 
