@@ -225,11 +225,42 @@ or with schema
 
 <br>
 
-**Example reporting format**
+By default, you have access to several available output formats: `default`, `simple`, `write`, and `bulk_write`. If you do not provide the 'default' format, the default format associated with the type will be utilized. Moreover, you have the flexibility to override all formats except for the `default` one.
+
+**default**
+
+```
+2023/08/12 15:10:44 Job: "lovely job name"
+Reqs: 7500, RPS 500.00, s:7500/err:0/tout:0/errRate:0.0%
+AVG: 1.395ms P50: 0.484ms, P90: 0.703ms P99: 8.048ms
+```
+
+**simple**
+
+```
+2023/08/12 17:28:47 Reqs: 2592, RPS 500.05 s:2592/err:0
+```
+
+**write**
+
+```
+2023/08/12 17:28:52 Reqs: 2595, RPS 499.91, s:2595/err:0/tout:0/errRate:0.0%
+AVG: 1.987ms P50: 0.989ms, P90: 1.634ms P99: 34.556ms
+
+```
+
+**bulk_write**
+
+```
+2023/08/12 17:28:57 Reqs: 2590, OPS: 259000, RPS 499.50, OPS 49949.52, s:2590/err0/tout:0/errRate:0.0
+AVG: 6.867ms P50: 3.814ms, P90: 6.786ms P99: 79.938ms
+```
+
+**Example custom reporting format**
 
 ```json
 {
-  "name": "simple",
+  "name": "custom",
   "interval": "5s",
   "template": "{{.Now}} Job: {{.JobType}}, total reqs: {{.TotalReqs}}, RPS {{f2 .Rps}} success: {{.SuccessReqs}}\n\n"
 }

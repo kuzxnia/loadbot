@@ -3,6 +3,7 @@ package config
 import (
 	"time"
 
+	"github.com/samber/lo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
@@ -86,12 +87,10 @@ func (j *Job) GetSchema() *Schema {
 }
 
 func (j *Job) GetReport() *ReportingFormat {
-	for _, report := range j.Parent.ReportingFormats {
-		if report.Name == j.ReportingFormat {
-			return report
-		}
-	}
-	return nil
+	reportingFormat := lo.If(j.ReportingFormat != "", j.ReportingFormat).Else(j.Type)
+	reportingFormats := append(j.Parent.ReportingFormats, DefaultReportFormats...)
+
+	return lo.FindOrElse(reportingFormats, DefaultReportFormat, func(rf *ReportingFormat) bool { return rf.Name == reportingFormat })
 }
 
 type Schema struct {
@@ -101,6 +100,40 @@ type Schema struct {
 	Schema     map[string]interface{} `json:"schema"` // todo: introducte new type and parse
 	Save       []string               `json:"save"`
 }
+
+var DefaultReportFormats = []*ReportingFormat{
+	{
+		Name:     "default",
+		Interval: 15 * time.Second,
+		Template: `{{.Now}} {{if .JobName -}}Job: "{{.JobName}}" {{else -}}Job type: "{{.JobType}}"{{end}}
+Reqs: {{.TotalReqs}}, RPS {{f2 .Rps}}, s:{{.SuccessReqs}}/err:{{.ErrorReqs}}/tout:{{.TimeoutErr}}/errRate:{{f1 .ErrorRate}}%
+AVG: {{msf3 .Avg}}ms P50: {{msf3 .P50}}ms, P90: {{msf3 .P90}}ms P99: {{msf3 .P99}}ms
+
+`,
+	},
+	{
+		Name:     "simple",
+		Interval: 15 * time.Second,
+		Template: "{{.Now}} Reqs: {{.TotalReqs}}, RPS {{f2 .Rps}} s:{{.SuccessReqs}}/err:{{.ErrorReqs}}\n\n",
+	},
+	{
+		Name:     "write",
+		Interval: 15 * time.Second,
+		Template: `{{.Now}} Reqs: {{.TotalReqs}}, RPS {{f2 .Rps}}, s:{{.SuccessReqs}}/err:{{.ErrorReqs}}/tout:{{.TimeoutErr}}/errRate:{{f1 .ErrorRate}}%
+AVG: {{msf3 .Avg}}ms P50: {{msf3 .P50}}ms, P90: {{msf3 .P90}}ms P99: {{msf3 .P99}}ms
+
+`,
+	},
+	{
+		Name:     "bulk_write",
+		Interval: 15 * time.Second,
+		Template: `{{.Now}} Reqs: {{.TotalReqs}}, OPS: {{.TotalOps}}, RPS {{f2 .Rps}}, OPS {{f2 .Ops}}, s:{{.SuccessReqs}}/err{{.ErrorReqs}}/tout:{{.TimeoutErr}}/errRate:{{f1 .ErrorRate}}
+AVG: {{msf3 .Avg}}ms P50: {{msf3 .P50}}ms, P90: {{msf3 .P90}}ms P99: {{msf3 .P99}}ms
+
+`,
+	},
+}
+var DefaultReportFormat = DefaultReportFormats[0]
 
 type ReportingFormat struct {
 	Name     string

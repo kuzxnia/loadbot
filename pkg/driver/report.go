@@ -13,14 +13,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-var (
-	ReportFormatKeys            = NewReportFormatKeys()
-	DefaultReportFormatTemplate = `{{.Now}}{{if .JobName -}} Job: "{{.JobName}}" {{else -}} Job type: "{{.JobType}}"{{end}}
-Total reqs: {{.TotalReqs}}, RPS {{f2 .Rps}} success: {{.SuccessReqs}}, errors: {{.ErrorReqs}} timeout: {{.TimeoutErr}}, error rate: {{f1 .ErrorRate}}
-AVG: {{msf3 .Avg}}ms P50: {{msf3 .P50}}ms, P90: {{msf3 .P90}}ms P99: {{msf3 .P99}}ms
-
-`
-)
+var ReportFormatKeys = NewReportFormatKeys()
 
 func NewReportFormatKeys() []string {
 	keys := []string{
@@ -176,15 +169,7 @@ func (s *TemplateReport) Add(interval time.Duration, err error) {
 }
 
 func (s *TemplateReport) Summary() {
-	// todo: handle error, by default Must panics
-	var reportTemplate string
-	if s.reportingFormat != nil {
-		reportTemplate = s.reportingFormat.Template
-	} else {
-		reportTemplate = DefaultReportFormatTemplate
-	}
-
-  reportData := s.GetReportData()
+	reportData := s.GetReportData()
 
 	outputTemplate := template.Must(template.New("").Funcs(template.FuncMap{
 		"f1":   func(f float64) string { return fmt.Sprintf("%.1f", f) },
@@ -195,7 +180,7 @@ func (s *TemplateReport) Summary() {
 		"msf2": func(f float64) string { return fmt.Sprintf("%.2f", f*1000) },
 		"msf3": func(f float64) string { return fmt.Sprintf("%.3f", f*1000) },
 		"msf4": func(f float64) string { return fmt.Sprintf("%.4f", f*1000) },
-	}).Parse(reportTemplate))
+	}).Parse(s.reportingFormat.Template))
 	outputTemplate.Execute(os.Stdout, reportData)
 }
 
