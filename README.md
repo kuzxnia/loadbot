@@ -6,7 +6,7 @@ The purpose of this tool is to simulate workloads to facilitate testing the fail
 
 ## How to use:
 1. Build image - `docker build -t mload .`
-2. Run with simple cli aruments - `docker run --network="host" --rm -it mload -c 10 -o 10000 http://localhost:27017`
+2. Run with simple cli aruments - `docker run -it mload -c 10 -o 10000 mongodb://lovely.host.name:27017`
 3. Run with config file - `docker run -it mload < config_file.json`
 
 > Note: If running with local db remember to use host network and configure connection_string to 127.0.0.1 `docker run --network="host" --rm -it mload < config_file.json`
