@@ -6,10 +6,10 @@ The purpose of this tool is to simulate workloads to facilitate testing the fail
 
 ## How to use:
 1. Build image - `docker build -t mload .`
-2. Run with simple cli aruments - `docker run -it mload -c 10 -o 10000 mongodb://lovely.host.name:27017`
-3. Run with config file - `docker run -it mload < config_file.json`
+2. Run with simple cli aruments - `docker run -t mload -c 10 -o 10000 mongodb://lovely.host.name:27017`
+3. Run with config file - `docker run -t mload < config_file.json`
 
-> Note: If running with local db remember to use host network and configure connection_string to 127.0.0.1 `docker run --network="host" --rm -it mload < config_file.json`
+> Note: If running with local db remember to use host network and configure connection_string to 127.0.0.1 `docker run --network="host" --rm -t mload < config_file.json`
 
 This tool offers two ways to access it: one through CLI arguments and the other via a configuration file. Utilizing the configuration file provides additional functionalities for the tool.
 
@@ -31,7 +31,7 @@ This tool offers two ways to access it: one through CLI arguments and the other 
 
 ### Configuration file:
 Due to the limited functionalities of the CLI, in order to fully harness the capabilities of this tool, it is advisable to utilize a configuration file. The program can be executed by specifying the configuration file with:
-1. stdin with binary `cat config_file.json | mload` or stdin with docker `docker run mload -it mload < config_file.json`
+1. stdin with binary `cat config_file.json | mload` or stdin with docker `docker run mload -t mload < config_file.json`
 2. flag with `--config-file <file-path>` or `-f <file-path>`. 
 
 > Note: If you want to use config file with docker you need to mount volume with file or copy when building image.
