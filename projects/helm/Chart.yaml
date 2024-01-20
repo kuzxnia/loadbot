@@ -1,0 +1,10 @@
+apiVersion: v2
+name: tasks
+description: A Helm chart that allows deploy multiple instances of workload drivers
+
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
+dependencies:
+  - name: workload
+    version: 0.1.0
