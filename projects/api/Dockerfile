@@ -11,7 +11,7 @@ RUN go mod download && \
 # copy the source code as the last step
 COPY . .
 # build binary
-RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-w -s" -a -installsuffix cgo -o /go/bin/mongoload ./cmd/main.go
+RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-w -s" -a -installsuffix cgo -o /go/bin/api ./cmd/main.go
 
 
 # build a small image
@@ -20,8 +20,8 @@ LABEL language="golang"
 # import the user and group files from the builder
 COPY --from=builder /etc/passwd /etc/passwd
 # copy the static executable
-COPY --from=builder --chown=user:1000 /go/bin/mongoload /mongoload
+COPY --from=builder --chown=user:1000 /go/bin/api /api
 # use a non-root user
 USER user
 # run app
-ENTRYPOINT ["./mongoload"]
+ENTRYPOINT ["./api"]
