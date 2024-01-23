@@ -9,10 +9,10 @@ import (
 )
 
 const (
-	CommandInstall = "install"
+	CommandInstall   = "install"
+	CommandUnInstall = "uninstall"
 
-  // if not set will install localy without k8s
-
+	// if not set will install localy without k8s
 	FlagSourceKubeconfig = "k8s-config"
 	FlagSourceContext    = "k8s-context"
 	FlagSourceNamespace  = "k8s-namespace"
@@ -26,16 +26,22 @@ const (
 	installationArgsNum = 1
 )
 
-func provideInstallationHandler() *cobra.Command {
-	cmd := cobra.Command{
+var OrchiestrationGroup = cobra.Group{
+	ID:    "orchiestration",
+	Title: "Resource Orchiestration Commands:",
+}
+
+func provideOrchiestrationCommands() []*cobra.Command {
+	installationCommand := cobra.Command{
 		Use:     CommandInstall + " <config-file>",
 		Aliases: []string{"i"},
-		Short:   "Install workload driver",
+		Short:   "Install workload driver with helm charts on k8s or only with docker locally",
 		Args:    cobra.ExactArgs(installationArgsNum),
 		RunE:    installationHandler,
+		GroupID: OrchiestrationGroup.ID,
 	}
 
-	flags := cmd.Flags()
+	flags := installationCommand.Flags()
 	// flags
 	flags.StringP(FlagSourceKubeconfig, "k", "", "path of the kubeconfig file of the source PVC")
 	flags.StringP(FlagSourceContext, "c", "", "context in the kubeconfig file of the source PVC")
@@ -51,7 +57,16 @@ func provideInstallationHandler() *cobra.Command {
 	// helmTimeout
 	// helmValues
 
-	return &cmd
+	unInstallationCommand := cobra.Command{
+		// todo: where to keep configuration? there will be couple workloads at the same time
+		Use:     CommandUnInstall,
+		Aliases: []string{"i"},
+		Short:   "Uninstall workload driver",
+		RunE:    unInstallationHandler,
+		GroupID: OrchiestrationGroup.ID,
+	}
+
+	return []*cobra.Command{&installationCommand, &unInstallationCommand}
 }
 
 func installationHandler(cmd *cobra.Command, args []string) error {
@@ -81,6 +96,20 @@ func installationHandler(cmd *cobra.Command, args []string) error {
 	logger.Info("🚀 Starting installation process")
 
 	if err := orchiestrator.NewInstallationProcess(cmd.Context(), request).Run(); err != nil {
+		return fmt.Errorf("installation failed: %w", err)
+	}
+
+	logger.Info("✅ Installation process succeeded")
+
+	return nil
+}
+
+func unInstallationHandler(cmd *cobra.Command, args []string) error {
+	request := orchiestrator.UnInstallationRequest{}
+
+	logger.Info("🚀 Starting installation process")
+
+	if err := orchiestrator.NewUnInstallationProcess(cmd.Context(), request).Run(); err != nil {
 		return fmt.Errorf("installation failed: %w", err)
 	}
 

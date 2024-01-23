@@ -48,10 +48,10 @@ func buildRootCmd(version string, commit string, date string) *cobra.Command {
 	pf.String(FlagLogLevel, applog.LevelInfo, fmt.Sprintf("log level, must be one of: %s", strings.Join(applog.Levels, ", ")))
 	pf.String(FlagLogFormat, applog.FormatFancy, fmt.Sprintf("log format, must be one of: %s", strings.Join(applog.Formats, ", ")))
 
-	cmd.AddCommand(provideInstallationHandler())
-	cmd.AddCommand(provideStartingDriverHandler())
-	cmd.AddCommand(provideStoppingDriverHandler())
-	cmd.AddCommand(provideWatchingDriverHandler())
+	cmd.AddGroup(&OrchiestrationGroup)
+	cmd.AddCommand(provideOrchiestrationCommands()...)
+	cmd.AddGroup(&DriverGroup)
+	cmd.AddCommand(provideDriverCommands()...)
 
 	// _ = cmd.RegisterFlagCompletionFunc(FlagLogLevel, buildStaticSliceCompletionFunc(applog.Levels))
 	// _ = cmd.RegisterFlagCompletionFunc(FlagLogFormat, buildStaticSliceCompletionFunc(applog.Formats))

@@ -14,10 +14,10 @@ type UnInstallationRequest struct {
 
 type UnInstallationProcess struct {
 	ctx     context.Context
-	request *UnInstallationProcess
+	request *UnInstallationRequest
 }
 
-func NewUnInstallationProcess(ctx context.Context, request UnInstallationProcess) *UnInstallationProcess {
+func NewUnInstallationProcess(ctx context.Context, request UnInstallationRequest) *UnInstallationProcess {
 	return &UnInstallationProcess{ctx: ctx, request: &request}
 }
 

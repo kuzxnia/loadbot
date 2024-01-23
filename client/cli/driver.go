@@ -13,19 +13,40 @@ const (
 	CommandWatchDriver = "watch"
 )
 
-func provideStartingDriverHandler() *cobra.Command {
-	cmd := cobra.Command{
+var DriverGroup = cobra.Group{
+	ID:    "driver",
+	Title: "Driver Commands:",
+}
+
+func provideDriverCommands() []*cobra.Command {
+	startCommand := cobra.Command{
 		Use:     CommandStartDriver,
 		Aliases: []string{"i"},
 		Short:   "Start stress test",
 		Args:    cobra.ExactArgs(installationArgsNum),
 		RunE:    startingDriverHandler,
+		GroupID: DriverGroup.ID,
 	}
 
-	// flags := cmd.Flags()
-	// flags
+	stopCommand := cobra.Command{
+		Use:     CommandStopDriver,
+		Aliases: []string{"i"},
+		Short:   "Stopping stress test",
+		Args:    cobra.ExactArgs(installationArgsNum),
+		RunE:    stoppingDriverHandler,
+		GroupID: DriverGroup.ID,
+	}
 
-	return &cmd
+	watchCommand := cobra.Command{
+		Use:     CommandWatchDriver,
+		Aliases: []string{"i"},
+		Short:   "Watch stress test",
+		Args:    cobra.ExactArgs(installationArgsNum),
+		RunE:    watchingDriverHandler,
+		GroupID: DriverGroup.ID,
+	}
+
+	return []*cobra.Command{&startCommand, &stopCommand, &watchCommand}
 }
 
 func startingDriverHandler(cmd *cobra.Command, args []string) error {
@@ -44,18 +65,6 @@ func startingDriverHandler(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-func provideStoppingDriverHandler() *cobra.Command {
-	cmd := cobra.Command{
-		Use:     CommandStopDriver,
-		Aliases: []string{"i"},
-		Short:   "Stopping stress test",
-		Args:    cobra.ExactArgs(installationArgsNum),
-		RunE:    stoppingDriverHandler,
-	}
-
-	return &cmd
-}
-
 func stoppingDriverHandler(cmd *cobra.Command, args []string) error {
 	request := driver.StoppingRequest{}
 
@@ -68,18 +77,6 @@ func stoppingDriverHandler(cmd *cobra.Command, args []string) error {
 	logger.Info("✅ Stopping stress test succeeded")
 
 	return nil
-}
-
-func provideWatchingDriverHandler() *cobra.Command {
-	cmd := cobra.Command{
-		Use:     CommandWatchDriver,
-		Aliases: []string{"i"},
-		Short:   "Watch stress test",
-		Args:    cobra.ExactArgs(installationArgsNum),
-		RunE:    watchingDriverHandler,
-	}
-
-	return &cmd
 }
 
 func watchingDriverHandler(cmd *cobra.Command, args []string) error {
