@@ -22,3 +22,5 @@ func (o *Orchiestrator) createResources() {
 func (o *Orchiestrator) deleteResources() {
   o.chart.uninstall()
 }
+
+// nessesary? yes not allways we will have helms
