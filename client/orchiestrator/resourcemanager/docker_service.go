@@ -1,8 +1,7 @@
-package orchiestrator
+package resourcemanager 
 
 import (
 	"context"
-	"fmt"
 	"io"
 	"log"
 	"os"
@@ -22,7 +21,14 @@ type DockerContainer struct {
 	Name string
 }
 
+
+
+
 type DockerService struct{}
+
+func (d *DockerService) Install() error {return nil}
+func (d *DockerService) UnInstall() error {return nil}
+func (d *DockerService) Suspend() error {return nil}
 
 // add optional argument with chart version
 func NewDockerService() (*DockerService, error) {
@@ -46,8 +52,6 @@ func (c *DockerService) createContainer(image DockerImage) (err error) {
 	}
 	defer cli.Close()
 
-	imageName := "bfirsh/reticulate-splines"
-
 	out, err := cli.ImagePull(ctx, image.Name, types.ImagePullOptions{})
 	if err != nil {
 		return err
@@ -56,7 +60,7 @@ func (c *DockerService) createContainer(image DockerImage) (err error) {
 	io.Copy(os.Stdout, out)
 
 	resp, err := cli.ContainerCreate(ctx, &container.Config{
-		Image: imageName,
+		Image: image.Name,
 	}, nil, nil, nil, "")
 	if err != nil {
 		return err
@@ -65,9 +69,6 @@ func (c *DockerService) createContainer(image DockerImage) (err error) {
 	if err := cli.ContainerStart(ctx, resp.ID, types.ContainerStartOptions{}); err != nil {
 		return err
 	}
-
-	fmt.Println(resp.ID)
-
 	return
 }
 
@@ -107,8 +108,6 @@ func (c *DockerService) removeContainer(cont DockerContainer) (err error) {
 
 	return
 }
-
-
 
 // func runContainer(client *client.Client, imagename string, containername string, port string, inputEnv []string) error {
 // 	// Define a PORT opening

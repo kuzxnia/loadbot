@@ -1,4 +1,4 @@
-package orchiestrator
+package resourcemanager
 
 import (
 	"bytes"
@@ -14,12 +14,12 @@ var chartBytes []byte
 // defult are from above,  - MVP
 // but it should be able to process helm charts from internet also
 
-type HelmChart struct {
+type HelmService struct {
 	chart *chart.Chart
 }
 
 // add optional argument with chart version
-func NewHelmChart() (*HelmChart, error) {
+func NewHelmChart() (*HelmService, error) {
 	// use default or fetch from internet from tag
 	// todo: later add validation for type
 
@@ -28,15 +28,19 @@ func NewHelmChart() (*HelmChart, error) {
 		return nil, err
 	}
 
-	return &HelmChart{
+	return &HelmService{
 		chart: chart,
 	}, nil
 }
 
-func (c *HelmChart) install() (err error) {
+func (c *HelmService) Install() (err error) {
 	return
 }
 
-func (c *HelmChart) uninstall() (err error) {
+func (c *HelmService) UnInstall() (err error) {
+  return
+}
+
+func (c *HelmService) Suspend() (err error) {
   return
 }
