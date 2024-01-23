@@ -1,11 +1,11 @@
-package installation
+package orchiestrator
 
 import (
 	"context"
 	"time"
 )
 
-type Request struct {
+type InstallationRequest struct {
 	KubeconfigPath   string
 	Context          string
 	Namespace        string
@@ -18,10 +18,10 @@ type Request struct {
 
 type InstallationProcess struct {
 	ctx     context.Context
-	request *Request
+	request *InstallationRequest
 }
 
-func NewInstallationProcess(ctx context.Context, request Request) *InstallationProcess {
+func NewInstallationProcess(ctx context.Context, request InstallationRequest) *InstallationProcess {
 	return &InstallationProcess{ctx: ctx, request: &request}
 }
 

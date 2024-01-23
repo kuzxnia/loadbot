@@ -13,13 +13,13 @@ const (
 	CommandWatchDriver = "watch"
 )
 
-func provideStartDriverHandler() *cobra.Command {
+func provideStartingDriverHandler() *cobra.Command {
 	cmd := cobra.Command{
 		Use:     CommandStartDriver,
 		Aliases: []string{"i"},
 		Short:   "Start stress test",
 		Args:    cobra.ExactArgs(installationArgsNum),
-		RunE:    installationHandler,
+		RunE:    startingDriverHandler,
 	}
 
 	// flags := cmd.Flags()
@@ -28,7 +28,7 @@ func provideStartDriverHandler() *cobra.Command {
 	return &cmd
 }
 
-func startDriverHandler(cmd *cobra.Command, args []string) error {
+func startingDriverHandler(cmd *cobra.Command, args []string) error {
 	// flags := cmd.Flags()
 
 	request := driver.StartRequest{}
@@ -44,54 +44,54 @@ func startDriverHandler(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-func provideStopDriverHandler() *cobra.Command {
+func provideStoppingDriverHandler() *cobra.Command {
 	cmd := cobra.Command{
 		Use:     CommandStopDriver,
 		Aliases: []string{"i"},
-		Short:   "Stop stress test",
+		Short:   "Stopping stress test",
 		Args:    cobra.ExactArgs(installationArgsNum),
-		RunE:    installationHandler,
+		RunE:    stoppingDriverHandler,
 	}
 
 	return &cmd
 }
 
-func stopDriverHandler(cmd *cobra.Command, args []string) error {
-	request := driver.StopRequest{}
+func stoppingDriverHandler(cmd *cobra.Command, args []string) error {
+	request := driver.StoppingRequest{}
 
-	logger.Info("🚀 Stop stress test")
+	logger.Info("🚀 Stopping stress test")
 
-	if err := driver.NewStopProcess(cmd.Context(), request).Run(); err != nil {
-		return fmt.Errorf("stop stress test failed: %w", err)
+	if err := driver.NewStoppingProcess(cmd.Context(), request).Run(); err != nil {
+		return fmt.Errorf("Stopping stress test failed: %w", err)
 	}
 
-	logger.Info("✅ Stop stress test succeeded")
+	logger.Info("✅ Stopping stress test succeeded")
 
 	return nil
 }
 
-func provideWatchDriverHandler() *cobra.Command {
+func provideWatchingDriverHandler() *cobra.Command {
 	cmd := cobra.Command{
 		Use:     CommandWatchDriver,
 		Aliases: []string{"i"},
 		Short:   "Watch stress test",
 		Args:    cobra.ExactArgs(installationArgsNum),
-		RunE:    installationHandler,
+		RunE:    watchingDriverHandler,
 	}
 
 	return &cmd
 }
 
-func watchDriverHandler(cmd *cobra.Command, args []string) error {
-	request := driver.WatchRequest{}
+func watchingDriverHandler(cmd *cobra.Command, args []string) error {
+	request := driver.WatchingRequest{}
 
-	logger.Info("🚀 Watch stress test")
+	logger.Info("🚀 Watching stress test")
 
-	if err := driver.NewWatchProcess(cmd.Context(), request).Run(); err != nil {
-		return fmt.Errorf("Watch stress test failed: %w", err)
+	if err := driver.NewWatchingProcess(cmd.Context(), request).Run(); err != nil {
+		return fmt.Errorf("Watching stress test failed: %w", err)
 	}
 
-	logger.Info("✅ Watch stress test succeeded")
+	logger.Info("✅ Watching stress test succeeded")
 
 	return nil
 }

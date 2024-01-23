@@ -4,12 +4,14 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/kuzxnia/loadcli/installation"
+	"github.com/kuzxnia/loadcli/orchiestrator"
 	"github.com/spf13/cobra"
 )
 
 const (
 	CommandInstall = "install"
+
+  // if not set will install localy without k8s
 
 	FlagSourceKubeconfig = "k8s-config"
 	FlagSourceContext    = "k8s-context"
@@ -65,7 +67,7 @@ func installationHandler(cmd *cobra.Command, args []string) error {
 	helmSetString, _ := flags.GetStringSlice(FlagHelmSetString)
 	helmSetFile, _ := flags.GetStringSlice(FlagHelmSetFile)
 
-	request := installation.Request{
+	request := orchiestrator.InstallationRequest{
 		KubeconfigPath:   srcKubeconfigPath,
 		Context:          srcContext,
 		Namespace:        srcNS,
@@ -78,7 +80,7 @@ func installationHandler(cmd *cobra.Command, args []string) error {
 
 	logger.Info("🚀 Starting installation process")
 
-	if err := installation.NewInstallationProcess(cmd.Context(), request).Run(); err != nil {
+	if err := orchiestrator.NewInstallationProcess(cmd.Context(), request).Run(); err != nil {
 		return fmt.Errorf("installation failed: %w", err)
 	}
 
