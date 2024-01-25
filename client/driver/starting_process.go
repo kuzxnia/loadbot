@@ -19,5 +19,7 @@ func NewStartProcess(ctx context.Context, request StartRequest) *StartProcess {
 
 func (c *StartProcess) Run() error {
 	// if watch arg - run watch
+
+  // before starting process it will varify health of cluster, if pods
 	return nil
 }

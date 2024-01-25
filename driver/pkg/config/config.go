@@ -7,6 +7,8 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
+// driver Settings
+
 // global config -- to rename as config
 type JobType string
 

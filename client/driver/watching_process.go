@@ -1,8 +1,6 @@
 package driver
 
-import (
-	"context"
-)
+import "context"
 
 type WatchingRequest struct{}
 
@@ -15,7 +13,7 @@ func NewWatchingProcess(ctx context.Context, request WatchingRequest) *WatchingP
 	return &WatchingProcess{ctx: ctx, request: &request}
 }
 
-func (c *WatchingProcess) Run() error {
+func (w *WatchingProcess) Run() error {
 	// if watch arg - run watch
 	return nil
 }
