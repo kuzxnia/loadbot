@@ -5,7 +5,7 @@ import (
 	"strings"
 	"time"
 
-	applog "github.com/kuzxnia/loadbot/cli/log"
+	applog "github.com/kuzxnia/loadbot/lbot/log"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
