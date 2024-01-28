@@ -1,6 +1,6 @@
 package orchiestrator
 
-import "github.com/kuzxnia/loadbot/lbot/orchiestrator/resourcemanager"
+import "github.com/kuzxnia/loadbot/orchiestrator/resourcemanager"
 
 type Orchiestrator struct {
 	resourceManager resourcemanager.ResourceManager

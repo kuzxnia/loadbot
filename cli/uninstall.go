@@ -3,12 +3,12 @@ package cli
 import (
 	"net/rpc"
 
-	"github.com/kuzxnia/loadbot/lbot"
+	"github.com/kuzxnia/loadbot/orchiestrator"
 	"github.com/spf13/cobra"
 )
 
 func unInstallationHandler(cmd *cobra.Command, args []string) error {
-	request := lbot.UnInstallationRequest{}
+	request := orchiestrator.UnInstallationRequest{}
 
 	Logger.Info("🚀 Starting installation process")
 
@@ -21,7 +21,7 @@ func unInstallationHandler(cmd *cobra.Command, args []string) error {
 	err = client.Call("UnInstallationProcess.Run", request, &reply)
 	if err != nil {
 		Logger.Fatal("UnInstallationProcess error:", err)
-	// 	return fmt.Errorf("installation failed: %w", err)
+		// 	return fmt.Errorf("installation failed: %w", err)
 	}
 
 	Logger.Info("✅ Installation process succeeded")

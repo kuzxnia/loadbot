@@ -1,4 +1,4 @@
-package lbot
+package orchiestrator
 
 import (
 	"context"

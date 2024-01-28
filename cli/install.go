@@ -3,7 +3,7 @@ package cli
 import (
 	"net/rpc"
 
-	"github.com/kuzxnia/loadbot/lbot"
+	"github.com/kuzxnia/loadbot/orchiestrator"
 	"github.com/spf13/cobra"
 )
 
@@ -21,7 +21,7 @@ func installationHandler(cmd *cobra.Command, args []string) error {
 	helmSetFile, _ := flags.GetStringSlice(FlagHelmSetFile)
 
 	// only when k8s is used
-	request := lbot.InstallationRequest{
+	request := orchiestrator.InstallationRequest{
 		// install options
 		// local-process
 		// local-docker
