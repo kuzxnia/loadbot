@@ -1,45 +1,43 @@
+
 package cli
 
-import (
-	"context"
-	"time"
-)
+func installationHandler(cmd *cobra.Command, args []string) error {
+	flags := cmd.Flags()
 
-type InstallationRequest struct {
-	KubeconfigPath   string
-	Context          string
-	Namespace        string
-	HelmTimeout      time.Duration
-	HelmValuesFiles  []string
-	HelmValues       []string
-	HelmFileValues   []string
-	HelmStringValues []string
-}
+	srcKubeconfigPath, _ := flags.GetString(FlagSourceKubeconfig)
+	srcContext, _ := flags.GetString(FlagSourceContext)
+	srcNS, _ := flags.GetString(FlagSourceNamespace)
 
-type InstallationProcess struct {
-	ctx     context.Context
-	request *InstallationRequest
-}
+	helmTimeout, _ := flags.GetDuration(FlagHelmTimeout)
+	helmValues, _ := flags.GetStringSlice(FlagHelmValues)
+	helmSet, _ := flags.GetStringSlice(FlagHelmSet)
+	helmSetString, _ := flags.GetStringSlice(FlagHelmSetString)
+	helmSetFile, _ := flags.GetStringSlice(FlagHelmSetFile)
 
-func NewInstallationProcess(ctx context.Context, request InstallationRequest) *InstallationProcess {
-	return &InstallationProcess{ctx: ctx, request: &request}
-}
+	request := lbot.InstallationRequest{
+		KubeconfigPath:   srcKubeconfigPath,
+		Context:          srcContext,
+		Namespace:        srcNS,
+		HelmTimeout:      helmTimeout,
+		HelmValuesFiles:  helmValues,
+		HelmValues:       helmSet,
+		HelmStringValues: helmSetString,
+		HelmFileValues:   helmSetFile,
+	}
 
-func (c *InstallationProcess) Run() error {
-	// if watch arg - run watch
+	logger.Info("🚀 Starting installation process")
 
-	// create resources,
+  client, err := rpc.NewRpcClient("")
+  clie
+  err = client.Call("InstallationProcess.Run", args, &reply)
 
-	// for helm
-	// set config map thought values or helm file values - configure thought config map
-	// - change to yaml values, it will be driver settings and workload test setting
+	if err := NewInstallationProcess(cmd.Context(), request).Run(); err != nil {
+		return fmt.Errorf("installation failed: %w", err)
+	}
 
-	// for docker it will be save inside container??
 
-	// if we have multiple nodes, we need to set cluster from them
-
-	// if flag starting is provided it will start workload
-	// same with watch flag
+	logger.Info("✅ Installation process succeeded")
 
 	return nil
 }
+

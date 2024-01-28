@@ -1,25 +1,17 @@
 package cli
 
-import (
-	"context"
-)
+func startingDriverHandler(cmd *cobra.Command, args []string) error {
+	// flags := cmd.Flags()
 
-type StartRequest struct {
-	watch bool
-}
+	request := StartRequest{}
 
-type StartProcess struct {
-	ctx     context.Context
-	request *StartRequest
-}
+	logger.Info("🚀 Starting stress test")
 
-func NewStartProcess(ctx context.Context, request StartRequest) *StartProcess {
-	return &StartProcess{ctx: ctx, request: &request}
-}
+	if err := NewStartProcess(cmd.Context(), request).Run(); err != nil {
+		return fmt.Errorf("starting stress test failed: %w", err)
+	}
 
-func (c *StartProcess) Run() error {
-	// if watch arg - run watch
+	logger.Info("✅ Starting stress test succeeded")
 
-	// before starting process it will varify health of cluster, if pods
 	return nil
 }

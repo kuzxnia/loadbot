@@ -6,6 +6,7 @@ import (
 	"time"
 
 	applog "github.com/kuzxnia/loadbot/cli/log"
+	"github.com/kuzxnia/loadbot/lbot"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
@@ -60,6 +61,12 @@ func buildRootCmd(version string, commit string, date string) *cobra.Command {
 	return &cmd
 }
 
+const (
+	CommandStartDriver = "start"
+	CommandStopDriver  = "stop"
+	CommandWatchDriver = "watch"
+)
+
 var DriverGroup = cobra.Group{
 	ID:    "driver",
 	Title: "Driver Commands:",
@@ -98,27 +105,6 @@ func provideDriverCommands() []*cobra.Command {
 
 // todo: generate complection
 
-const (
-	CommandStartDriver = "start"
-	CommandStopDriver  = "stop"
-	CommandWatchDriver = "watch"
-)
-
-func startingDriverHandler(cmd *cobra.Command, args []string) error {
-	// flags := cmd.Flags()
-
-	request := StartRequest{}
-
-	logger.Info("🚀 Starting stress test")
-
-	if err := NewStartProcess(cmd.Context(), request).Run(); err != nil {
-		return fmt.Errorf("starting stress test failed: %w", err)
-	}
-
-	logger.Info("✅ Starting stress test succeeded")
-
-	return nil
-}
 
 func stoppingDriverHandler(cmd *cobra.Command, args []string) error {
 	request := StoppingRequest{}
@@ -193,6 +179,7 @@ func provideOrchiestrationCommands() []*cobra.Command {
 	flags.StringSlice(FlagHelmSetString, nil, "set additional Helm STRING values on the command line (can specify multiple or separate values with commas: key1=val1,key2=val2)")
 	flags.StringSlice(FlagHelmSetFile, nil, "set additional Helm values from respective files specified via the command line (can specify multiple or separate values with commas: key1=path1,key2=path2)")
 
+  // if no flags provided, install as local, simply start 
 	// skipCleanup
 	// helmTimeout
 	// helmValues
@@ -222,7 +209,7 @@ func installationHandler(cmd *cobra.Command, args []string) error {
 	helmSetString, _ := flags.GetStringSlice(FlagHelmSetString)
 	helmSetFile, _ := flags.GetStringSlice(FlagHelmSetFile)
 
-	request := InstallationRequest{
+	request := lbot.InstallationRequest{
 		KubeconfigPath:   srcKubeconfigPath,
 		Context:          srcContext,
 		Namespace:        srcNS,
@@ -238,6 +225,7 @@ func installationHandler(cmd *cobra.Command, args []string) error {
 	if err := NewInstallationProcess(cmd.Context(), request).Run(); err != nil {
 		return fmt.Errorf("installation failed: %w", err)
 	}
+
 
 	logger.Info("✅ Installation process succeeded")
 
