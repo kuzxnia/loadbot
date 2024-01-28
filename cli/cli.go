@@ -6,38 +6,29 @@ import (
 	"time"
 
 	applog "github.com/kuzxnia/loadbot/cli/log"
-	"github.com/kuzxnia/loadbot/lbot"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
-
-const (
-	appName = "workload"
-)
-
-var logger *log.Entry
-
-func New(rootLogger *log.Entry, version string, commit string, date string) *cobra.Command {
-	logger = rootLogger
-
-	return buildRootCmd(version, commit, date)
-}
 
 const (
 	FlagLogLevel  = "log-level"
 	FlagLogFormat = "log-format"
 )
 
-func buildRootCmd(version string, commit string, date string) *cobra.Command {
+var Logger *log.Entry
+
+func New(rootLogger *log.Entry, version string, commit string, date string) *cobra.Command {
+	Logger = rootLogger
+
 	cmd := cobra.Command{
-		Use:     appName,
+		Use:     "lbot",
 		Short:   "A command-line database workload ",
 		Version: fmt.Sprintf("%s (commit: %s) (build date: %s)", version, commit, date),
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 			f := cmd.Flags()
 			loglvl, _ := f.GetString(FlagLogLevel)
 			logfmt, _ := f.GetString(FlagLogFormat)
-			err := applog.Configure(logger, loglvl, logfmt)
+			err := applog.Configure(Logger, loglvl, logfmt)
 			if err != nil {
 				return fmt.Errorf("failed to configure logger: %w", err)
 			}
@@ -45,6 +36,19 @@ func buildRootCmd(version string, commit string, date string) *cobra.Command {
 			return nil
 		},
 	}
+
+
+  // by default run in docker container
+  // agent save config file in /tmp/lbot/ .* 
+  // if you want to change file you need to reconfigure or kill process and start
+
+  // todo: validate connection to agent when calling without args
+  // default localhost
+  // add arg param agent-uri, if agent is somewhere else
+
+
+  // jeśli stworzone było lokalnie to bij do lokalnego, 
+  // jeśli na k8s to bijesz po k8s-selector, jeśli wiele to bijesz do wielu, 
 
 	pf := cmd.PersistentFlags()
 	pf.String(FlagLogLevel, applog.LevelInfo, fmt.Sprintf("log level, must be one of: %s", strings.Join(applog.Levels, ", ")))
@@ -54,9 +58,6 @@ func buildRootCmd(version string, commit string, date string) *cobra.Command {
 	cmd.AddCommand(provideOrchiestrationCommands()...)
 	cmd.AddGroup(&DriverGroup)
 	cmd.AddCommand(provideDriverCommands()...)
-
-	// _ = cmd.RegisterFlagCompletionFunc(FlagLogLevel, buildStaticSliceCompletionFunc(applog.Levels))
-	// _ = cmd.RegisterFlagCompletionFunc(FlagLogFormat, buildStaticSliceCompletionFunc(applog.Formats))
 
 	return &cmd
 }
@@ -105,35 +106,6 @@ func provideDriverCommands() []*cobra.Command {
 
 // todo: generate complection
 
-
-func stoppingDriverHandler(cmd *cobra.Command, args []string) error {
-	request := StoppingRequest{}
-
-	logger.Info("🚀 Stopping stress test")
-
-	if err := NewStoppingProcess(cmd.Context(), request).Run(); err != nil {
-		return fmt.Errorf("Stopping stress test failed: %w", err)
-	}
-
-	logger.Info("✅ Stopping stress test succeeded")
-
-	return nil
-}
-
-func watchingDriverHandler(cmd *cobra.Command, args []string) error {
-	request := WatchingRequest{}
-
-	logger.Info("🚀 Watching stress test")
-
-	if err := NewWatchingProcess(cmd.Context(), request).Run(); err != nil {
-		return fmt.Errorf("Watching stress test failed: %w", err)
-	}
-
-	logger.Info("✅ Watching stress test succeeded")
-
-	return nil
-}
-
 const (
 	CommandInstall   = "install"
 	CommandUnInstall = "uninstall"
@@ -179,7 +151,7 @@ func provideOrchiestrationCommands() []*cobra.Command {
 	flags.StringSlice(FlagHelmSetString, nil, "set additional Helm STRING values on the command line (can specify multiple or separate values with commas: key1=val1,key2=val2)")
 	flags.StringSlice(FlagHelmSetFile, nil, "set additional Helm values from respective files specified via the command line (can specify multiple or separate values with commas: key1=path1,key2=path2)")
 
-  // if no flags provided, install as local, simply start 
+	// if no flags provided, install as local, simply start
 	// skipCleanup
 	// helmTimeout
 	// helmValues
@@ -194,54 +166,4 @@ func provideOrchiestrationCommands() []*cobra.Command {
 	}
 
 	return []*cobra.Command{&installationCommand, &unInstallationCommand}
-}
-
-func installationHandler(cmd *cobra.Command, args []string) error {
-	flags := cmd.Flags()
-
-	srcKubeconfigPath, _ := flags.GetString(FlagSourceKubeconfig)
-	srcContext, _ := flags.GetString(FlagSourceContext)
-	srcNS, _ := flags.GetString(FlagSourceNamespace)
-
-	helmTimeout, _ := flags.GetDuration(FlagHelmTimeout)
-	helmValues, _ := flags.GetStringSlice(FlagHelmValues)
-	helmSet, _ := flags.GetStringSlice(FlagHelmSet)
-	helmSetString, _ := flags.GetStringSlice(FlagHelmSetString)
-	helmSetFile, _ := flags.GetStringSlice(FlagHelmSetFile)
-
-	request := lbot.InstallationRequest{
-		KubeconfigPath:   srcKubeconfigPath,
-		Context:          srcContext,
-		Namespace:        srcNS,
-		HelmTimeout:      helmTimeout,
-		HelmValuesFiles:  helmValues,
-		HelmValues:       helmSet,
-		HelmStringValues: helmSetString,
-		HelmFileValues:   helmSetFile,
-	}
-
-	logger.Info("🚀 Starting installation process")
-
-	if err := NewInstallationProcess(cmd.Context(), request).Run(); err != nil {
-		return fmt.Errorf("installation failed: %w", err)
-	}
-
-
-	logger.Info("✅ Installation process succeeded")
-
-	return nil
-}
-
-func unInstallationHandler(cmd *cobra.Command, args []string) error {
-	request := UnInstallationRequest{}
-
-	logger.Info("🚀 Starting installation process")
-
-	if err := NewUnInstallationProcess(cmd.Context(), request).Run(); err != nil {
-		return fmt.Errorf("installation failed: %w", err)
-	}
-
-	logger.Info("✅ Installation process succeeded")
-
-	return nil
 }

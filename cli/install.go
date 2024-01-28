@@ -1,5 +1,11 @@
-
 package cli
+
+import (
+	"net/rpc"
+
+	"github.com/kuzxnia/loadbot/lbot"
+	"github.com/spf13/cobra"
+)
 
 func installationHandler(cmd *cobra.Command, args []string) error {
 	flags := cmd.Flags()
@@ -14,7 +20,13 @@ func installationHandler(cmd *cobra.Command, args []string) error {
 	helmSetString, _ := flags.GetStringSlice(FlagHelmSetString)
 	helmSetFile, _ := flags.GetStringSlice(FlagHelmSetFile)
 
+	// only when k8s is used
 	request := lbot.InstallationRequest{
+		// install options
+		// local-process
+		// local-docker
+		// k8s
+
 		KubeconfigPath:   srcKubeconfigPath,
 		Context:          srcContext,
 		Namespace:        srcNS,
@@ -24,20 +36,21 @@ func installationHandler(cmd *cobra.Command, args []string) error {
 		HelmStringValues: helmSetString,
 		HelmFileValues:   helmSetFile,
 	}
+	var reply int
 
-	logger.Info("🚀 Starting installation process")
+	Logger.Info("🚀 Starting installation process")
 
-  client, err := rpc.NewRpcClient("")
-  clie
-  err = client.Call("InstallationProcess.Run", args, &reply)
-
-	if err := NewInstallationProcess(cmd.Context(), request).Run(); err != nil {
-		return fmt.Errorf("installation failed: %w", err)
+	client, err := rpc.DialHTTP("tcp", "127.0.0.1:1234")
+	if err != nil {
+		Logger.Fatal("Found errors trying to connect to lbot-agent:", err)
 	}
 
+	err = client.Call("InstallationProcess.Run", request, &reply)
+	if err != nil {
+		Logger.Fatal("InstallationProcess error:", err)
+	}
 
-	logger.Info("✅ Installation process succeeded")
+	Logger.Info("✅ Installation process succeeded")
 
 	return nil
 }
-

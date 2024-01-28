@@ -1,20 +1,34 @@
 package main
 
 import (
-	"github.com/kuzxnia/loadbot/lbot/pkg/args"
-	"github.com/kuzxnia/loadbot/lbot/pkg/driver"
-	"github.com/kuzxnia/loadbot/lbot/pkg/logger"
+	"context"
+
+	"github.com/kuzxnia/loadbot/lbot"
+	"github.com/kuzxnia/loadbot/lbot/log"
 )
 
 func main() {
-	// maxprocs.Set()
-	config, err := args.Parse()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	logger, err := log.NewLogger(ctx)
 	if err != nil {
 		panic(err)
 	}
-	log := logger.Default()
-	log.SetConfig(config)
-	defer log.CloseOutputFile()
+	agent := lbot.NewAgent(ctx, logger)
 
-	driver.Torment(config)
+	agent.Listen()
 }
+
+// func main() {
+// 	// maxprocs.Set()
+// 	config, err := args.Parse()
+// 	if err != nil {
+// 		panic(err)
+// 	}
+// 	log := logger.Default()
+// 	log.SetConfig(config)
+// 	defer log.CloseOutputFile()
+
+// 	driver.Torment(config)
+// }

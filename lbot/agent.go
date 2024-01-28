@@ -1,24 +1,49 @@
 package lbot
 
 import (
-  "net/rpc"
-  "log"
-  "net/http"
-  "net"
+	"context"
+	"net"
+	"net/http"
+	"net/rpc"
+	"os"
+	"os/signal"
+
+	log "github.com/sirupsen/logrus"
 )
+
 type Agent struct {
+	ctx  context.Context
+	log  *log.Entry
 	lbot *Lbot
 }
 
-func (a *Agent) Listen() error {
-  // listen for struct methods
-	// arith := new(Arith)
-	// rpc.Register(arith)
-	rpc.HandleHTTP()
-	l, err := net.Listen("tcp", ":1234")
-	if err != nil {
-		log.Fatal("listen error:", err)
+func NewAgent(ctx context.Context, logger *log.Entry) *Agent {
+	return &Agent{
+		ctx: ctx,
+		log: logger,
 	}
+}
+
+func (a *Agent) Listen() error {
+	// register driver commands
+	rpc.Register(NewStartProcess(a.ctx))
+	rpc.Register(NewWatchingProcess(a.ctx))
+	rpc.Register(NewStoppingProcess(a.ctx))
+
+	rpc.HandleHTTP()
+	agentHost := "127.0.0.1:1234"
+	l, err := net.Listen("tcp", agentHost)
+	if err != nil {
+		a.log.Fatal("listen error:", err)
+	}
+	a.log.Info("lbot-agent started on " + agentHost)
+
+	stop := make(chan os.Signal, 1)
+	signal.Notify(stop, os.Interrupt)
+
 	go http.Serve(l, nil)
-  return nil
+
+	<-stop
+
+	return nil
 }

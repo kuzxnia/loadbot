@@ -1,4 +1,4 @@
-package cli
+package lbot
 
 import (
 	"context"
@@ -13,15 +13,14 @@ type UnInstallationRequest struct {
 }
 
 type UnInstallationProcess struct {
-	ctx     context.Context
-	request *UnInstallationRequest
+	ctx context.Context
 }
 
-func NewUnInstallationProcess(ctx context.Context, request UnInstallationRequest) *UnInstallationProcess {
-	return &UnInstallationProcess{ctx: ctx, request: &request}
+func NewUnInstallationProcess(ctx context.Context) *UnInstallationProcess {
+	return &UnInstallationProcess{ctx: ctx}
 }
 
-func (c *UnInstallationProcess) Run() error {
+func (c *UnInstallationProcess) Run(request *UnInstallationRequest, reply *int) error {
 	// if watch arg - run watch
 	return nil
 }

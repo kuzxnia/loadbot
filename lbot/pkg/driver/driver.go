@@ -16,6 +16,9 @@ import (
 
 var log = logger.Default()
 
+
+// todo: split this function to setup and to starting workers
+
 func Torment(config *config.Config) {
 	// todo: ping db, before workers init
 

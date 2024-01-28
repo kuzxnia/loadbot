@@ -17,15 +17,14 @@ type InstallationRequest struct {
 }
 
 type InstallationProcess struct {
-	ctx     context.Context
-	request *InstallationRequest
+	ctx context.Context
 }
 
-func NewInstallationProcess(ctx context.Context, request InstallationRequest) *InstallationProcess {
-	return &InstallationProcess{ctx: ctx, request: &request}
+func NewInstallationProcess(ctx context.Context) *InstallationProcess {
+	return &InstallationProcess{ctx: ctx}
 }
 
-func (c *InstallationProcess) Run() error {
+func (c *InstallationProcess) Run(request *InstallationRequest, reply *int) error {
 	// if watch arg - run watch
 
 	// create resources,

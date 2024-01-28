@@ -1,19 +1,18 @@
-package cli
+package lbot
 
 import "context"
 
 type WatchingRequest struct{}
 
 type WatchingProcess struct {
-	ctx     context.Context
-	request *WatchingRequest
+	ctx context.Context
 }
 
-func NewWatchingProcess(ctx context.Context, request WatchingRequest) *WatchingProcess {
-	return &WatchingProcess{ctx: ctx, request: &request}
+func NewWatchingProcess(ctx context.Context) *WatchingProcess {
+	return &WatchingProcess{ctx: ctx}
 }
 
-func (w *WatchingProcess) Run() error {
+func (w *WatchingProcess) Run(request *WatchingRequest, reply *int) error {
 	// if watch arg - run watch
 	return nil
 }

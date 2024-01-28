@@ -1,4 +1,4 @@
-package cli
+package lbot
 
 import (
 	"context"
@@ -8,14 +8,13 @@ type StoppingRequest struct{}
 
 type StoppingProcess struct {
 	ctx     context.Context
-	request *StoppingRequest
 }
 
-func NewStoppingProcess(ctx context.Context, request StoppingRequest) *StoppingProcess {
-	return &StoppingProcess{ctx: ctx, request: &request}
+func NewStoppingProcess(ctx context.Context) *StoppingProcess {
+	return &StoppingProcess{ctx: ctx}
 }
 
-func (c *StoppingProcess) Run() error {
+func (c *StoppingProcess) Run(request *StoppingRequest, reply *int) error {
 	// if watch arg - run watch
 	return nil
 }
