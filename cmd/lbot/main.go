@@ -6,7 +6,7 @@ import (
 	"os"
 
 	"github.com/kuzxnia/loadbot/cli"
-	applog "github.com/kuzxnia/loadbot/cli/log"
+	applog "github.com/kuzxnia/loadbot/lbot/log"
 )
 
 var (
@@ -26,7 +26,7 @@ func run() int {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	logger, err := applog.New(ctx)
+	logger, err := applog.NewLogger(ctx)
 	if err != nil {
 		fmt.Printf("❌ Error: %s\n", err.Error()) //nolint:forbidigo
 

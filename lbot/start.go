@@ -19,6 +19,8 @@ func NewStartProcess(ctx context.Context) *StartProcess {
 func (c *StartProcess) Run(request *StartRequest, reply *int) error {
 	// if watch arg - run watch
 
+  // 	driver.Torment(config)
+
 	// before starting process it will varify health of cluster, if pods
 	return nil
 }

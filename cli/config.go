@@ -27,7 +27,6 @@ package cli
 // 	Schemas          []*Schema          `json:"schemas"`
 // 	ReportingFormats []*ReportingFormat `json:"reporting_formats"`
 // 	Debug            bool               `json:"debug"`
-// 	DebugFile        string             `json:"debug_file"`
 // }
 
 // type Job struct {

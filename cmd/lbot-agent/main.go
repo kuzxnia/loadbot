@@ -2,12 +2,26 @@ package main
 
 import (
 	"context"
+	"os"
 
-	"github.com/kuzxnia/loadbot/lbot"
 	"github.com/kuzxnia/loadbot/lbot/log"
 )
 
+var (
+	// will be overridden by goreleaser: https://goreleaser.com/cookbooks/using-main.version/
+	version = "dev"
+	commit  = "none"
+	date    = "unknown"
+)
+
 func main() {
+	if exitCode := run(); exitCode != 0 {
+		os.Exit(exitCode)
+	}
+}
+
+func run() int {
+	// maxprocs.Set()
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -15,20 +29,12 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	agent := lbot.NewAgent(ctx, logger)
 
-	agent.Listen()
+	cmd := BuildArgs(logger, version, commit, date)
+	err = cmd.ExecuteContext(ctx)
+	if err != nil {
+		logger.Errorf("❌ Error: %s", err.Error())
+		return 1
+	}
+	return 0
 }
-
-// func main() {
-// 	// maxprocs.Set()
-// 	config, err := args.Parse()
-// 	if err != nil {
-// 		panic(err)
-// 	}
-// 	log := logger.Default()
-// 	log.SetConfig(config)
-// 	defer log.CloseOutputFile()
-
-// 	driver.Torment(config)
-// }

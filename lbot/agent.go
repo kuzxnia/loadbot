@@ -12,9 +12,10 @@ import (
 )
 
 type Agent struct {
-	ctx  context.Context
-	log  *log.Entry
-	lbot *Lbot
+	ctx    context.Context
+	log    *log.Entry
+	config *Config
+	lbot   *Lbot
 }
 
 func NewAgent(ctx context.Context, logger *log.Entry) *Agent {
@@ -46,4 +47,10 @@ func (a *Agent) Listen() error {
 	<-stop
 
 	return nil
+}
+
+// runned when initializing agent, and after reconfig
+func (a *Agent) ApplyConfig(configFilePath string) {
+	// check if operation is running
+	// lock ?
 }

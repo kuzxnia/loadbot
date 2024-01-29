@@ -5,14 +5,14 @@ import (
 	"strings"
 	"time"
 
+	"github.com/kuzxnia/loadbot/lbot"
 	applog "github.com/kuzxnia/loadbot/lbot/log"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
 
 const (
-	FlagLogLevel  = "log-level"
-	FlagLogFormat = "log-format"
+	AgentUri = "agent-uri"
 )
 
 var Logger *log.Entry
@@ -26,8 +26,8 @@ func New(rootLogger *log.Entry, version string, commit string, date string) *cob
 		Version: fmt.Sprintf("%s (commit: %s) (build date: %s)", version, commit, date),
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 			f := cmd.Flags()
-			loglvl, _ := f.GetString(FlagLogLevel)
-			logfmt, _ := f.GetString(FlagLogFormat)
+			loglvl, _ := f.GetString(lbot.FlagLogLevel)
+			logfmt, _ := f.GetString(lbot.FlagLogFormat)
 			err := applog.Configure(Logger, loglvl, logfmt)
 			if err != nil {
 				return fmt.Errorf("failed to configure logger: %w", err)
@@ -37,22 +37,21 @@ func New(rootLogger *log.Entry, version string, commit string, date string) *cob
 		},
 	}
 
+	// by default run in docker container
+	// agent save config file in /tmp/lbot/ .*
+	// if you want to change file you need to reconfigure or kill process and start
 
-  // by default run in docker container
-  // agent save config file in /tmp/lbot/ .* 
-  // if you want to change file you need to reconfigure or kill process and start
+	// todo: validate connection to agent when calling without args
+	// default localhost
+	// add arg param agent-uri, if agent is somewhere else
 
-  // todo: validate connection to agent when calling without args
-  // default localhost
-  // add arg param agent-uri, if agent is somewhere else
-
-
-  // jeśli stworzone było lokalnie to bij do lokalnego, 
-  // jeśli na k8s to bijesz po k8s-selector, jeśli wiele to bijesz do wielu, 
+	// jeśli stworzone było lokalnie to bij do lokalnego,
+	// jeśli na k8s to bijesz po k8s-selector, jeśli wiele to bijesz do wielu,
 
 	pf := cmd.PersistentFlags()
-	pf.String(FlagLogLevel, applog.LevelInfo, fmt.Sprintf("log level, must be one of: %s", strings.Join(applog.Levels, ", ")))
-	pf.String(FlagLogFormat, applog.FormatFancy, fmt.Sprintf("log format, must be one of: %s", strings.Join(applog.Formats, ", ")))
+	pf.StringP(AgentUri, "u", "", "loadbot agent uri (default: 127.0.0.1:1234)")
+	pf.String(lbot.FlagLogLevel, applog.LevelInfo, fmt.Sprintf("log level, must be one of: %s", strings.Join(applog.Levels, ", ")))
+	pf.String(lbot.FlagLogFormat, applog.FormatFancy, fmt.Sprintf("log format, must be one of: %s", strings.Join(applog.Formats, ", ")))
 
 	cmd.AddGroup(&OrchiestrationGroup)
 	cmd.AddCommand(provideOrchiestrationCommands()...)
@@ -78,7 +77,6 @@ func provideDriverCommands() []*cobra.Command {
 		Use:     CommandStartDriver,
 		Aliases: []string{"i"},
 		Short:   "Start stress test",
-		Args:    cobra.ExactArgs(installationArgsNum),
 		RunE:    startingDriverHandler,
 		GroupID: DriverGroup.ID,
 	}
@@ -87,7 +85,6 @@ func provideDriverCommands() []*cobra.Command {
 		Use:     CommandStopDriver,
 		Aliases: []string{"i"},
 		Short:   "Stopping stress test",
-		Args:    cobra.ExactArgs(installationArgsNum),
 		RunE:    stoppingDriverHandler,
 		GroupID: DriverGroup.ID,
 	}
@@ -96,7 +93,6 @@ func provideDriverCommands() []*cobra.Command {
 		Use:     CommandWatchDriver,
 		Aliases: []string{"i"},
 		Short:   "Watch stress test",
-		Args:    cobra.ExactArgs(installationArgsNum),
 		RunE:    watchingDriverHandler,
 		GroupID: DriverGroup.ID,
 	}
