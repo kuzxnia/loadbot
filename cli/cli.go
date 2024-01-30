@@ -62,9 +62,13 @@ func New(rootLogger *log.Entry, version string, commit string, date string) *cob
 }
 
 const (
-	CommandStartDriver = "start"
-	CommandStopDriver  = "stop"
-	CommandWatchDriver = "watch"
+	CommandStartDriver  = "start"
+	CommandStopDriver   = "stop"
+	CommandWatchDriver  = "watch"
+	CommandConfigDriver = "config"
+
+	// config args
+	ConfigFile = "config-file"
 )
 
 var DriverGroup = cobra.Group{
@@ -96,8 +100,15 @@ func provideDriverCommands() []*cobra.Command {
 		RunE:    watchingDriverHandler,
 		GroupID: DriverGroup.ID,
 	}
+	configCommand := cobra.Command{
+		Use:     CommandConfigDriver,
+		Aliases: []string{"i"},
+		Short:   "Config",
+		RunE:    setConfigDriverHandler,
+		GroupID: DriverGroup.ID,
+	}
 
-	return []*cobra.Command{&startCommand, &stopCommand, &watchCommand}
+	return []*cobra.Command{&startCommand, &stopCommand, &watchCommand, &configCommand}
 }
 
 // todo: generate complection

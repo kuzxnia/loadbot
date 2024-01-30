@@ -19,6 +19,7 @@ func (c *StartProcess) Run(request *StartRequest, reply *int) error {
 	// if watch arg - run watch
 
 	// 	driver.Torment(config)
+	c.lbot.Run(c.ctx)
 
 	// before starting process it will varify health of cluster, if pods
 	return nil

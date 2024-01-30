@@ -51,7 +51,19 @@ func (a *Agent) Listen() error {
 }
 
 // runned when initializing agent, and after reconfig
-func (a *Agent) ApplyConfig(configFilePath string) {
+func (a *Agent) ApplyConfig(configFilePath string) error {
+	// todo:
 	// check if operation is running
 	// lock ?
+	// if some operation is running {
+	//   return errors.New("")
+	// }
+
+	request, err := ParseConfigFile(configFilePath)
+	if err != nil {
+		return err
+	}
+	a.lbot.SetConfig(request)
+
+	return nil
 }
