@@ -7,19 +7,18 @@ type StartRequest struct {
 }
 
 type StartProcess struct {
-	ctx context.Context
+	ctx  context.Context
+	lbot *Lbot
 }
 
-func NewStartProcess(ctx context.Context) *StartProcess {
-	return &StartProcess{
-		ctx: ctx,
-	}
+func NewStartProcess(ctx context.Context, lbot *Lbot) *StartProcess {
+	return &StartProcess{ctx: ctx, lbot: lbot}
 }
 
 func (c *StartProcess) Run(request *StartRequest, reply *int) error {
 	// if watch arg - run watch
 
-  // 	driver.Torment(config)
+	// 	driver.Torment(config)
 
 	// before starting process it will varify health of cluster, if pods
 	return nil

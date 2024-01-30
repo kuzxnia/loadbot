@@ -50,7 +50,6 @@ func (job *Job) Validate() error {
 		job.validateBatchSize,
 		job.validateOperations,
 		job.validateDataSize,
-		job.validateIndexes,
 	}
 
 	for _, validate := range validators {
@@ -90,7 +89,6 @@ func (job *Job) validateType() (err error) {
 	case string(BulkWrite):
 	case string(Read):
 	case string(Update):
-	case string(CreateIndex):
 	case string(DropCollection):
 	case string(Sleep):
 	default:
@@ -174,22 +172,6 @@ func (job *Job) validateOperations() (err error) {
 		}
 	}
 	return
-}
-
-func (job *Job) validateIndexes() (err error) {
-	if job.Type == string(CreateIndex) {
-		for _, index := range job.Indexes {
-			if error := index.Validate(); error != nil {
-				return error
-			}
-		}
-	}
-	return
-}
-
-func (rp *Index) Validate() error {
-	// todo:
-	return nil
 }
 
 func (rp *ReportingFormat) Validate() error {

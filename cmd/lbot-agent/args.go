@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/kuzxnia/loadbot/lbot"
+	"github.com/kuzxnia/loadbot/lbot/config"
 	applog "github.com/kuzxnia/loadbot/lbot/log"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -18,8 +19,8 @@ func BuildArgs(logger *log.Entry, version string, commit string, date string) *c
 		Version: fmt.Sprintf("%s (commit: %s) (build date: %s)", version, commit, date),
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 			f := cmd.Flags()
-			loglvl, _ := f.GetString(lbot.FlagLogLevel)
-			logfmt, _ := f.GetString(lbot.FlagLogFormat)
+			loglvl, _ := f.GetString(config.FlagLogLevel)
+			logfmt, _ := f.GetString(config.FlagLogFormat)
 			err := applog.Configure(logger, loglvl, logfmt)
 			if err != nil {
 				return fmt.Errorf("failed to configure logger: %w", err)
@@ -34,7 +35,7 @@ func BuildArgs(logger *log.Entry, version string, commit string, date string) *c
 
 			agent := lbot.NewAgent(cmd.Context(), logger)
 			if configFilePath != "" {
-        agent.ApplyConfig(configFilePath)
+				agent.ApplyConfig(configFilePath)
 			}
 
 			agent.Listen()

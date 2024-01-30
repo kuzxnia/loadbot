@@ -2,8 +2,45 @@ package config
 
 import (
 	"encoding/json"
+	"errors"
+	"os"
 	"time"
+
+	"github.com/tailscale/hujson"
 )
+
+func ParseFileConfigArgs(configFile string) (*Config, error) {
+	content, err := os.ReadFile(configFile)
+	if err != nil {
+		return nil, err
+	}
+	content, err = standardizeJSON(content)
+	if err != nil {
+		return nil, err
+	}
+
+	var cfg Config
+	err = json.Unmarshal(content, &cfg)
+
+	if err != nil {
+		return nil, errors.New("Error during Unmarshal(): " + err.Error())
+	}
+
+	for _, job := range cfg.Jobs {
+		job.Parent = &cfg
+	}
+
+	return &cfg, err
+}
+
+func standardizeJSON(b []byte) ([]byte, error) {
+	ast, err := hujson.Parse(b)
+	if err != nil {
+		return b, err
+	}
+	ast.Standardize()
+	return ast.Pack(), nil
+}
 
 func (c *Job) UnmarshalJSON(data []byte) (err error) {
 	var tmp struct {
@@ -21,7 +58,6 @@ func (c *Job) UnmarshalJSON(data []byte) (err error) {
 		Operations      uint64                 `json:"operations"`
 		Timeout         string                 `json:"timeout"` // if not set, default
 		Filter          map[string]interface{} `json:"filter"`
-		Indexes         []*Index               `json:"indexes"` // if not set, default
 	}
 	// default values
 	tmp.Connections = 1
@@ -55,12 +91,6 @@ func (c *Job) UnmarshalJSON(data []byte) (err error) {
 		}
 	}
 	c.Filter = tmp.Filter
-	c.Indexes = tmp.Indexes
-
-  // default values
-	if c.Type == string(CreateIndex) {
-		c.Operations = 1
-	}
 
 	return
 }

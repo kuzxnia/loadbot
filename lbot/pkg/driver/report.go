@@ -168,6 +168,7 @@ func (s *TemplateReport) Add(interval time.Duration, err error) {
 	}
 }
 
+// writer 
 func (s *TemplateReport) Summary() {
 	reportData := s.GetReportData()
 
@@ -182,6 +183,10 @@ func (s *TemplateReport) Summary() {
 		"msf4": func(f float64) string { return fmt.Sprintf("%.4f", f*1000) },
 	}).Parse(s.reportingFormat.Template))
 	outputTemplate.Execute(os.Stdout, reportData)
+
+  // todo: change template to 
+  // https://github.com/gosuri/uiprogress
+  // https://github.com/gosuri/uilive
 }
 
 // var ErrNoDocuments = errors.New("mongo: no documents in result")

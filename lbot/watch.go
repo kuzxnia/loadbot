@@ -5,11 +5,12 @@ import "context"
 type WatchingRequest struct{}
 
 type WatchingProcess struct {
-	ctx context.Context
+	ctx  context.Context
+	lbot *Lbot
 }
 
-func NewWatchingProcess(ctx context.Context) *WatchingProcess {
-	return &WatchingProcess{ctx: ctx}
+func NewWatchingProcess(ctx context.Context, lbot *Lbot) *WatchingProcess {
+	return &WatchingProcess{ctx: ctx, lbot: lbot}
 }
 
 func (w *WatchingProcess) Run(request *WatchingRequest, reply *int) error {

@@ -5,7 +5,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/kuzxnia/loadbot/lbot"
+	"github.com/kuzxnia/loadbot/lbot/config"
 	applog "github.com/kuzxnia/loadbot/lbot/log"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -26,8 +26,8 @@ func New(rootLogger *log.Entry, version string, commit string, date string) *cob
 		Version: fmt.Sprintf("%s (commit: %s) (build date: %s)", version, commit, date),
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 			f := cmd.Flags()
-			loglvl, _ := f.GetString(lbot.FlagLogLevel)
-			logfmt, _ := f.GetString(lbot.FlagLogFormat)
+			loglvl, _ := f.GetString(config.FlagLogLevel)
+			logfmt, _ := f.GetString(config.FlagLogFormat)
 			err := applog.Configure(Logger, loglvl, logfmt)
 			if err != nil {
 				return fmt.Errorf("failed to configure logger: %w", err)
@@ -50,8 +50,8 @@ func New(rootLogger *log.Entry, version string, commit string, date string) *cob
 
 	pf := cmd.PersistentFlags()
 	pf.StringP(AgentUri, "u", "", "loadbot agent uri (default: 127.0.0.1:1234)")
-	pf.String(lbot.FlagLogLevel, applog.LevelInfo, fmt.Sprintf("log level, must be one of: %s", strings.Join(applog.Levels, ", ")))
-	pf.String(lbot.FlagLogFormat, applog.FormatFancy, fmt.Sprintf("log format, must be one of: %s", strings.Join(applog.Formats, ", ")))
+	pf.String(config.FlagLogLevel, applog.LevelInfo, fmt.Sprintf("log level, must be one of: %s", strings.Join(applog.Levels, ", ")))
+	pf.String(config.FlagLogFormat, applog.FormatFancy, fmt.Sprintf("log format, must be one of: %s", strings.Join(applog.Formats, ", ")))
 
 	cmd.AddGroup(&OrchiestrationGroup)
 	cmd.AddCommand(provideOrchiestrationCommands()...)

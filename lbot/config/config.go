@@ -1,4 +1,4 @@
-package lbot
+package config
 
 import (
 	"time"
