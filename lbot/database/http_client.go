@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/kuzxnia/loadbot/lbot/pkg/config"
+	"github.com/kuzxnia/loadbot/lbot/config"
 )
 
 func HTTPClient(cfg *config.Job) *http.Client {

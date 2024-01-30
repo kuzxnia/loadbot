@@ -1,7 +1,7 @@
 package driver
 
 import (
-	"github.com/kuzxnia/loadbot/lbot/pkg/config"
+	"github.com/kuzxnia/loadbot/lbot/config"
 	"go.uber.org/ratelimit"
 )
 

@@ -5,7 +5,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/kuzxnia/loadbot/lbot/pkg/config"
+	"github.com/kuzxnia/loadbot/lbot/config"
 )
 
 type JobPool interface {

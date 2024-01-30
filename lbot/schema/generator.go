@@ -6,7 +6,7 @@ import (
 
 	"github.com/go-faker/faker/v4"
 	"github.com/go-faker/faker/v4/pkg/options"
-	"github.com/kuzxnia/loadbot/lbot/pkg/config"
+	"github.com/kuzxnia/loadbot/lbot/config"
 	"github.com/samber/lo"
 	"go.mongodb.org/mongo-driver/bson"
 )

@@ -1,7 +1,7 @@
 package schema
 
 import (
-	"github.com/kuzxnia/loadbot/lbot/pkg/config"
+	"github.com/kuzxnia/loadbot/lbot/config"
 )
 
 type DataProvider interface {

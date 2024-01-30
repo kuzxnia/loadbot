@@ -7,15 +7,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/kuzxnia/loadbot/lbot/pkg/config"
-	"github.com/kuzxnia/loadbot/lbot/pkg/database"
-	"github.com/kuzxnia/loadbot/lbot/pkg/logger"
-	"github.com/kuzxnia/loadbot/lbot/pkg/schema"
+	"github.com/kuzxnia/loadbot/lbot/config"
+	"github.com/kuzxnia/loadbot/lbot/database"
+	"github.com/kuzxnia/loadbot/lbot/schema"
 	"github.com/samber/lo"
 )
-
-var log = logger.Default()
-
 
 // todo: split this function to setup and to starting workers
 
@@ -106,7 +102,7 @@ func (w *Worker) Work() {
 				// add debug of some kind
 				if error != nil {
 					// todo: debug
-					log.Debug(error)
+					// log.Debug(error)
 				}
 				w.pool.MarkJobDone()
 			}
@@ -119,7 +115,7 @@ func (w *Worker) Work() {
 func (w *Worker) InitIntervalReportingSummary() {
 	reportingFormat := w.job.GetReport()
 	if reportingFormat == nil || reportingFormat.Interval == 0 {
-		log.Info("Interval reporting skipped")
+		// log.Info("Interval reporting skipped")
 		return
 	}
 

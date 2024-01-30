@@ -4,15 +4,12 @@ import (
 	"context"
 	"time"
 
-	"github.com/kuzxnia/loadbot/lbot/pkg/config"
-	"github.com/kuzxnia/loadbot/lbot/pkg/logger"
+	"github.com/kuzxnia/loadbot/lbot/config"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
 )
-
-var log = logger.Default()
 
 type Client interface {
 	InsertOne(interface{}) (bool, error)
@@ -20,7 +17,6 @@ type Client interface {
 	ReadOne(interface{}) (bool, error)
 	ReadMany(interface{}) (bool, error)
 	UpdateOne(interface{}, interface{}) (bool, error)
-	CreateIndexes([]*config.Index) error
 	DropCollection() error
 	Disconnect() error
 }
@@ -52,9 +48,9 @@ func NewMongoClient(connectionString string, cfg *config.Job, schema *config.Sch
 	err = client.Ping(ctx, readpref.Primary())
 
 	if err != nil {
-		log.Error("error in ping to mongo")
+		// log.Error("error in ping to mongo")
 	} else {
-		log.Info("Successfully connected to database server")
+		// log.Info("Successfully connected to database server")
 	}
 
 	var collection *mongo.Collection
@@ -69,9 +65,9 @@ func NewMongoClient(connectionString string, cfg *config.Job, schema *config.Sch
 func (c *MongoClient) Disconnect() (err error) {
 	err = c.client.Disconnect(c.ctx)
 	if err != nil {
-		log.Error("Error tring to disconnect from database", err)
+		// log.Error("Error tring to disconnect from database", err)
 	} else {
-		log.Info("Successfully disconnected from database server")
+		// log.Info("Successfully disconnected from database server")
 	}
 	return
 }
@@ -104,7 +100,7 @@ func (c *MongoClient) ReadMany(filter interface{}) (bool, error) {
 
 	cursor, err := c.collection.Find(context.TODO(), bson.M{"author": "Franz Kafkaaa"}, &options.FindOptions{BatchSize: &batch_size})
 	if err != nil {
-		log.Error(err)
+		// log.Error(err)
 	}
 
 	defer cursor.Close(context.TODO())
@@ -126,7 +122,7 @@ func (c *MongoClient) ReadMany(filter interface{}) (bool, error) {
 		var data bson.M
 
 		if err = cursor.Decode(&data); err != nil {
-			log.Error(err)
+			// log.Error(err)
 		}
 		totalFound++
 	}
@@ -146,42 +142,6 @@ func (c *MongoClient) UpdateOne(filter interface{}, data interface{}) (bool, err
 		return false, err
 	}
 	return true, nil
-}
-
-func (c *MongoClient) CreateIndexes(indexes []*config.Index) error {
-	idxs := make([]mongo.IndexModel, len(indexes))
-
-	for i, index := range indexes {
-		idxs[i] = mongo.IndexModel{
-			Keys: index.Keys,
-			Options: &options.IndexOptions{
-				Background:              index.Options.Background,
-				ExpireAfterSeconds:      index.Options.ExpireAfterSeconds,
-				Name:                    index.Options.Name,
-				Sparse:                  index.Options.Sparse,
-				StorageEngine:           index.Options.StorageEngine,
-				Unique:                  index.Options.Unique,
-				Version:                 index.Options.Version,
-				DefaultLanguage:         index.Options.DefaultLanguage,
-				LanguageOverride:        index.Options.LanguageOverride,
-				TextVersion:             index.Options.TextVersion,
-				Weights:                 index.Options.Weights,
-				SphereVersion:           index.Options.SphereVersion,
-				Bits:                    index.Options.Bits,
-				Max:                     index.Options.Max,
-				Min:                     index.Options.Min,
-				BucketSize:              index.Options.BucketSize,
-				PartialFilterExpression: index.Options.PartialFilterExpression,
-				Collation:               index.Options.Collation,
-				WildcardProjection:      index.Options.WildcardProjection,
-				Hidden:                  index.Options.Hidden,
-			},
-		}
-	}
-
-	_, err := c.collection.Indexes().CreateMany(context.TODO(), idxs)
-
-	return err
 }
 
 func (c *MongoClient) DropCollection() error {

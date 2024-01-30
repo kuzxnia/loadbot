@@ -6,6 +6,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/kuzxnia/loadbot/lbot/config"
 	"github.com/tailscale/hujson"
 	"golang.org/x/net/context"
 )
@@ -173,4 +174,218 @@ func (c *ReportingFormatRequest) UnmarshalJSON(data []byte) (err error) {
 	}
 
 	return
+}
+
+func (c *ConfigRequest) Validate() error {
+	validators := []func() error{
+		c.validateJobs,
+		// c.validateSchemas,
+		c.validateReportingFormats,
+	}
+
+	for _, validate := range validators {
+		if error := validate(); error != nil {
+			return error
+		}
+	}
+	return nil
+}
+
+func (c *ConfigRequest) validateJobs() error {
+	for _, job := range c.Jobs {
+		if error := job.Validate(); error != nil {
+			return error
+		}
+	}
+	return nil
+}
+
+func (c *ConfigRequest) validateReportingFormats() error {
+	for _, reportingFormat := range c.ReportingFormats {
+		if error := reportingFormat.Validate(); error != nil {
+			return error
+		}
+	}
+	return nil
+}
+
+func (job *JobRequest) Validate() error {
+	validators := []func() error{
+		job.validateSchema,
+		job.validateReportFormat,
+		job.validateDatabase,
+		job.validateCollection,
+		job.validateType,
+		job.validateDuration,
+		job.validatePace,
+		job.validateConnections,
+		job.validateBatchSize,
+		job.validateOperations,
+		job.validateDataSize,
+	}
+
+	for _, validate := range validators {
+		if error := validate(); error != nil {
+			return error
+		}
+	}
+	return nil
+}
+
+func (job *JobRequest) validateSchema() error {
+	if string(config.Sleep) == job.Type || job.Schema == "" {
+		return nil
+	}
+
+	// todo: to fix
+	// if !Contains(job.Parent.Schemas, func(s *Schema) bool { return s.Name == job.Schema }) {
+	// 	return errors.New("JobValidationError: job \"" + job.Name + "\" have invalid template \"" + job.Schema + "\"")
+	// }
+	return nil
+}
+
+func (job *JobRequest) validateReportFormat() error {
+	if job.ReportingFormat == "" {
+		return nil
+	}
+
+	// todo: to fix
+	// reportingFormats := append(job.Parent.ReportingFormats, DefaultReportFormats...)
+	// if !Contains(reportingFormats, func(s *ReportingFormat) bool { return s.Name == job.ReportingFormat }) {
+	// 	return errors.New("JobValidationError: job \"" + job.Name + "\" have invalid report_format \"" + job.ReportingFormat + "\"")
+	// }
+	return nil
+}
+
+func (job *JobRequest) validateType() (err error) {
+	switch job.Type {
+	case string(config.Write):
+	case string(config.BulkWrite):
+	case string(config.Read):
+	case string(config.Update):
+	case string(config.DropCollection):
+	case string(config.Sleep):
+	default:
+		err = errors.New("Job type: " + job.Type + " ")
+	}
+	return
+}
+
+func (job *JobRequest) validateDatabase() (err error) {
+	if job.Schema != "" || job.Type == string(config.Sleep) {
+		return
+	}
+	if job.Database == "" {
+		err = errors.New("JobValidationError: field 'database' is required if 'template' or 'type' is not set")
+	}
+	return
+}
+
+func (job *JobRequest) validateCollection() (err error) {
+	if job.Schema != "" || job.Type == string(config.Sleep) {
+		return
+	}
+	if job.Collection == "" {
+		err = errors.New("JobValidationError: field 'collection' is required if 'template' or 'type' is not set")
+	}
+	return
+}
+
+func (job *JobRequest) validateConnections() (err error) {
+	if job.Connections == 0 {
+		err = errors.New("JobValidationError: field 'connections' must be greater than 0")
+	}
+	if job.Type == string(config.Sleep) {
+		if job.Connections != 1 {
+			err = errors.New("JobValidationError: field 'connections' max number concurrent connections for job type 'sleep' is 1")
+		}
+	}
+	return
+}
+
+func (job *JobRequest) validateDuration() (err error) {
+	if job.Type == string(config.Sleep) {
+		if job.Duration <= 0 {
+			err = errors.New("JobValidationError: field 'duration' must be greater than 0 for job with 'sleep' type ")
+		}
+	}
+	return
+}
+
+func (job *JobRequest) validatePace() (err error) {
+	if job.Type == string(config.Sleep) {
+		if job.Pace != 0 {
+			err = errors.New("JobValidationError: field 'pace' must be equal 0 or must be not set for job with 'sleep' type ")
+		}
+	}
+	return
+}
+
+func (job *JobRequest) validateBatchSize() (err error) {
+	if job.Type == string(config.Sleep) {
+		if job.BatchSize != 0 {
+			err = errors.New("JobValidationError: field 'batch_size' must be equal 0 or must be not set for job with 'sleep' type ")
+		}
+	}
+	return
+}
+
+func (job *JobRequest) validateDataSize() (err error) {
+	if job.Type == string(config.Sleep) {
+		if job.DataSize != 0 {
+			err = errors.New("JobValidationError: field 'data_size' must be equal 0 or must be not set for job with 'sleep' type ")
+		}
+	}
+	return
+}
+
+func (job *JobRequest) validateOperations() (err error) {
+	if job.Type == string(config.Sleep) {
+		if job.Operations != 0 {
+			err = errors.New("JobValidationError: field 'operations' must be equal 0 or must be not set for job with 'sleep' type ")
+		}
+	}
+	return
+}
+
+func (rp *ReportingFormatRequest) Validate() error {
+	validators := []func() error{
+		rp.validateReportingFormat,
+	}
+
+	for _, validate := range validators {
+		if error := validate(); error != nil {
+			return error
+		}
+	}
+	return nil
+}
+
+func (rpt *ReportingFormatRequest) validateReportingFormat() (err error) {
+	return nil
+}
+
+// todo: add schema validation
+// schema keys
+// save key should be in schema
+
+// todo: validation job type
+// todo: validation duration and opertions cannot be set together
+
+// func Contains[T comparable, X comparable](array []T, comparator X, predicate func(T, X) bool) bool {
+// 	for _, elem := range array {
+// 		if predicate(elem, comparator) {
+// 			return true
+// 		}
+// 	}
+// 	return false
+// }
+
+func Contains[T comparable](array []T, predicate func(T) bool) bool {
+	for _, elem := range array {
+		if predicate(elem) {
+			return true
+		}
+	}
+	return false
 }

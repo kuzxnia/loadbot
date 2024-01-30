@@ -7,7 +7,7 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/kuzxnia/loadbot/lbot/pkg/config"
+	"github.com/kuzxnia/loadbot/lbot/config"
 	"github.com/montanaflynn/stats"
 	"github.com/samber/lo"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -168,7 +168,7 @@ func (s *TemplateReport) Add(interval time.Duration, err error) {
 	}
 }
 
-// writer 
+// writer
 func (s *TemplateReport) Summary() {
 	reportData := s.GetReportData()
 
@@ -184,9 +184,9 @@ func (s *TemplateReport) Summary() {
 	}).Parse(s.reportingFormat.Template))
 	outputTemplate.Execute(os.Stdout, reportData)
 
-  // todo: change template to 
-  // https://github.com/gosuri/uiprogress
-  // https://github.com/gosuri/uilive
+	// todo: change template to
+	// https://github.com/gosuri/uiprogress
+	// https://github.com/gosuri/uilive
 }
 
 // var ErrNoDocuments = errors.New("mongo: no documents in result")

@@ -7,7 +7,7 @@ import (
 	"sync/atomic"
 
 	"github.com/go-faker/faker/v4/pkg/options"
-	"github.com/kuzxnia/loadbot/lbot/pkg/config"
+	"github.com/kuzxnia/loadbot/lbot/config"
 )
 
 type DataPool interface {
@@ -102,7 +102,7 @@ func (d *InMemoryDataPool) ExtendGeneratorMapperFields(generator *GeneratorField
 	defer d.mutex.RUnlock()
 
 	for key := range d.dataPool {
-    // todo: fix problem with same field returned, propably related to go closures
+		// todo: fix problem with same field returned, propably related to go closures
 		generator.Set("#"+key, func(opts ...options.OptionFunc) string {
 			return d.Get(key).(string)
 		})

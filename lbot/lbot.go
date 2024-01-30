@@ -4,7 +4,8 @@ import (
 	"context"
 
 	"github.com/kuzxnia/loadbot/lbot/config"
-	"github.com/kuzxnia/loadbot/lbot/pkg/schema"
+	"github.com/kuzxnia/loadbot/lbot/driver"
+	"github.com/kuzxnia/loadbot/lbot/schema"
 )
 
 type Lbot struct {
@@ -31,7 +32,7 @@ func (l *Lbot) Run(ctx context.Context) {
 		func() {
 			// todo: fix here, no schema data pool will be nill
 			dataPool := dataPools[job.Schema]
-			worker, error := NewWorker(l.config, job, dataPool)
+			worker, error := driver.NewWorker(l.config, job, dataPool)
 			if error != nil {
 				panic("Worker initialization error")
 			}
@@ -49,7 +50,7 @@ func (l *Lbot) Ping() error {
 }
 
 func (l *Lbot) SetConfig(config *ConfigRequest) {
-  // todo: create config from request 
-  // should be in config
+	// todo: create config from request
+	// should be in config
 	// l.config = config
 }

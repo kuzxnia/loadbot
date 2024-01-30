@@ -3,9 +3,9 @@ package driver
 import (
 	"time"
 
-	"github.com/kuzxnia/loadbot/lbot/pkg/config"
-	"github.com/kuzxnia/loadbot/lbot/pkg/database"
-	"github.com/kuzxnia/loadbot/lbot/pkg/schema"
+	"github.com/kuzxnia/loadbot/lbot/config"
+	"github.com/kuzxnia/loadbot/lbot/database"
+	"github.com/kuzxnia/loadbot/lbot/schema"
 	"go.mongodb.org/mongo-driver/bson"
 )
 
@@ -31,8 +31,6 @@ func NewJobHandler(job *config.Job, client database.Client, dataPool schema.Data
 		return JobHandler(&UpdateHandler{BaseHandler: &handler})
 	case string(config.BulkWrite):
 		return JobHandler(&BulkWriteHandler{BaseHandler: &handler})
-	case string(config.CreateIndex):
-		return JobHandler(&CreateIndex{BaseHandler: &handler})
 	case string(config.DropCollection):
 		return JobHandler(&DropCollection{BaseHandler: &handler})
 	case string(config.Sleep):
@@ -107,17 +105,6 @@ func (h *UpdateHandler) Handle() (time.Duration, error) {
 
 	start := time.Now()
 	_, error := h.client.UpdateOne(filter, bson.M{"$set": item})
-	elapsed := time.Since(start)
-	return elapsed, error
-}
-
-type CreateIndex struct {
-	*BaseHandler
-}
-
-func (h *CreateIndex) Handle() (time.Duration, error) {
-	start := time.Now()
-	error := h.client.CreateIndexes(h.job.Indexes)
 	elapsed := time.Since(start)
 	return elapsed, error
 }

@@ -3,7 +3,7 @@ package schema
 import (
 	"testing"
 
-	"github.com/kuzxnia/loadbot/lbot/pkg/config"
+	"github.com/kuzxnia/loadbot/lbot/config"
 	"github.com/samber/lo"
 	"github.com/stretchr/testify/assert"
 )
