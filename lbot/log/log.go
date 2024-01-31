@@ -80,9 +80,10 @@ func getLogFormatter(format string) (log.Formatter, error) {
 		return &jsonFormatter{}, nil
 	case FormatFancy:
 		return &fancyFormatter{}, nil
-	}
+	default:
+		return &fancyFormatter{}, nil
 
-	return nil, fmt.Errorf("unknown log format: %s", format)
+	}
 }
 
 func getLogLevel(level string) (log.Level, error) {
@@ -101,9 +102,9 @@ func getLogLevel(level string) (log.Level, error) {
 		return log.FatalLevel, nil
 	case LevelPanic:
 		return log.PanicLevel, nil
+	default:
+		return log.InfoLevel, nil
 	}
-
-	return 0, fmt.Errorf("unknown log level: %s", level)
 }
 
 type jsonFormatter struct {

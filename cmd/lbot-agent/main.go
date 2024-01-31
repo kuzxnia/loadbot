@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 
+	"github.com/kuzxnia/loadbot/lbot"
 	"github.com/kuzxnia/loadbot/lbot/log"
 )
 
@@ -30,7 +31,7 @@ func run() int {
 		panic(err)
 	}
 
-	cmd := BuildArgs(logger, version, commit, date)
+	cmd := lbot.BuildArgs(logger, version, commit, date)
 	err = cmd.ExecuteContext(ctx)
 	if err != nil {
 		logger.Errorf("❌ Error: %s", err.Error())

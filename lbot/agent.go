@@ -38,7 +38,7 @@ func (a *Agent) Listen() error {
 	if err != nil {
 		a.log.Fatal("listen error:", err)
 	}
-	a.log.Info("lbot-agent started on " + agentHost)
+	a.log.Info("Started lbot-agent on " + agentHost)
 
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, os.Interrupt)
@@ -46,6 +46,7 @@ func (a *Agent) Listen() error {
 	go http.Serve(l, nil)
 
 	<-stop
+	a.log.Info("Shuted down lbot-agent")
 
 	return nil
 }
