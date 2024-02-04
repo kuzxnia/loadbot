@@ -53,8 +53,8 @@ func New(rootLogger *log.Entry, version string, commit string, date string) *cob
 	pf.String(config.FlagLogLevel, applog.LevelInfo, fmt.Sprintf("log level, must be one of: %s", strings.Join(applog.Levels, ", ")))
 	pf.String(config.FlagLogFormat, applog.FormatFancy, fmt.Sprintf("log format, must be one of: %s", strings.Join(applog.Formats, ", ")))
 
-	cmd.AddGroup(&OrchiestrationGroup)
-	cmd.AddCommand(provideOrchiestrationCommands()...)
+	// cmd.AddGroup(&OrchiestrationGroup)
+	// cmd.AddCommand(provideOrchiestrationCommands()...)
 	cmd.AddGroup(&DriverGroup)
 	cmd.AddCommand(provideDriverCommands()...)
 
@@ -93,13 +93,13 @@ func provideDriverCommands() []*cobra.Command {
 		GroupID: DriverGroup.ID,
 	}
 
-	watchCommand := cobra.Command{
-		Use:     CommandWatchDriver,
-		Aliases: []string{"i"},
-		Short:   "Watch stress test",
-		RunE:    watchingDriverHandler,
-		GroupID: DriverGroup.ID,
-	}
+	// watchCommand := cobra.Command{
+	// 	Use:     CommandWatchDriver,
+	// 	Aliases: []string{"i"},
+	// 	Short:   "Watch stress test",
+	// 	RunE:    watchingDriverHandler,
+	// 	GroupID: DriverGroup.ID,
+	// }
 	configCommand := cobra.Command{
 		Use:     CommandConfigDriver,
 		Aliases: []string{"i"},
@@ -108,7 +108,8 @@ func provideDriverCommands() []*cobra.Command {
 		GroupID: DriverGroup.ID,
 	}
 
-	return []*cobra.Command{&startCommand, &stopCommand, &watchCommand, &configCommand}
+	// return []*cobra.Command{&startCommand, &stopCommand, &watchCommand, &configCommand}
+	return []*cobra.Command{&startCommand, &stopCommand, &configCommand}
 }
 
 // todo: generate complection
