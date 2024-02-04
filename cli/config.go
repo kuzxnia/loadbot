@@ -7,6 +7,7 @@ package cli
 // 3. generate samle config, for mongodb, postgres itp
 
 import (
+	"errors"
 	"fmt"
 	"net/rpc"
 
@@ -18,14 +19,26 @@ import (
 
 // command for setting full new config
 func setConfigDriverHandler(cmd *cobra.Command, args []string) (err error) {
-	// flags := cmd.Flags()
+	var requestConfig *lbot.ConfigRequest
 
 	flags := cmd.Flags()
-
 	configFile, _ := flags.GetString(ConfigFile)
-	request, err := lbot.ParseConfigFile(configFile)
-	if err != nil {
-		return err
+	stdin, _ := flags.GetBool(StdIn)
+
+	if configFile == "" && !stdin {
+		return errors.New("You need to provide configuration from either " + ConfigFile + " or " + StdIn)
+	}
+
+	if stdin {
+		requestConfig, err = lbot.ParseStdInConfig()
+		fmt.Printf("%+v", requestConfig)
+	}
+
+	if configFile != "" {
+		requestConfig, err = lbot.ParseConfigFile(configFile)
+		if err != nil {
+			return err
+		}
 	}
 
 	// to change
@@ -33,13 +46,13 @@ func setConfigDriverHandler(cmd *cobra.Command, args []string) (err error) {
 
 	Logger.Info("🚀 Setting new config")
 
-	client, err := rpc.DialHTTP("tcp", "127.0.0.1:1234")
+	client, err := rpc.DialHTTP("tcp", "0.0.0.0:1234")
 	if err != nil {
 		Logger.Fatal("Found errors trying to connect to lbot-agent:", err)
 		return
 	}
 
-	err = client.Call("SetConfigProcess.Run", request, &reply)
+	err = client.Call("SetConfigProcess.Run", requestConfig, &reply)
 	if err != nil {
 		return fmt.Errorf("Setting config failed: %w", err)
 	}

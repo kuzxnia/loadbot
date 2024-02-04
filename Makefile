@@ -1,3 +1,7 @@
+args = `arg="$(filter-out $@,$(MAKECMDGOALS))" && echo $${arg:-${1}}`
+
+CONFIG_FILE=
+
 
 build-docker: build-docker-lbot build-docker-agent
 
@@ -7,7 +11,10 @@ build-docker-agent:
 	docker build -t lbot-agent -f docker/Dockerfile.agent .
 
 run-docker-lbot:
-	docker run --net=host -t --rm lbot
+	@docker run --net=host -t --rm lbot $(call args,)
+run-docker-lbot-config:
+	docker run --net=host -i --rm lbot config --stdin < $(CONFIG_FILE)
+
 run-docker-agent:
 	docker run -p 1234:1234 -t --rm lbot-agent
 

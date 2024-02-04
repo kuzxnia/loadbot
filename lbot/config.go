@@ -3,6 +3,8 @@ package lbot
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
+	"io"
 	"os"
 	"time"
 
@@ -120,6 +122,36 @@ func ParseConfigFile(configFile string) (*ConfigRequest, error) {
 	if err != nil {
 		return nil, err
 	}
+	content, err = standardizeJSON(content)
+	if err != nil {
+		return nil, err
+	}
+
+	var cfg ConfigRequest
+	err = json.Unmarshal(content, &cfg)
+
+	if err != nil {
+		return nil, errors.New("Error during Unmarshal(): " + err.Error())
+	}
+
+	return &cfg, err
+}
+
+func InStdInNotEmpty() (bool, error) {
+	stat, err := os.Stdin.Stat()
+	if err != nil {
+		return false, fmt.Errorf("you have an error in stdin:%s", err)
+	}
+
+	return (stat.Mode() & os.ModeNamedPipe) == 0, nil
+}
+
+func ParseStdInConfig() (*ConfigRequest, error) {
+	content, err := io.ReadAll(os.Stdin)
+	if err != nil {
+		return nil, err
+	}
+  // move, repetition as above
 	content, err = standardizeJSON(content)
 	if err != nil {
 		return nil, err

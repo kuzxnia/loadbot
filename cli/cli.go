@@ -69,6 +69,7 @@ const (
 
 	// config args
 	ConfigFile = "config-file"
+	StdIn      = "stdin"
 )
 
 var DriverGroup = cobra.Group{
@@ -104,8 +105,9 @@ func provideDriverCommands() []*cobra.Command {
 		RunE:    setConfigDriverHandler,
 		GroupID: DriverGroup.ID,
 	}
-	configCommandFlags:= configCommand.Flags()
+	configCommandFlags := configCommand.Flags()
 	configCommandFlags.StringP(ConfigFile, "f", "", "file with workload configuration")
+	configCommandFlags.Bool(StdIn, false, "get workload configuration from stdin")
 
 	// return []*cobra.Command{&startCommand, &stopCommand, &watchCommand, &configCommand}
 	return []*cobra.Command{&startCommand, &stopCommand, &configCommand}
