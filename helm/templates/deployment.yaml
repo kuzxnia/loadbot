@@ -1,0 +1,26 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: workload
+  namespace: {{ .Values.global.namespace }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      role: workload
+      mongodb_clustername: {{ .Values.global.cluster.name }}
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        role: workload 
+        mongodb_clustername: {{ .Values.global.cluster.name }}
+    spec:
+      containers:
+        - name: load-driver
+          image: {{ .Values.workload.image }}
+          command: ["{{ .Values.workload.command }}"]
+          args: ["{{ .Values.workload.args }}"]
+          ports: 
+            - containerPort: 22
