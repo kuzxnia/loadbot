@@ -108,11 +108,8 @@ func NewSetConfigProcess(ctx context.Context, lbot *Lbot) *SetConfigProcess {
 }
 
 func (c *SetConfigProcess) Run(request *ConfigRequest, reply *int) error {
-	// if watch arg - run watch
-
-	// 	driver.Torment(config)
-	c.lbot.SetConfig(nil)
-	c.lbot.Run()
+	cfg := NewConfig(request)
+	c.lbot.SetConfig(cfg)
 
 	// before configing process it will varify health of cluster, if pods
 	return nil

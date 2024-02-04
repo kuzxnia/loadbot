@@ -79,7 +79,6 @@ var DriverGroup = cobra.Group{
 func provideDriverCommands() []*cobra.Command {
 	startCommand := cobra.Command{
 		Use:     CommandStartDriver,
-		Aliases: []string{"i"},
 		Short:   "Start stress test",
 		RunE:    startingDriverHandler,
 		GroupID: DriverGroup.ID,
@@ -87,7 +86,6 @@ func provideDriverCommands() []*cobra.Command {
 
 	stopCommand := cobra.Command{
 		Use:     CommandStopDriver,
-		Aliases: []string{"i"},
 		Short:   "Stopping stress test",
 		RunE:    stoppingDriverHandler,
 		GroupID: DriverGroup.ID,
@@ -102,11 +100,12 @@ func provideDriverCommands() []*cobra.Command {
 	// }
 	configCommand := cobra.Command{
 		Use:     CommandConfigDriver,
-		Aliases: []string{"i"},
 		Short:   "Config",
 		RunE:    setConfigDriverHandler,
 		GroupID: DriverGroup.ID,
 	}
+	configCommandFlags:= configCommand.Flags()
+	configCommandFlags.StringP(ConfigFile, "f", "", "file with workload configuration")
 
 	// return []*cobra.Command{&startCommand, &stopCommand, &watchCommand, &configCommand}
 	return []*cobra.Command{&startCommand, &stopCommand, &configCommand}
