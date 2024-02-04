@@ -1,9 +1,8 @@
 package driver
 
 import (
+	"context"
 	"fmt"
-	"os"
-	"os/signal"
 	"sync"
 	"time"
 
@@ -15,34 +14,35 @@ import (
 
 // todo: split this function to setup and to starting workers
 
-func Torment(config *config.Config) {
-	// todo: ping db, before workers init
+// func Torment(config *config.Config) {
+// 	// todo: ping db, before workers init
 
-	// init datapools
-	dataPools := make(map[string]schema.DataPool)
-	for _, sh := range config.Schemas {
-		dataPools[sh.Name] = schema.NewDataPool(sh)
-	}
+// 	// init datapools
+// 	dataPools := make(map[string]schema.DataPool)
+// 	for _, sh := range config.Schemas {
+// 		dataPools[sh.Name] = schema.NewDataPool(sh)
+// 	}
 
-	// todo: in a parallel depending on type
-	for _, job := range config.Jobs {
-		func() {
-			// todo: fix here, no schema data pool will be nill
-			dataPool := dataPools[job.Schema]
-			worker, error := NewWorker(config, job, dataPool)
-			if error != nil {
-				panic("Worker initialization error")
-			}
-			defer worker.Close()
-			worker.InitIntervalReportingSummary()
-			worker.Work()
-			worker.Summary()
-			worker.ExtendCopySavedFieldsToDataPool()
-		}()
-	}
-}
+// 	// todo: in a parallel depending on type
+// 	for _, job := range config.Jobs {
+// 		func() {
+// 			// todo: fix here, no schema data pool will be nill
+// 			dataPool := dataPools[job.Schema]
+// 			worker, error := NewWorker(config, job, dataPool)
+// 			if error != nil {
+// 				panic("Worker initialization error")
+// 			}
+// 			defer worker.Close()
+// 			worker.InitIntervalReportingSummary()
+// 			worker.Work()
+// 			worker.Summary()
+// 			worker.ExtendCopySavedFieldsToDataPool()
+// 		}()
+// 	}
+// }
 
 type Worker struct {
+	ctx         context.Context
 	cfg         *config.Config
 	job         *config.Job
 	wg          sync.WaitGroup
@@ -56,10 +56,11 @@ type Worker struct {
 	startTime   time.Time
 }
 
-func NewWorker(cfg *config.Config, job *config.Job, dataPool schema.DataPool) (*Worker, error) {
+func NewWorker(ctx context.Context, cfg *config.Config, job *config.Job, dataPool schema.DataPool) (*Worker, error) {
 	// todo: check errors
 	fmt.Printf("Starting job: %s\n", lo.If(job.Name != "", job.Name).Else(job.Type))
 	worker := new(Worker)
+	worker.ctx = ctx
 	worker.cfg = cfg
 	worker.job = job
 	worker.wg.Add(int(job.Connections))
@@ -84,12 +85,13 @@ func NewWorker(cfg *config.Config, job *config.Job, dataPool schema.DataPool) (*
 func (w *Worker) Work() {
 	w.startTime = time.Now()
 
-	interruptChan := make(chan os.Signal, 1)
-	signal.Notify(interruptChan, os.Interrupt)
-	go func() {
-		<-interruptChan
-		w.Cancel()
-	}()
+	// something wrong with context propagation change this
+	// go func() {
+	// 	select {
+	// 	case <-w.ctx.Done():
+	// 		w.Cancel()
+	// 	}
+	// }()
 
 	for i := 0; i < int(w.job.Connections); i++ {
 		go func() {
@@ -140,15 +142,14 @@ func (w *Worker) Summary() {
 }
 
 func (w *Worker) Cancel() {
+	fmt.Printf("Task canceled\n")
 	w.pool.Cancel()
 	w.Close()
 }
 
 func (w *Worker) Close() {
 	if w.job.Type != string(config.Sleep) {
-		if err := w.db.Disconnect(); err != nil {
-			panic(err)
-		}
+		w.db.Disconnect()
 	}
 	if w.ticker != nil {
 		w.ticker.Stop()

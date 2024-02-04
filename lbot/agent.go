@@ -23,7 +23,7 @@ func NewAgent(ctx context.Context, logger *log.Entry) *Agent {
 	return &Agent{
 		ctx:  ctx,
 		log:  logger,
-		lbot: NewLbot(nil),
+		lbot: NewLbot(ctx),
 	}
 }
 
@@ -47,6 +47,9 @@ func (a *Agent) Listen() error {
 	go http.Serve(l, nil)
 
 	<-stop
+	_, cancel := context.WithCancel(a.ctx)
+	cancel()
+
 	a.log.Info("Shuted down lbot-agent")
 
 	return nil

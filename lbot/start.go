@@ -20,8 +20,7 @@ func (c *StartProcess) Run(request *StartRequest, reply *int) error {
 
   // validate is configured
 
-	// 	driver.Torment(config)
-	c.lbot.Run(c.ctx)
+	go c.lbot.Run()
 
 	// before starting process it will varify health of cluster, if pods
 	return nil

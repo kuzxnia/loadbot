@@ -112,7 +112,7 @@ func (c *SetConfigProcess) Run(request *ConfigRequest, reply *int) error {
 
 	// 	driver.Torment(config)
 	c.lbot.SetConfig(nil)
-	c.lbot.Run(c.ctx)
+	c.lbot.Run()
 
 	// before configing process it will varify health of cluster, if pods
 	return nil

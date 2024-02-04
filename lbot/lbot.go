@@ -9,16 +9,18 @@ import (
 )
 
 type Lbot struct {
-	config *config.Config
+	ctx     context.Context
+	config  *config.Config
+	workers []*driver.Worker
 }
 
-func NewLbot(config *config.Config) *Lbot {
+func NewLbot(ctx context.Context) *Lbot {
 	return &Lbot{
-		config: config,
+		ctx: ctx,
 	}
 }
 
-func (l *Lbot) Run(ctx context.Context) {
+func (l *Lbot) Run() {
 	// todo: ping db, before workers init
 
 	// init datapools
@@ -32,7 +34,8 @@ func (l *Lbot) Run(ctx context.Context) {
 		func() {
 			// todo: fix here, no schema data pool will be nill
 			dataPool := dataPools[job.Schema]
-			worker, error := driver.NewWorker(l.config, job, dataPool)
+			worker, error := driver.NewWorker(l.ctx, l.config, job, dataPool)
+			l.workers = append(l.workers, worker)
 			if error != nil {
 				panic("Worker initialization error")
 			}
@@ -45,7 +48,18 @@ func (l *Lbot) Run(ctx context.Context) {
 	}
 }
 
-func (l *Lbot) Ping() error {
+func (l *Lbot) Cancel() error {
+	// fmt.Println(&l.ctx)
+
+	// ctx, cancel := context.WithCancel(l.ctx)
+	// fmt.Println(&ctx)
+	// fmt.Printf("Canceling workload")
+	// cancel()
+	for _, worker := range l.workers {
+		worker.Cancel()
+	}
+	l.workers = nil
+
 	return nil
 }
 

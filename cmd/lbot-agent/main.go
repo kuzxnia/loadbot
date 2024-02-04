@@ -30,7 +30,6 @@ func run() int {
 	if err != nil {
 		panic(err)
 	}
-
 	cmd := lbot.BuildArgs(logger, version, commit, date)
 	err = cmd.ExecuteContext(ctx)
 	if err != nil {
