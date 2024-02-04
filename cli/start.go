@@ -13,7 +13,9 @@ import (
 func startingDriverHandler(cmd *cobra.Command, args []string) (err error) {
 	// flags := cmd.Flags()
 
-	request := lbot.StartRequest{}
+	request := lbot.StartRequest{
+    Watch: false,
+  }
 	// to change
 	var reply int
 

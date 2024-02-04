@@ -3,7 +3,7 @@ package lbot
 import "golang.org/x/net/context"
 
 type StartRequest struct {
-	watch bool
+	Watch bool
 }
 
 type StartProcess struct {
