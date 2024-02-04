@@ -11,6 +11,52 @@ import (
 	"golang.org/x/net/context"
 )
 
+func NewConfig(request *ConfigRequest) *config.Config {
+	cfg := &config.Config{
+		ConnectionString: request.ConnectionString,
+		Jobs:             make([]*config.Job, len(request.Jobs)),
+		Schemas:          make([]*config.Schema, len(request.Schemas)),
+		ReportingFormats: make([]*config.ReportingFormat, len(request.ReportingFormats)),
+		Debug:            request.Debug,
+	}
+	for i, job := range request.Jobs {
+		cfg.Jobs[i] = &config.Job{
+			Name:            job.Name,
+			Database:        job.Database,
+			Collection:      job.Collection,
+			Type:            job.Type,
+			Schema:          job.Schema,
+			ReportingFormat: job.ReportingFormat,
+			Connections:     job.Connections,
+			Pace:            job.Pace,
+			DataSize:        job.DataSize,
+			BatchSize:       job.BatchSize,
+			Duration:        job.Duration,
+			Operations:      job.Operations,
+			Timeout:         job.Timeout,
+			Filter:          job.Filter,
+		}
+	}
+	for i, schema := range request.Schemas {
+		cfg.Schemas[i] = &config.Schema{
+			Name:       schema.Name,
+			Database:   schema.Database,
+			Collection: schema.Collection,
+			Schema:     schema.Schema,
+			Save:       schema.Save,
+		}
+	}
+	for i, rf := range request.ReportingFormats {
+		cfg.ReportingFormats[i] = &config.ReportingFormat{
+			Name:     rf.Name,
+			Interval: rf.Interval,
+			Template: rf.Template,
+		}
+	}
+
+	return cfg
+}
+
 // todo: should be pointers
 type ConfigRequest struct {
 	ConnectionString string                    `json:"connection_string"`

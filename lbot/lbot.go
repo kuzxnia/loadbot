@@ -49,8 +49,6 @@ func (l *Lbot) Ping() error {
 	return nil
 }
 
-func (l *Lbot) SetConfig(config *ConfigRequest) {
-	// todo: create config from request
-	// should be in config
-	// l.config = config
+func (l *Lbot) SetConfig(config *config.Config) {
+	l.config = config
 }

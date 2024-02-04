@@ -64,7 +64,8 @@ func (a *Agent) ApplyConfig(configFilePath string) error {
 	if err != nil {
 		return err
 	}
-	a.lbot.SetConfig(request)
+	cfg := NewConfig(request)
+	a.lbot.SetConfig(cfg)
 
 	return nil
 }
