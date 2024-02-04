@@ -34,7 +34,7 @@ func (a *Agent) Listen() error {
 	rpc.Register(NewStoppingProcess(a.ctx, a.lbot))
 
 	rpc.HandleHTTP()
-	agentHost := "127.0.0.1:1234"
+	agentHost := "0.0.0.0:1234"
 	l, err := net.Listen("tcp", agentHost)
 	if err != nil {
 		a.log.Fatal("listen error:", err)
