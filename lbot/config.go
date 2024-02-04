@@ -22,6 +22,7 @@ func NewConfig(request *ConfigRequest) *config.Config {
 	for i, job := range request.Jobs {
 		cfg.Jobs[i] = &config.Job{
 			Name:            job.Name,
+			Parent:          cfg,
 			Database:        job.Database,
 			Collection:      job.Collection,
 			Type:            job.Type,

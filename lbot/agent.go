@@ -21,8 +21,9 @@ type Agent struct {
 
 func NewAgent(ctx context.Context, logger *log.Entry) *Agent {
 	return &Agent{
-		ctx: ctx,
-		log: logger,
+		ctx:  ctx,
+		log:  logger,
+		lbot: NewLbot(nil),
 	}
 }
 
@@ -64,6 +65,7 @@ func (a *Agent) ApplyConfig(configFilePath string) error {
 	if err != nil {
 		return err
 	}
+	a.log.Info("lbot-agent configured using " + configFilePath)
 	cfg := NewConfig(request)
 	a.lbot.SetConfig(cfg)
 

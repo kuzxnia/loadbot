@@ -18,6 +18,8 @@ func NewStartProcess(ctx context.Context, lbot *Lbot) *StartProcess {
 func (c *StartProcess) Run(request *StartRequest, reply *int) error {
 	// if watch arg - run watch
 
+  // validate is configured
+
 	// 	driver.Torment(config)
 	c.lbot.Run(c.ctx)
 

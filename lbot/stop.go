@@ -16,6 +16,8 @@ func NewStoppingProcess(ctx context.Context, lbot *Lbot) *StoppingProcess {
 }
 
 func (c *StoppingProcess) Run(request *StoppingRequest, reply *int) error {
+  // validate is configured
+
 	// if watch arg - run watch
 	return nil
 }
