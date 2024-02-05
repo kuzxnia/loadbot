@@ -1,31 +1,44 @@
 package cli
 
 import (
-	"net/rpc"
+	"context"
+	"fmt"
+	"io"
+	"log"
 
-	"github.com/kuzxnia/loadbot/lbot"
-	"github.com/spf13/cobra"
+	"github.com/kuzxnia/loadbot/lbot/proto"
+	"google.golang.org/grpc"
 )
 
-func watchingDriverHandler(cmd *cobra.Command, args []string) error {
-	request := lbot.WatchingRequest{}
+func WatchDriver(conn grpc.ClientConnInterface, request *proto.WatchRequest) (err error) {
+	Logger.Info("🚀 Starting stress test")
 
-	Logger.Info("🚀 Watching stress test")
+	client := proto.NewWatchProcessClient(conn)
 
-	var reply int
-	client, err := rpc.DialHTTP("tcp", "127.0.0.1:1234")
+	stream, err := client.Run(context.TODO(), request)
 	if err != nil {
-		Logger.Fatal("Found errors trying to connect to lbot-agent:", err)
+		return fmt.Errorf("starting stress test failed: %w", err)
 	}
 
-  // currently not possible because it require stream
-  // for first version change this to execute in look, and fetch last n min/sec of logs
-	err = client.Call("WatchProcess.Run", request, &reply)
-	if err != nil {
-		Logger.Fatal("WatchProcess error:", err)
-	}
+	done := make(chan bool)
 
-	Logger.Info("✅ Watching stress test succeeded")
+	go func() {
+		for {
+			resp, err := stream.Recv()
+			if err == io.EOF {
+				done <- true // means stream is finished
+				return
+			}
+			if err != nil {
+				log.Fatalf("cannot receive %v", err)
+			}
+			log.Printf("%s", resp.Message)
+		}
+	}()
 
-	return nil
+	<-done // we will wait until all response is received
+
+	Logger.Info("✅ Starting stress test succeeded")
+
+	return
 }

@@ -12,11 +12,14 @@ type Lbot struct {
 	ctx     context.Context
 	config  *config.Config
 	workers []*driver.Worker
+	logs    chan string
 }
 
 func NewLbot(ctx context.Context) *Lbot {
 	return &Lbot{
-		ctx: ctx,
+		ctx:  ctx,
+    // todo: chanell max size one
+		logs: make(chan string),
 	}
 }
 
@@ -40,7 +43,7 @@ func (l *Lbot) Run() {
 				panic("Worker initialization error")
 			}
 			defer worker.Close()
-			worker.InitIntervalReportingSummary()
+			worker.InitIntervalReportingSummary(l.logs)
 			worker.Work()
 			worker.Summary()
 			worker.ExtendCopySavedFieldsToDataPool()

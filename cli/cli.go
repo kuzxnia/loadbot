@@ -131,14 +131,22 @@ func provideDriverCommands() []*cobra.Command {
 		GroupID: DriverGroup.ID,
 	}
 
-	// watchCommand := cobra.Command{
-	// 	Use:     CommandWatchDriver,
-	// 	Aliases: []string{"i"},
-	// 	Short:   "Watch stress test",
-	// 	RunE:    watchingDriverHandler,
-	// 	GroupID: DriverGroup.ID,
-	// }
-	// var conn *grpc.ClientConn
+	watchCommand := cobra.Command{
+		Use:     CommandWatchDriver,
+		Aliases: []string{"i"},
+		Short:   "Watch stress test",
+		RunE: func(cmd *cobra.Command, args []string) (err error) {
+			// building parameters for stop
+			// check for params
+
+			// todo: switch to local model aka cli.StartRequest
+			request := proto.WatchRequest{}
+      // response model could have worlkload id?
+
+			return WatchDriver(Conn, &request)
+		},
+		GroupID: DriverGroup.ID,
+	}
 	configCommand := cobra.Command{
 		Use:   CommandConfigDriver,
 		Short: "Config",
@@ -174,8 +182,7 @@ func provideDriverCommands() []*cobra.Command {
 	configCommandFlags.StringP(ConfigFile, "f", "", "file with workload configuration")
 	configCommandFlags.Bool(StdIn, false, "get workload configuration from stdin")
 
-	// return []*cobra.Command{&startCommand, &stopCommand, &watchCommand, &configCommand}
-	return []*cobra.Command{&startCommand, &stopCommand, &configCommand}
+	return []*cobra.Command{&startCommand, &stopCommand, &watchCommand, &configCommand}
 }
 
 // todo: generate complection

@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+package proto;
+
+option go_package = "proto/";
+
+service WatchProcess {
+  rpc Run(WatchRequest) returns (stream WatchResponse) {}
+}
+
+message WatchRequest {}
+
+message WatchResponse {
+  string message = 1;
+}

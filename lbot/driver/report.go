@@ -1,8 +1,8 @@
 package driver
 
 import (
+	"bytes"
 	"fmt"
-	"os"
 	"sync"
 	"text/template"
 	"time"
@@ -56,7 +56,7 @@ type Report interface {
 
 	Add(time.Duration, error)
 	SetDuration(time.Duration)
-	Summary()
+	Summary(chan string)
 }
 
 func NewReport(job *config.Job) Report {
@@ -169,7 +169,7 @@ func (s *TemplateReport) Add(interval time.Duration, err error) {
 }
 
 // writer
-func (s *TemplateReport) Summary() {
+func (s *TemplateReport) Summary(logs chan string) {
 	reportData := s.GetReportData()
 
 	outputTemplate := template.Must(template.New("").Funcs(template.FuncMap{
@@ -182,8 +182,19 @@ func (s *TemplateReport) Summary() {
 		"msf3": func(f float64) string { return fmt.Sprintf("%.3f", f*1000) },
 		"msf4": func(f float64) string { return fmt.Sprintf("%.4f", f*1000) },
 	}).Parse(s.reportingFormat.Template))
-	outputTemplate.Execute(os.Stdout, reportData)
 
+	var buf bytes.Buffer
+	outputTemplate.Execute(&buf, reportData)
+
+	fmt.Printf(buf.String())
+
+	select {
+	case logs <- buf.String():
+		fmt.Println("sent message to channel")
+	default:
+		fmt.Println("skipped senting message channel")
+
+	}
 	// todo: change template to
 	// https://github.com/gosuri/uiprogress
 	// https://github.com/gosuri/uilive
