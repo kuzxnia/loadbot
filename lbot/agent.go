@@ -35,7 +35,7 @@ func (a *Agent) Listen() error {
 	// register driver commands
 	// rpc.Register(NewStartProcess(a.ctx, a.lbot))
 	rpc.Register(NewWatchingProcess(a.ctx, a.lbot))
-	rpc.Register(NewStoppingProcess(a.ctx, a.lbot))
+	// rpc.Register(NewStoppingProcess(a.ctx, a.lbot))
 	rpc.Register(NewSetConfigProcess(a.ctx, a.lbot))
 
 	rpc.HandleHTTP()
@@ -70,6 +70,7 @@ func (a *Agent) ListenGRPC() error {
 	grpcServer := grpc.NewServer()
 	// register commands
 	proto.RegisterStartProcessServer(grpcServer, NewStartProcess(a.ctx, a.lbot))
+	proto.RegisterStopProcessServer(grpcServer, NewStoppingProcess(a.ctx, a.lbot))
 
 	reflection.Register(grpcServer)
 
