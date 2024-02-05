@@ -41,6 +41,7 @@ func (a *Agent) Listen() error {
 	proto.RegisterStartProcessServer(grpcServer, NewStartProcess(a.ctx, a.lbot))
 	proto.RegisterStopProcessServer(grpcServer, NewStoppingProcess(a.ctx, a.lbot))
 	proto.RegisterSetConfigProcessServer(grpcServer, NewSetConfigProcess(a.ctx, a.lbot))
+	proto.RegisterWatchProcessServer(grpcServer, NewWatchingProcess(a.ctx, a.lbot))
 
 	reflection.Register(grpcServer)
 
