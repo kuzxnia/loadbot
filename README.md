@@ -1,4 +1,4 @@
-# lbot - workload database driver (currenty supporting only MongoDB)
+# lbot - workload database driver (currently supporting only MongoDB)
 
 ## Introduction
 The purpose of this tool is to simulate workloads to facilitate testing the failover capabilities of database cluster under load. This code, being an open-source project, is in its early development stage and likely contains various bugs.
