@@ -1,21 +1,28 @@
 package cli
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 	"time"
 
+	"github.com/kuzxnia/loadbot/lbot"
 	"github.com/kuzxnia/loadbot/lbot/config"
 	applog "github.com/kuzxnia/loadbot/lbot/log"
+	"github.com/kuzxnia/loadbot/lbot/proto"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	"google.golang.org/grpc"
 )
 
 const (
 	AgentUri = "agent-uri"
 )
 
-var Logger *log.Entry
+var (
+	Logger *log.Entry
+	Conn   *grpc.ClientConn
+)
 
 func New(rootLogger *log.Entry, version string, commit string, date string) *cobra.Command {
 	Logger = rootLogger
@@ -24,18 +31,41 @@ func New(rootLogger *log.Entry, version string, commit string, date string) *cob
 		Use:     "lbot",
 		Short:   "A command-line database workload ",
 		Version: fmt.Sprintf("%s (commit: %s) (build date: %s)", version, commit, date),
-		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+		PersistentPreRunE: func(cmd *cobra.Command, args []string) (err error) {
 			f := cmd.Flags()
 			loglvl, _ := f.GetString(config.FlagLogLevel)
 			logfmt, _ := f.GetString(config.FlagLogFormat)
-			err := applog.Configure(Logger, loglvl, logfmt)
+			err = applog.Configure(Logger, loglvl, logfmt)
 			if err != nil {
 				return fmt.Errorf("failed to configure logger: %w", err)
 			}
 
-			return nil
+			agentUri, _ := f.GetString(AgentUri)
+			Conn, err = grpc.Dial(agentUri, grpc.WithInsecure())
+			// valiedate connection
+			if err != nil {
+				Logger.Fatal("Found errors trying to connect to lbot-agent:", err)
+				return
+			}
+
+			return
+		},
+		PersistentPostRunE: func(cmd *cobra.Command, args []string) (err error) {
+			defer Conn.Close()
+
+			return
 		},
 	}
+	pf := cmd.PersistentFlags()
+	pf.StringP(AgentUri, "u", "127.0.0.1:1234", "loadbot agent uri (default: 127.0.0.1:1234)")
+	pf.String(config.FlagLogLevel, applog.LevelInfo, fmt.Sprintf("log level, must be one of: %s", strings.Join(applog.Levels, ", ")))
+	pf.String(config.FlagLogFormat, applog.FormatFancy, fmt.Sprintf("log format, must be one of: %s", strings.Join(applog.Formats, ", ")))
+
+	// setup supcommands
+	// cmd.AddGroup(&OrchiestrationGroup)
+	// cmd.AddCommand(provideOrchiestrationCommands()...)
+	cmd.AddGroup(&DriverGroup)
+	cmd.AddCommand(provideDriverCommands()...)
 
 	// by default run in docker container
 	// agent save config file in /tmp/lbot/ .*
@@ -47,16 +77,6 @@ func New(rootLogger *log.Entry, version string, commit string, date string) *cob
 
 	// jeśli stworzone było lokalnie to bij do lokalnego,
 	// jeśli na k8s to bijesz po k8s-selector, jeśli wiele to bijesz do wielu,
-
-	pf := cmd.PersistentFlags()
-	pf.StringP(AgentUri, "u", "", "loadbot agent uri (default: 127.0.0.1:1234)")
-	pf.String(config.FlagLogLevel, applog.LevelInfo, fmt.Sprintf("log level, must be one of: %s", strings.Join(applog.Levels, ", ")))
-	pf.String(config.FlagLogFormat, applog.FormatFancy, fmt.Sprintf("log format, must be one of: %s", strings.Join(applog.Formats, ", ")))
-
-	// cmd.AddGroup(&OrchiestrationGroup)
-	// cmd.AddCommand(provideOrchiestrationCommands()...)
-	cmd.AddGroup(&DriverGroup)
-	cmd.AddCommand(provideDriverCommands()...)
 
 	return &cmd
 }
@@ -79,16 +99,35 @@ var DriverGroup = cobra.Group{
 
 func provideDriverCommands() []*cobra.Command {
 	startCommand := cobra.Command{
-		Use:     CommandStartDriver,
-		Short:   "Start stress test",
-		RunE:    startingDriverHandler,
+		Use:   CommandStartDriver,
+		Short: "Start stress test",
+		RunE: func(cmd *cobra.Command, args []string) (err error) {
+			// building parameters for start
+			// check for params
+
+			// todo: switch to local model aka cli.StartRequest
+			request := proto.StartRequest{
+				Watch: false,
+			}
+
+			return StartDriver(Conn, &request)
+		},
 		GroupID: DriverGroup.ID,
 	}
 
 	stopCommand := cobra.Command{
-		Use:     CommandStopDriver,
-		Short:   "Stopping stress test",
-		RunE:    stoppingDriverHandler,
+		Use:   CommandStopDriver,
+		Short: "Stopping stress test",
+		RunE: func(cmd *cobra.Command, args []string) (err error) {
+			// building parameters for stop
+			// check for params
+
+			// todo: switch to local model aka cli.StartRequest
+			request := proto.StopRequest{}
+      // response model could have worlkload id?
+
+			return StopDriver(Conn, &request)
+		},
 		GroupID: DriverGroup.ID,
 	}
 
@@ -99,10 +138,36 @@ func provideDriverCommands() []*cobra.Command {
 	// 	RunE:    watchingDriverHandler,
 	// 	GroupID: DriverGroup.ID,
 	// }
+	// var conn *grpc.ClientConn
 	configCommand := cobra.Command{
-		Use:     CommandConfigDriver,
-		Short:   "Config",
-		RunE:    setConfigDriverHandler,
+		Use:   CommandConfigDriver,
+		Short: "Config",
+		RunE: func(cmd *cobra.Command, args []string) (err error) {
+			flags := cmd.Flags()
+			configFile, _ := flags.GetString(ConfigFile)
+			stdin, _ := flags.GetBool(StdIn)
+
+			if configFile == "" && !stdin {
+				return errors.New("You need to provide configuration from either " + ConfigFile + " or " + StdIn)
+			}
+
+			var parsedConfig *lbot.ConfigRequest
+			if stdin {
+				parsedConfig, err = lbot.ParseStdInConfig()
+				if err != nil {
+					return err
+				}
+			}
+
+			if configFile != "" {
+				parsedConfig, err = lbot.ParseConfigFile(configFile)
+				if err != nil {
+					return err
+				}
+			}
+
+			return SetConfigDriver(Conn, parsedConfig)
+		},
 		GroupID: DriverGroup.ID,
 	}
 	configCommandFlags := configCommand.Flags()

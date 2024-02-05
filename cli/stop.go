@@ -1,31 +1,24 @@
 package cli
 
 import (
-	"net/rpc"
+	"context"
 
-	"github.com/kuzxnia/loadbot/lbot"
-	"github.com/spf13/cobra"
+	"github.com/kuzxnia/loadbot/lbot/proto"
+	"google.golang.org/grpc"
 )
 
-func stoppingDriverHandler(cmd *cobra.Command, args []string) (err error) {
-	request := lbot.StoppingRequest{}
-
+func StopDriver(conn grpc.ClientConnInterface, request *proto.StopRequest) (err error) {
 	Logger.Info("🚀 Stopping stress test")
 
-	var reply int
+	client := proto.NewStopProcessClient(conn)
 
-	client, err := rpc.DialHTTP("tcp", "127.0.0.1:1234")
-	if err != nil {
-		Logger.Fatal("Found errors trying to connect to lbot-agent:", err)
-		return
-	}
-
-	err = client.Call("StoppingProcess.Run", request, &reply)
+	reply, err := client.Run(context.TODO(), request)
 	if err != nil {
 		Logger.Fatal("arith error:", err)
 		return
 	}
 
+	Logger.Infof("Received: %v", reply)
 	Logger.Info("✅ Stopping stress test succeeded")
 
 	return nil

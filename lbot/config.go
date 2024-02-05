@@ -1,6 +1,7 @@
 package lbot
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -9,8 +10,8 @@ import (
 	"time"
 
 	"github.com/kuzxnia/loadbot/lbot/config"
+	"github.com/kuzxnia/loadbot/lbot/proto"
 	"github.com/tailscale/hujson"
-	"golang.org/x/net/context"
 )
 
 func NewConfig(request *ConfigRequest) *config.Config {
@@ -60,6 +61,56 @@ func NewConfig(request *ConfigRequest) *config.Config {
 	return cfg
 }
 
+func NewConfigFromProtoConfigRequest(request *proto.ConfigRequest) *config.Config {
+	cfg := &config.Config{
+		ConnectionString: request.ConnectionString,
+		Jobs:             make([]*config.Job, len(request.Jobs)),
+		Schemas:          make([]*config.Schema, len(request.Schemas)),
+		ReportingFormats: make([]*config.ReportingFormat, len(request.ReportingFormats)),
+		Debug:            request.Debug,
+	}
+	for i, job := range request.Jobs {
+		duration, _ := time.ParseDuration(job.Duration)
+		timeout, _ := time.ParseDuration(job.Timeout)
+		cfg.Jobs[i] = &config.Job{
+			Name:            job.Name,
+			Parent:          cfg,
+			Database:        job.Database,
+			Collection:      job.Collection,
+			Type:            job.Type,
+			Schema:          job.Schema,
+			ReportingFormat: job.ReportingFormat,
+			Connections:     job.Connections,
+			Pace:            job.Pace,
+			DataSize:        job.DataSize,
+			BatchSize:       job.BatchSize,
+			Duration:        duration,
+			Operations:      job.Operations,
+			Timeout:         timeout,
+			// Filter:          job.Filter,
+		}
+	}
+	for i, schema := range request.Schemas {
+		cfg.Schemas[i] = &config.Schema{
+			Name:       schema.Name,
+			Database:   schema.Database,
+			Collection: schema.Collection,
+			// Schema:     schema.Schema,
+			Save: schema.Save,
+		}
+	}
+	for i, rf := range request.ReportingFormats {
+		interval, _ := time.ParseDuration(rf.Interval)
+		cfg.ReportingFormats[i] = &config.ReportingFormat{
+			Name:     rf.Name,
+			Interval: interval,
+			Template: rf.Template,
+		}
+	}
+
+	return cfg
+}
+
 // todo: should be pointers
 type ConfigRequest struct {
 	ConnectionString string                    `json:"connection_string"`
@@ -101,6 +152,7 @@ type ReportingFormatRequest struct {
 }
 
 type SetConfigProcess struct {
+	proto.UnimplementedSetConfigProcessServer
 	ctx  context.Context
 	lbot *Lbot
 }
@@ -109,12 +161,12 @@ func NewSetConfigProcess(ctx context.Context, lbot *Lbot) *SetConfigProcess {
 	return &SetConfigProcess{ctx: ctx, lbot: lbot}
 }
 
-func (c *SetConfigProcess) Run(request *ConfigRequest, reply *int) error {
-	cfg := NewConfig(request)
+func (c *SetConfigProcess) Run(ctx context.Context, request *proto.ConfigRequest) (*proto.ConfigResponse, error) {
+	cfg := NewConfigFromProtoConfigRequest(request)
 	c.lbot.SetConfig(cfg)
 
 	// before configing process it will varify health of cluster, if pods
-	return nil
+	return &proto.ConfigResponse{}, nil
 }
 
 func ParseConfigFile(configFile string) (*ConfigRequest, error) {
@@ -151,7 +203,7 @@ func ParseStdInConfig() (*ConfigRequest, error) {
 	if err != nil {
 		return nil, err
 	}
-  // move, repetition as above
+	// move, repetition as above
 	content, err = standardizeJSON(content)
 	if err != nil {
 		return nil, err

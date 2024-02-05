@@ -3,13 +3,15 @@ package lbot
 import (
 	"context"
 	"net"
-	"net/http"
-	"net/rpc"
 	"os"
 	"os/signal"
+	"syscall"
 
 	"github.com/kuzxnia/loadbot/lbot/config"
+	"github.com/kuzxnia/loadbot/lbot/proto"
 	log "github.com/sirupsen/logrus"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/reflection"
 )
 
 type Agent struct {
@@ -28,26 +30,36 @@ func NewAgent(ctx context.Context, logger *log.Entry) *Agent {
 }
 
 func (a *Agent) Listen() error {
-	// register driver commands
-	rpc.Register(NewStartProcess(a.ctx, a.lbot))
-	rpc.Register(NewWatchingProcess(a.ctx, a.lbot))
-	rpc.Register(NewStoppingProcess(a.ctx, a.lbot))
-	rpc.Register(NewSetConfigProcess(a.ctx, a.lbot))
-
-	rpc.HandleHTTP()
-	agentHost := "0.0.0.0:1234"
+	agentHost := "0.0.0.0:1235"
 	l, err := net.Listen("tcp", agentHost)
 	if err != nil {
 		a.log.Fatal("listen error:", err)
 	}
+
+	grpcServer := grpc.NewServer()
+	// register commands
+	proto.RegisterStartProcessServer(grpcServer, NewStartProcess(a.ctx, a.lbot))
+	proto.RegisterStopProcessServer(grpcServer, NewStoppingProcess(a.ctx, a.lbot))
+	proto.RegisterSetConfigProcessServer(grpcServer, NewSetConfigProcess(a.ctx, a.lbot))
+
+	reflection.Register(grpcServer)
+
 	a.log.Info("Started lbot-agent on " + agentHost)
+	go func() {
+		if err := grpcServer.Serve(l); err != nil {
+			log.Fatalf("failed to serve: %s", err)
+		}
+	}()
 
 	stop := make(chan os.Signal, 1)
-	signal.Notify(stop, os.Interrupt)
-
-	go http.Serve(l, nil)
+	signal.Notify(
+		stop, os.Interrupt, syscall.SIGHUP, syscall.SIGINT, syscall.SIGQUIT, syscall.SIGTERM,
+	)
 
 	<-stop
+	grpcServer.GracefulStop()
+
+	// is this needed?
 	_, cancel := context.WithCancel(a.ctx)
 	cancel()
 
@@ -57,19 +69,14 @@ func (a *Agent) Listen() error {
 }
 
 // runned when initializing agent, and after reconfig
-func (a *Agent) ApplyConfig(configFilePath string) error {
+func (a *Agent) ApplyConfig(request *ConfigRequest) error {
 	// todo:
 	// check if operation is running
-	// lock ?
+	// lock ? or apply config and restart
 	// if some operation is running {
 	//   return errors.New("")
 	// }
 
-	request, err := ParseConfigFile(configFilePath)
-	if err != nil {
-		return err
-	}
-	a.log.Info("lbot-agent configured using " + configFilePath)
 	cfg := NewConfig(request)
 	a.lbot.SetConfig(cfg)
 

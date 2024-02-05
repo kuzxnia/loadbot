@@ -1,12 +1,13 @@
 package lbot
 
-import "golang.org/x/net/context"
+import (
+	"context"
 
-type StartRequest struct {
-	Watch bool
-}
+	"github.com/kuzxnia/loadbot/lbot/proto"
+)
 
 type StartProcess struct {
+	proto.UnimplementedStartProcessServer
 	ctx  context.Context
 	lbot *Lbot
 }
@@ -15,13 +16,12 @@ func NewStartProcess(ctx context.Context, lbot *Lbot) *StartProcess {
 	return &StartProcess{ctx: ctx, lbot: lbot}
 }
 
-func (c *StartProcess) Run(request *StartRequest, reply *int) error {
+func (c *StartProcess) Run(ctx context.Context, request *proto.StartRequest) (*proto.StartResponse, error) {
 	// if watch arg - run watch
 
-  // validate is configured
-
+	// validate is configured
 	go c.lbot.Run()
 
 	// before starting process it will varify health of cluster, if pods
-	return nil
+	return &proto.StartResponse{}, nil
 }
