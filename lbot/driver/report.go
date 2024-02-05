@@ -186,9 +186,15 @@ func (s *TemplateReport) Summary(logs chan string) {
 	var buf bytes.Buffer
 	outputTemplate.Execute(&buf, reportData)
 
-  fmt.Printf(buf.String())
+	fmt.Printf(buf.String())
 
-	logs <- buf.String()
+	select {
+	case logs <- buf.String():
+		fmt.Println("sent message to channel")
+	default:
+		fmt.Println("skipped senting message channel")
+
+	}
 	// todo: change template to
 	// https://github.com/gosuri/uiprogress
 	// https://github.com/gosuri/uilive
