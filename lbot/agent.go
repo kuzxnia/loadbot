@@ -36,7 +36,7 @@ func (a *Agent) Listen() error {
 	// rpc.Register(NewStartProcess(a.ctx, a.lbot))
 	rpc.Register(NewWatchingProcess(a.ctx, a.lbot))
 	// rpc.Register(NewStoppingProcess(a.ctx, a.lbot))
-	rpc.Register(NewSetConfigProcess(a.ctx, a.lbot))
+	// rpc.Register(NewSetConfigProcess(a.ctx, a.lbot))
 
 	rpc.HandleHTTP()
 	agentHost := "0.0.0.0:1234"
@@ -71,6 +71,7 @@ func (a *Agent) ListenGRPC() error {
 	// register commands
 	proto.RegisterStartProcessServer(grpcServer, NewStartProcess(a.ctx, a.lbot))
 	proto.RegisterStopProcessServer(grpcServer, NewStoppingProcess(a.ctx, a.lbot))
+	proto.RegisterSetConfigProcessServer(grpcServer, NewSetConfigProcess(a.ctx, a.lbot))
 
 	reflection.Register(grpcServer)
 
