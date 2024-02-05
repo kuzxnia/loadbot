@@ -16,6 +16,7 @@ import (
 )
 
 // checks if process is running in local system
+// here should be cli config request - not lbot one
 func SetConfigDriver(conn *grpc.ClientConn, parsedConfig *lbot.ConfigRequest) (err error) {
 	requestConfig := BuildConfigRequest(parsedConfig)
 

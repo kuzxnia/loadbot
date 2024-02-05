@@ -9,6 +9,7 @@ import (
 	"github.com/kuzxnia/loadbot/lbot"
 	"github.com/kuzxnia/loadbot/lbot/config"
 	applog "github.com/kuzxnia/loadbot/lbot/log"
+	"github.com/kuzxnia/loadbot/lbot/proto"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"google.golang.org/grpc"
@@ -41,7 +42,7 @@ func New(rootLogger *log.Entry, version string, commit string, date string) *cob
 
 			agentUri, _ := f.GetString(AgentUri)
 			Conn, err = grpc.Dial(agentUri, grpc.WithInsecure())
-      // valiedate connection
+			// valiedate connection
 			if err != nil {
 				Logger.Fatal("Found errors trying to connect to lbot-agent:", err)
 				return
@@ -98,16 +99,35 @@ var DriverGroup = cobra.Group{
 
 func provideDriverCommands() []*cobra.Command {
 	startCommand := cobra.Command{
-		Use:     CommandStartDriver,
-		Short:   "Start stress test",
-		RunE:    startingDriverHandler,
+		Use:   CommandStartDriver,
+		Short: "Start stress test",
+		RunE: func(cmd *cobra.Command, args []string) (err error) {
+			// building parameters for start
+			// check for params
+
+			// todo: switch to local model aka cli.StartRequest
+			request := proto.StartRequest{
+				Watch: false,
+			}
+
+			return StartDriver(Conn, &request)
+		},
 		GroupID: DriverGroup.ID,
 	}
 
 	stopCommand := cobra.Command{
-		Use:     CommandStopDriver,
-		Short:   "Stopping stress test",
-		RunE:    stoppingDriverHandler,
+		Use:   CommandStopDriver,
+		Short: "Stopping stress test",
+		RunE: func(cmd *cobra.Command, args []string) (err error) {
+			// building parameters for stop
+			// check for params
+
+			// todo: switch to local model aka cli.StartRequest
+			request := proto.StopRequest{}
+      // response model could have worlkload id?
+
+			return StopDriver(Conn, &request)
+		},
 		GroupID: DriverGroup.ID,
 	}
 
