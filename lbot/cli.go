@@ -57,8 +57,7 @@ func BuildArgs(logger *log.Entry, version string, commit string, date string) *c
 				agent.ApplyConfig(requestConfig)
 			}
 
-			// agent.Listen()
-			agent.ListenGRPC()
+			agent.Listen()
 			return nil
 		},
 	}

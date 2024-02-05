@@ -3,8 +3,6 @@ package lbot
 import (
 	"context"
 	"net"
-	"net/http"
-	"net/rpc"
 	"os"
 	"os/signal"
 	"syscall"
@@ -32,35 +30,6 @@ func NewAgent(ctx context.Context, logger *log.Entry) *Agent {
 }
 
 func (a *Agent) Listen() error {
-	// register driver commands
-	// rpc.Register(NewStartProcess(a.ctx, a.lbot))
-	rpc.Register(NewWatchingProcess(a.ctx, a.lbot))
-	// rpc.Register(NewStoppingProcess(a.ctx, a.lbot))
-	// rpc.Register(NewSetConfigProcess(a.ctx, a.lbot))
-
-	rpc.HandleHTTP()
-	agentHost := "0.0.0.0:1234"
-	l, err := net.Listen("tcp", agentHost)
-	if err != nil {
-		a.log.Fatal("listen error:", err)
-	}
-	a.log.Info("Started lbot-agent on " + agentHost)
-
-	stop := make(chan os.Signal, 1)
-	signal.Notify(stop, os.Interrupt)
-
-	go http.Serve(l, nil)
-
-	<-stop
-	_, cancel := context.WithCancel(a.ctx)
-	cancel()
-
-	a.log.Info("Shuted down lbot-agent")
-
-	return nil
-}
-
-func (a *Agent) ListenGRPC() error {
 	agentHost := "0.0.0.0:1235"
 	l, err := net.Listen("tcp", agentHost)
 	if err != nil {
@@ -103,7 +72,7 @@ func (a *Agent) ListenGRPC() error {
 func (a *Agent) ApplyConfig(request *ConfigRequest) error {
 	// todo:
 	// check if operation is running
-	// lock ?
+	// lock ? or apply config and restart
 	// if some operation is running {
 	//   return errors.New("")
 	// }

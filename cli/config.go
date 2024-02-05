@@ -8,56 +8,20 @@ package cli
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
 	"github.com/kuzxnia/loadbot/lbot"
 	"github.com/kuzxnia/loadbot/lbot/proto"
-	"github.com/spf13/cobra"
 	"google.golang.org/grpc"
 )
 
 // checks if process is running in local system
-
-// command for setting full new config
-func setConfigDriverHandler(cmd *cobra.Command, args []string) (err error) {
-	flags := cmd.Flags()
-	configFile, _ := flags.GetString(ConfigFile)
-	stdin, _ := flags.GetBool(StdIn)
-
-	if configFile == "" && !stdin {
-		return errors.New("You need to provide configuration from either " + ConfigFile + " or " + StdIn)
-	}
-
-	var parsedConfig *lbot.ConfigRequest
-	if stdin {
-		parsedConfig, err = lbot.ParseStdInConfig()
-		if err != nil {
-			return err
-		}
-	}
-
-	if configFile != "" {
-		parsedConfig, err = lbot.ParseConfigFile(configFile)
-		if err != nil {
-			return err
-		}
-	}
-
+func SetConfigDriver(conn *grpc.ClientConn, parsedConfig *lbot.ConfigRequest) (err error) {
 	requestConfig := BuildConfigRequest(parsedConfig)
-
-	conn, err := grpc.Dial("127.0.0.1:1235", grpc.WithInsecure())
-	if err != nil {
-		Logger.Fatal("Found errors trying to connect to lbot-agent:", err)
-		return
-	}
-	defer conn.Close()
-
-	client := proto.NewSetConfigProcessClient(conn)
-	// to change
 
 	Logger.Info("🚀 Setting new config")
 
+	client := proto.NewSetConfigProcessClient(conn)
 	reply, err := client.Run(context.TODO(), requestConfig)
 	if err != nil {
 		return fmt.Errorf("Setting config failed: %w", err)
