@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"sync"
 	"time"
 
 	"github.com/kuzxnia/loadbot/lbot/proto"
@@ -24,23 +23,48 @@ func NewWatchingProcess(ctx context.Context, lbot *Lbot) *WatchingProcess {
 
 func (w *WatchingProcess) Run(request *proto.WatchRequest, srv proto.WatchProcess_RunServer) error {
 	// if watch arg - run watch
-	var wg sync.WaitGroup
-	for i := 0; i < 5; i++ {
-		wg.Add(1)
-		go func(count int64) {
-			defer wg.Done()
 
-			// time sleep to simulate server process time
-			time.Sleep(time.Duration(count) * time.Second)
-			resp := proto.WatchResponse{Message: fmt.Sprintf("Request #%d", count)}
-			if err := srv.Send(&resp); err != nil {
-				log.Printf("send error %v", err)
-        // todo: handle client not connected 
+  // todo: only temporary flush channel
+	drainchan(w.lbot.logs)
+
+	done := make(chan bool)
+
+	go func() {
+		for {
+			//   select {
+			//   case:
+			// }
+			// read channel with logs
+			time.Sleep(time.Second)
+			select {
+			case message := <-w.lbot.logs:
+				resp := proto.WatchResponse{Message: message}
+
+				if err := srv.Send(&resp); err != nil {
+					// todo: handle client not connected
+					log.Printf("client closed connection, closing channel done")
+					done <- true
+					return
+				}
 			}
-			log.Printf("finishing request number : %d", count)
-		}(int64(i))
-	}
+		}
+		// todo: or do this by interatin over channel
+	}()
 
-	wg.Wait()
+	fmt.Printf("before done")
+
+	<-done
+	fmt.Printf("done")
+
 	return nil
+}
+
+func drainchan(chann chan string) {
+	for {
+		select {
+		case <-chann:
+		default:
+			return
+		}
+	}
 }

@@ -14,33 +14,6 @@ import (
 
 // todo: split this function to setup and to starting workers
 
-// func Torment(config *config.Config) {
-// 	// todo: ping db, before workers init
-
-// 	// init datapools
-// 	dataPools := make(map[string]schema.DataPool)
-// 	for _, sh := range config.Schemas {
-// 		dataPools[sh.Name] = schema.NewDataPool(sh)
-// 	}
-
-// 	// todo: in a parallel depending on type
-// 	for _, job := range config.Jobs {
-// 		func() {
-// 			// todo: fix here, no schema data pool will be nill
-// 			dataPool := dataPools[job.Schema]
-// 			worker, error := NewWorker(config, job, dataPool)
-// 			if error != nil {
-// 				panic("Worker initialization error")
-// 			}
-// 			defer worker.Close()
-// 			worker.InitIntervalReportingSummary()
-// 			worker.Work()
-// 			worker.Summary()
-// 			worker.ExtendCopySavedFieldsToDataPool()
-// 		}()
-// 	}
-// }
-
 type Worker struct {
 	ctx         context.Context
 	cfg         *config.Config
@@ -114,7 +87,7 @@ func (w *Worker) Work() {
 	w.Report.SetDuration(time.Since(w.startTime))
 }
 
-func (w *Worker) InitIntervalReportingSummary() {
+func (w *Worker) InitIntervalReportingSummary(logs chan string) {
 	reportingFormat := w.job.GetReport()
 	if reportingFormat == nil || reportingFormat.Interval == 0 {
 		// log.Info("Interval reporting skipped")
@@ -125,7 +98,7 @@ func (w *Worker) InitIntervalReportingSummary() {
 	go func(worker *Worker) {
 		for range w.ticker.C {
 			worker.Report.SetDuration(time.Since(w.startTime))
-			worker.Report.Summary()
+			worker.Report.Summary(logs)
 		}
 	}(w)
 }
@@ -138,7 +111,7 @@ func (w *Worker) ExtendCopySavedFieldsToDataPool() {
 }
 
 func (w *Worker) Summary() {
-	w.Report.Summary()
+	w.Report.Summary(nil)
 }
 
 func (w *Worker) Cancel() {
