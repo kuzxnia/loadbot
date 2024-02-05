@@ -7,6 +7,7 @@ import (
 	"net/rpc"
 	"os"
 	"os/signal"
+	"syscall"
 
 	"github.com/kuzxnia/loadbot/lbot/config"
 	"github.com/kuzxnia/loadbot/lbot/proto"
@@ -72,15 +73,22 @@ func (a *Agent) ListenGRPC() error {
 
 	reflection.Register(grpcServer)
 
-	stop := make(chan os.Signal, 1)
-	signal.Notify(stop, os.Interrupt)
-
 	a.log.Info("Started lbot-agent on " + agentHost)
-	if err := grpcServer.Serve(l); err != nil {
-		log.Fatalf("failed to serve: %s", err)
-	}
+	go func() {
+		if err := grpcServer.Serve(l); err != nil {
+			log.Fatalf("failed to serve: %s", err)
+		}
+	}()
+
+	stop := make(chan os.Signal, 1)
+	signal.Notify(
+		stop, os.Interrupt, syscall.SIGHUP, syscall.SIGINT, syscall.SIGQUIT, syscall.SIGTERM,
+	)
 
 	<-stop
+	grpcServer.GracefulStop()
+
+	// is this needed?
 	_, cancel := context.WithCancel(a.ctx)
 	cancel()
 
