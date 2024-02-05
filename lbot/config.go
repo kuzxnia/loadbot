@@ -1,6 +1,7 @@
 package lbot
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -10,7 +11,6 @@ import (
 
 	"github.com/kuzxnia/loadbot/lbot/config"
 	"github.com/tailscale/hujson"
-	"golang.org/x/net/context"
 )
 
 func NewConfig(request *ConfigRequest) *config.Config {

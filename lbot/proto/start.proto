@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+option go_package = "start/";
+
+package proto;
+
+service StartProcess {
+  rpc Run(StartRequest) returns (StartResponse) {}
+}
+
+message StartRequest {
+  bool watch = 1;
+}
+
+message StartResponse {
+}
+
