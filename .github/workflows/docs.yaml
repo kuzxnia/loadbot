@@ -9,6 +9,9 @@ jobs:
   docs:
     name: docs
     runs-on: ubuntu-latest
+    if: |
+      always() &&
+      (github.ref == 'refs/heads/master')
 
     steps:
       - name: Checkout source repository
