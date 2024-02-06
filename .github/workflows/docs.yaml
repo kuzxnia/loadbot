@@ -8,7 +8,7 @@ on:
 jobs:
   docs:
     name: docs
-    runs-on: [ self-hosted, ubuntu-latest ]
+    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout source repository
@@ -27,5 +27,5 @@ jobs:
 
       - name: Publish docs
         run: |
-          make docs
+          mkdocs build
           mkdocs gh-deploy --force --no-history
