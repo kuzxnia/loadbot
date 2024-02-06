@@ -12,6 +12,7 @@ import (
 var (
 	ConfigFile = "config-file"
 	StdIn      = "stdin"
+	Port       = "port"
 )
 
 func BuildArgs(logger *log.Entry, version string, commit string, date string) *cobra.Command {
@@ -35,6 +36,7 @@ func BuildArgs(logger *log.Entry, version string, commit string, date string) *c
 
 			configFile, _ := flags.GetString(ConfigFile)
 			stdin, _ := flags.GetBool(StdIn)
+			port, _ := flags.GetString(Port)
 
 			var requestConfig *ConfigRequest
 
@@ -57,13 +59,14 @@ func BuildArgs(logger *log.Entry, version string, commit string, date string) *c
 				agent.ApplyConfig(requestConfig)
 			}
 
-			agent.Listen()
+			agent.Listen(port)
 			return nil
 		},
 	}
 
 	pf := cmd.PersistentFlags()
 	pf.StringP(ConfigFile, "f", "", "Config file for agent")
+	pf.StringP(Port, "p", "1234", "Agent port")
 	pf.Bool(StdIn, false, "get workload configuration from stdin")
 
 	return &cmd
