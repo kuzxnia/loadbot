@@ -1,0 +1,74 @@
+site_name: loadbot
+# site_url: "https://loadbot.github.com"
+site_description: "Workload database driver"
+repo_url: "https://github.com/kuzxnia/loadbot"
+repo_name: "kuzxnia/loadbot"
+
+
+theme:
+  name: material  
+  features:
+    - navigation.footer
+    - navigation.indexes
+    - navigation.sections
+    - navigation.top
+    - navigation.tracking
+  palette:
+  - scheme: slate
+    primary: indigo
+    accent: indigo
+    toggle:
+      icon: material/brightness-7
+      name: Switch to dark mode
+  - scheme: default
+    primary: indigo
+    accent: indigo
+    toggle:
+      icon: material/brightness-4
+      name: Switch to light mode
+  font:
+    text: Roboto
+    code: Roboto Mono
+
+nav:
+  - loadbot:
+    - home: index.md
+    - Install Guide: install.md
+
+
+markdown_extensions:
+- toc:
+    permalink: 💡
+- pymdownx.highlight:
+    anchor_linenums: true
+    line_spans: __span
+    pygments_lang_class: true
+- pymdownx.inlinehilite
+- pymdownx.snippets
+- pymdownx.details
+- pymdownx.emoji
+- pymdownx.magiclink
+- pymdownx.snippets:
+    check_paths: true
+- pymdownx.tabbed:
+    alternate_style: true
+- pymdownx.superfences
+- pymdownx.tasklist:
+    custom_checkbox: true
+- admonition
+- attr_list
+
+plugins:
+- search
+- mkdocstrings:
+    handlers:
+      python:
+        paths: [.]
+
+extra_css:
+  - static/css/termynal.css
+  - static/css/custom.css
+
+extra_javascript:
+  - static/js/termynal.js
+  - static/js/custom.js
