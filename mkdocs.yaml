@@ -1,0 +1,102 @@
+site_name: loadbot
+# site_url: "https://loadbot.github.com"
+site_description: "Workload database driver"
+repo_url: "https://github.com/kuzxnia/loadbot"
+repo_name: "kuzxnia/loadbot"
+
+
+theme:
+  name: material  
+  features:
+    - announce.dismiss
+    - search.suggest
+    - search.highlight
+    - search.share
+    - content.code.copy
+    - content.action.edit
+    - navigation.footer
+    - navigation.indexes
+    - navigation.instant
+    - navigation.tracking
+    - navigation.tabs
+  palette:
+  - scheme: slate
+    primary: teal
+    accent: teal
+    toggle:
+      icon: material/lightbulb
+      name: Switch to dark mode
+
+  - scheme: default
+    primary: green
+    accent: green
+    toggle:
+      icon: material/lightbulb-outline
+      name: Switch to light mode
+
+  font:
+    text: Roboto
+    code: Roboto Mono
+
+nav:
+  - Home:
+      # showcase and redirect to getting started
+    - index.md
+  - Getting Started:
+    - Intro: getting_started/intro.md
+    - Install Guide: getting_started/install.md
+    - Quick Start: getting_started/quick-start.md
+    - How it works: getting_started/how-it-works.md
+
+  - Setup:
+    - Configuration file: setup/index.md
+    - Jobs: setup/job.md
+    - Schemas: setup/job.md
+    - Reporting formats: setup/job.md
+    # workloads / defining jobs / configuration
+      # examples
+
+      # introduction
+  - Command Line Usage:
+    # agent and cli 
+    # descriptive description of both cli's
+    - lbot: cli/lbot.md
+    - lbot-agent: cli/lbot-agent.md
+      
+
+markdown_extensions:
+- toc:
+    permalink: 💡
+- pymdownx.highlight:
+    anchor_linenums: true
+    line_spans: __span
+    pygments_lang_class: true
+- pymdownx.inlinehilite
+- pymdownx.snippets
+- pymdownx.details
+- pymdownx.emoji
+- pymdownx.magiclink
+- pymdownx.snippets:
+    check_paths: true
+- pymdownx.tabbed:
+    alternate_style: true
+- pymdownx.superfences
+- pymdownx.tasklist:
+    custom_checkbox: true
+- admonition
+- attr_list
+
+plugins:
+- search
+- mkdocstrings:
+    handlers:
+      python:
+        paths: [.]
+
+extra_css:
+  - static/css/termynal.css
+  - static/css/custom.css
+
+extra_javascript:
+  - static/js/termynal.js
+  - static/js/custom.js

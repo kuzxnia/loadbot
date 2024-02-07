@@ -29,9 +29,10 @@ func NewAgent(ctx context.Context, logger *log.Entry) *Agent {
 	}
 }
 
-func (a *Agent) Listen() error {
-	agentHost := "0.0.0.0:1235"
-	l, err := net.Listen("tcp", agentHost)
+func (a *Agent) Listen(port string) error {
+  address := "0.0.0.0:" + port
+
+  l, err := net.Listen("tcp", address)
 	if err != nil {
 		a.log.Fatal("listen error:", err)
 	}
@@ -45,7 +46,7 @@ func (a *Agent) Listen() error {
 
 	reflection.Register(grpcServer)
 
-	a.log.Info("Started lbot-agent on " + agentHost)
+	a.log.Info("Started lbot-agent on " + address)
 	go func() {
 		if err := grpcServer.Serve(l); err != nil {
 			log.Fatalf("failed to serve: %s", err)
