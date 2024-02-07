@@ -8,33 +8,61 @@ repo_name: "kuzxnia/loadbot"
 theme:
   name: material  
   features:
+    - announce.dismiss
+    - search.suggest
+    - search.highlight
+    - search.share
+    - content.code.copy
+    - content.action.edit
     - navigation.footer
     - navigation.indexes
-    - navigation.sections
-    - navigation.top
+    - navigation.instant
     - navigation.tracking
+    - navigation.tabs
   palette:
   - scheme: slate
-    primary: indigo
-    accent: indigo
+    primary: teal
+    accent: teal
     toggle:
-      icon: material/brightness-7
+      icon: material/lightbulb
       name: Switch to dark mode
+
   - scheme: default
-    primary: indigo
-    accent: indigo
+    primary: green
+    accent: green
     toggle:
-      icon: material/brightness-4
+      icon: material/lightbulb-outline
       name: Switch to light mode
+
   font:
     text: Roboto
     code: Roboto Mono
 
 nav:
-  - loadbot:
-    - home: index.md
-    - Install Guide: install.md
+  - Home:
+      # showcase and redirect to getting started
+    - index.md
+  - Getting Started:
+    - Intro: getting_started/intro.md
+    - Install Guide: getting_started/install.md
+    - Quick Start: getting_started/quick-start.md
+    - How it works: getting_started/how-it-works.md
 
+  - Setup:
+    - Configuration file: setup/index.md
+    - Jobs: setup/job.md
+    - Schemas: setup/job.md
+    - Reporting formats: setup/job.md
+    # workloads / defining jobs / configuration
+      # examples
+
+      # introduction
+  - Command Line Usage:
+    # agent and cli 
+    # descriptive description of both cli's
+    - lbot: cli/lbot.md
+    - lbot-agent: cli/lbot-agent.md
+      
 
 markdown_extensions:
 - toc:
