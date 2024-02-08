@@ -13,13 +13,14 @@ type Lbot struct {
 	config  *config.Config
 	workers []*driver.Worker
 	logs    chan string
+	metric  *driver.Metric
 }
 
 func NewLbot(ctx context.Context) *Lbot {
 	return &Lbot{
-		ctx:  ctx,
-    // todo: chanell max size one
-		logs: make(chan string),
+		ctx:    ctx,
+		metric: driver.NewMetrics(),
+		logs:   make(chan string),
 	}
 }
 
@@ -37,7 +38,7 @@ func (l *Lbot) Run() {
 		func() {
 			// todo: fix here, no schema data pool will be nill
 			dataPool := dataPools[job.Schema]
-			worker, error := driver.NewWorker(l.ctx, l.config, job, dataPool)
+			worker, error := driver.NewWorker(l.ctx, l.config, job, dataPool, l.metric)
 			l.workers = append(l.workers, worker)
 			if error != nil {
 				panic("Worker initialization error")
@@ -52,12 +53,6 @@ func (l *Lbot) Run() {
 }
 
 func (l *Lbot) Cancel() error {
-	// fmt.Println(&l.ctx)
-
-	// ctx, cancel := context.WithCancel(l.ctx)
-	// fmt.Println(&ctx)
-	// fmt.Printf("Canceling workload")
-	// cancel()
 	for _, worker := range l.workers {
 		worker.Cancel()
 	}

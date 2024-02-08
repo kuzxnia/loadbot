@@ -3,6 +3,7 @@ module github.com/kuzxnia/loadbot
 go 1.21
 
 require (
+	github.com/VictoriaMetrics/metrics v1.31.0
 	github.com/docker/docker v25.0.0+incompatible
 	github.com/forPelevin/gomoji v1.1.8
 	github.com/go-faker/faker/v4 v4.2.0
@@ -41,6 +42,8 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rivo/uniseg v0.4.4 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
+	github.com/valyala/fastrand v1.1.0 // indirect
+	github.com/valyala/histogram v1.2.0 // indirect
 	github.com/xdg-go/pbkdf2 v1.0.0 // indirect
 	github.com/xdg-go/scram v1.1.2 // indirect
 	github.com/xdg-go/stringprep v1.0.4 // indirect

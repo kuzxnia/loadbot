@@ -10,7 +10,7 @@ import (
 )
 
 type JobHandler interface {
-	Handle() (time.Duration, error)
+	Execute() error
 }
 
 func NewJobHandler(job *config.Job, client database.Client, dataPool schema.DataPool) JobHandler {
@@ -52,79 +52,69 @@ type WriteHandler struct {
 	*BaseHandler
 }
 
-func (h *WriteHandler) Handle() (time.Duration, error) {
+func (h *WriteHandler) Execute() error {
 	item := h.dataProvider.GetSingleItem()
 
-	start := time.Now()
 	_, error := h.client.InsertOne(item)
-	elapsed := time.Since(start)
 
 	if error == nil && h.dataPool != nil {
 		h.dataPool.Set(item)
 	}
-	return elapsed, error
+	return error
 }
 
 type BulkWriteHandler struct {
 	*BaseHandler
 }
 
-func (h *BulkWriteHandler) Handle() (time.Duration, error) {
+func (h *BulkWriteHandler) Execute() error {
 	items := h.dataProvider.GetBatch(100)
 
-	start := time.Now()
 	_, error := h.client.InsertMany(items)
-	elapsed := time.Since(start)
 
 	if error == nil && h.dataPool != nil {
 		h.dataPool.SetBatch(items)
 	}
-	return elapsed, error
+	return error
 }
 
 type ReadHandler struct {
 	*BaseHandler
 }
 
-func (h *ReadHandler) Handle() (time.Duration, error) {
+func (h *ReadHandler) Execute() error {
 	filter := h.dataProvider.GetFilter()
 
-	start := time.Now()
 	_, error := h.client.ReadOne(filter)
-	elapsed := time.Since(start)
-	return elapsed, error
+	return error
 }
 
 type UpdateHandler struct {
 	*BaseHandler
 }
 
-func (h *UpdateHandler) Handle() (time.Duration, error) {
+func (h *UpdateHandler) Execute() error {
 	item := h.dataProvider.GetSingleItemWithout("_id")
 	filter := h.dataProvider.GetFilter()
 
-	start := time.Now()
 	_, error := h.client.UpdateOne(filter, bson.M{"$set": item})
-	elapsed := time.Since(start)
-	return elapsed, error
+	return error
 }
 
 type DropCollection struct {
 	*BaseHandler
 }
 
-func (h *DropCollection) Handle() (time.Duration, error) {
-	start := time.Now()
+func (h *DropCollection) Execute() error {
 	error := h.client.DropCollection()
-	elapsed := time.Since(start)
-	return elapsed, error
+	return error
 }
 
 type SleepHandler struct {
 	Duration time.Duration
 }
 
-func (h *SleepHandler) Handle() (time.Duration, error) {
+func (h *SleepHandler) Execute() error {
 	time.Sleep(h.Duration)
-	return h.Duration, nil
+	return nil
 }

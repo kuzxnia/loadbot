@@ -13,7 +13,6 @@ import (
 )
 
 // todo: split this function to setup and to starting workers
-
 type Worker struct {
 	ctx         context.Context
 	cfg         *config.Config
@@ -24,12 +23,12 @@ type Worker struct {
 	rateLimiter Limiter
 	pool        JobPool
 	dataPool    schema.DataPool
-	Report      Report
-	ticker      *time.Ticker
-	startTime   time.Time
+	metrics     *Metric
+	// Report      Report
+	ticker *time.Ticker
 }
 
-func NewWorker(ctx context.Context, cfg *config.Config, job *config.Job, dataPool schema.DataPool) (*Worker, error) {
+func NewWorker(ctx context.Context, cfg *config.Config, job *config.Job, dataPool schema.DataPool, metric *Metric) (*Worker, error) {
 	// todo: check errors
 	fmt.Printf("Starting job: %s\n", lo.If(job.Name != "", job.Name).Else(job.Type))
 	worker := new(Worker)
@@ -37,7 +36,8 @@ func NewWorker(ctx context.Context, cfg *config.Config, job *config.Job, dataPoo
 	worker.cfg = cfg
 	worker.job = job
 	worker.wg.Add(int(job.Connections))
-	worker.Report = NewReport(job)
+	// worker.Report = NewReport(job)
+	worker.metrics = metric
 	worker.pool = NewJobPool(job)
 	worker.rateLimiter = NewLimiter(job)
 
@@ -56,8 +56,6 @@ func NewWorker(ctx context.Context, cfg *config.Config, job *config.Job, dataPoo
 }
 
 func (w *Worker) Work() {
-	w.startTime = time.Now()
-
 	// something wrong with context propagation change this
 	// go func() {
 	// 	select {
@@ -72,19 +70,15 @@ func (w *Worker) Work() {
 			for w.pool.SpawnJob() {
 				w.rateLimiter.Take()
 				// perform operation
-				duration, error := w.handler.Handle()
-				w.Report.Add(duration, error)
-				// add debug of some kind
-				if error != nil {
-					// todo: debug
-					// log.Debug(error)
-				}
+
+				w.metrics.Meter(w.handler.Execute)
+
 				w.pool.MarkJobDone()
 			}
 		}()
 	}
 	w.wg.Wait()
-	w.Report.SetDuration(time.Since(w.startTime))
+	// w.Report.SetDuration(time.Since(w.startTime))
 }
 
 func (w *Worker) InitIntervalReportingSummary(logs chan string) {
@@ -97,8 +91,9 @@ func (w *Worker) InitIntervalReportingSummary(logs chan string) {
 	w.ticker = time.NewTicker(reportingFormat.Interval)
 	go func(worker *Worker) {
 		for range w.ticker.C {
-			worker.Report.SetDuration(time.Since(w.startTime))
-			worker.Report.Summary(logs)
+			// todo: get metrics and push
+			// worker.Report.SetDuration(time.Since(w.startTime))
+			// worker.Report.Summary(logs)
 		}
 	}(w)
 }
@@ -111,7 +106,7 @@ func (w *Worker) ExtendCopySavedFieldsToDataPool() {
 }
 
 func (w *Worker) Summary() {
-	w.Report.Summary(nil)
+	// w.Report.Summary(nil)
 }
 
 func (w *Worker) Cancel() {
