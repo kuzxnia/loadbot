@@ -4,12 +4,16 @@ import (
 	"time"
 
 	"github.com/VictoriaMetrics/metrics"
+	"github.com/samber/lo"
 )
+
+var Stats = NewMetrics()
 
 type Metric struct {
 	RequestsTotal   *metrics.Counter
 	RequestsError   *metrics.Counter
 	RequestDuration *metrics.Summary
+	startTime       time.Time
 	// ResponseSize    *metrics.Histogram
 }
 
@@ -20,6 +24,10 @@ func NewMetrics() *Metric {
 		RequestDuration: metrics.NewSummary("requests_duration_seconds"),
 		// ResponseSize:    metrics.NewHistogram("requests_size"),
 	}
+}
+
+func (m *Metric) Init() {
+	m.startTime = time.Now()
 }
 
 func (m *Metric) Meter(handler func() error) {
@@ -35,8 +43,9 @@ func (m *Metric) Meter(handler func() error) {
 	}
 }
 
-func (m *Metric) Rps() uint64 {
-	return m.RequestsTotal.Get()
+func (m *Metric) Rps() float32 {
+	duration := time.Since(m.startTime)
+	return lo.If(duration != 0, float32(m.RequestsTotal.Get())/float32(duration.Seconds())).Else(0)
 }
 
 func (m *Metric) Total() uint64 {

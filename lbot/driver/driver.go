@@ -23,12 +23,10 @@ type Worker struct {
 	rateLimiter Limiter
 	pool        JobPool
 	dataPool    schema.DataPool
-	metrics     *Metric
-	// Report      Report
 	ticker *time.Ticker
 }
 
-func NewWorker(ctx context.Context, cfg *config.Config, job *config.Job, dataPool schema.DataPool, metric *Metric) (*Worker, error) {
+func NewWorker(ctx context.Context, cfg *config.Config, job *config.Job, dataPool schema.DataPool) (*Worker, error) {
 	// todo: check errors
 	fmt.Printf("Starting job: %s\n", lo.If(job.Name != "", job.Name).Else(job.Type))
 	worker := new(Worker)
@@ -36,8 +34,6 @@ func NewWorker(ctx context.Context, cfg *config.Config, job *config.Job, dataPoo
 	worker.cfg = cfg
 	worker.job = job
 	worker.wg.Add(int(job.Connections))
-	// worker.Report = NewReport(job)
-	worker.metrics = metric
 	worker.pool = NewJobPool(job)
 	worker.rateLimiter = NewLimiter(job)
 
@@ -71,7 +67,7 @@ func (w *Worker) Work() {
 				w.rateLimiter.Take()
 				// perform operation
 
-				w.metrics.Meter(w.handler.Execute)
+				Stats.Meter(w.handler.Execute)
 
 				w.pool.MarkJobDone()
 			}
@@ -81,21 +77,21 @@ func (w *Worker) Work() {
 	// w.Report.SetDuration(time.Since(w.startTime))
 }
 
-func (w *Worker) InitIntervalReportingSummary(logs chan string) {
-	reportingFormat := w.job.GetReport()
-	if reportingFormat == nil || reportingFormat.Interval == 0 {
-		// log.Info("Interval reporting skipped")
-		return
-	}
+func (w *Worker) InitMetrics() {
+	// reportingFormat := w.job.GetReport()
+	// if reportingFormat == nil || reportingFormat.Interval == 0 {
+	// 	// log.Info("Interval reporting skipped")
+	// 	return
+	// }
 
-	w.ticker = time.NewTicker(reportingFormat.Interval)
-	go func(worker *Worker) {
-		for range w.ticker.C {
-			// todo: get metrics and push
-			// worker.Report.SetDuration(time.Since(w.startTime))
-			// worker.Report.Summary(logs)
-		}
-	}(w)
+	// w.ticker = time.NewTicker(reportingFormat.Interval)
+	// go func(worker *Worker) {
+	// 	for range w.ticker.C {
+	// 		// todo: get metrics and push
+	// 		// worker.Report.SetDuration(time.Since(w.startTime))
+	// 		// worker.Report.Summary(logs)
+	// 	}
+	// }(w)
 }
 
 // todo: fix wrong place invalid

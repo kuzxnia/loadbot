@@ -6,6 +6,7 @@ import (
 	"io"
 	"log"
 
+	"github.com/gosuri/uilive"
 	"github.com/kuzxnia/loadbot/lbot/proto"
 	"google.golang.org/grpc"
 )
@@ -18,23 +19,19 @@ func WorkloadProgress(conn grpc.ClientConnInterface, request *proto.ProgressRequ
 		return fmt.Errorf("starting stress test failed: %w", err)
 	}
 
-	done := make(chan bool)
-
-	go func() {
-		for {
-			resp, err := stream.Recv()
-			if err == io.EOF {
-				done <- true // means stream is finished
-				return
-			}
-			if err != nil {
-				log.Fatalf("cannot receive %v", err)
-			}
-			log.Printf("rsp=%d total=%d err_rate=%.2f", resp.Rps, resp.RequestsTotal, resp.ErrorRate)
+	writer := uilive.New()
+	writer.Start()
+	for {
+		resp, err := stream.Recv()
+		if err == io.EOF {
+			break
 		}
-	}()
-
-	<-done // we will wait until all response is received
+		if err != nil {
+			log.Fatalf("cannot receive %v", err)
+		}
+    fmt.Fprintf(writer, "RPS: %.1f Requests: %d ErrorRate %.2f\n", resp.Rps, resp.RequestsTotal, resp.ErrorRate)
+	}
+	writer.Stop()
 
 	return
 }

@@ -6,6 +6,7 @@ import (
 	"log"
 	"time"
 
+	"github.com/kuzxnia/loadbot/lbot/driver"
 	"github.com/kuzxnia/loadbot/lbot/proto"
 )
 
@@ -31,9 +32,9 @@ func (w *ProgressProcess) Run(request *proto.ProgressRequest, srv proto.Progress
 	go func() {
 		for range ticker.C {
 			resp := proto.ProgressResponse{
-				RequestsTotal: w.lbot.metric.Total(),
-				Rps:           w.lbot.metric.Rps(),
-				ErrorRate:     w.lbot.metric.ErrorRate(),
+				RequestsTotal: driver.Stats.Total(),
+				Rps:           driver.Stats.Rps(),
+				ErrorRate:     driver.Stats.ErrorRate(),
 			}
 
 			if err := srv.Send(&resp); err != nil {

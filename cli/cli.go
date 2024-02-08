@@ -166,7 +166,7 @@ func provideDriverCommands() []*cobra.Command {
 		GroupID: DriverGroup.ID,
 	}
 	progressCommandFlags := progressCommand.Flags()
-	defaultInterval, _ := time.ParseDuration("5s")
+	defaultInterval, _ := time.ParseDuration("1s")
 	progressCommandFlags.DurationP(Interval, "i", defaultInterval, "Progress refresh interval")
 
 	configCommand := cobra.Command{
