@@ -29,7 +29,7 @@ func New(rootLogger *log.Entry, version string, commit string, date string) *cob
 
 	cmd := cobra.Command{
 		Use:     "lbot",
-		Short:   "A command-line database workload ",
+		Short:   "A command-line database workload driver ",
 		Version: fmt.Sprintf("%s (commit: %s) (build date: %s)", version, commit, date),
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) (err error) {
 			f := cmd.Flags()
@@ -64,6 +64,8 @@ func New(rootLogger *log.Entry, version string, commit string, date string) *cob
 	// setup supcommands
 	// cmd.AddGroup(&OrchiestrationGroup)
 	// cmd.AddCommand(provideOrchiestrationCommands()...)
+	cmd.AddGroup(&AgentGroup)
+	cmd.AddCommand(provideAgentCommands()...)
 	cmd.AddGroup(&DriverGroup)
 	cmd.AddCommand(provideDriverCommands()...)
 
@@ -205,6 +207,43 @@ func provideDriverCommands() []*cobra.Command {
 	configCommandFlags.Bool(StdIn, false, "get workload configuration from stdin")
 
 	return []*cobra.Command{&startCommand, &stopCommand, &watchCommand, &configCommand, &progressCommand}
+}
+
+const (
+	CommandStartAgent = "start-agent"
+
+	// agent args
+	Port = "port"
+)
+
+var AgentGroup = cobra.Group{
+	ID:    "Agent",
+	Title: "Agent Commands:",
+}
+
+func provideAgentCommands() []*cobra.Command {
+	agentCommand := cobra.Command{
+		Use:     CommandStartAgent,
+		Aliases: []string{"a"},
+		Short:   "Start lbot-agent",
+		RunE: func(cmd *cobra.Command, args []string) (err error) {
+			flags := cmd.Flags()
+
+			configFile, _ := flags.GetString(ConfigFile)
+			stdin, _ := flags.GetBool(StdIn)
+			port, _ := flags.GetString(Port)
+
+			return StartAgent(cmd.Context(), stdin, port, configFile)
+		},
+		GroupID: AgentGroup.ID,
+	}
+
+	flags := agentCommand.Flags()
+	flags.StringP(ConfigFile, "f", "", "Config file for lbot-agent")
+	flags.StringP(Port, "p", "1234", "Agent port")
+	flags.Bool(StdIn, false, "get workload configuration from stdin")
+
+	return []*cobra.Command{&agentCommand}
 }
 
 // todo: generate complection
