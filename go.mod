@@ -8,6 +8,7 @@ require (
 	github.com/docker/docker v25.0.0+incompatible
 	github.com/forPelevin/gomoji v1.1.8
 	github.com/go-faker/faker/v4 v4.2.0
+	github.com/google/uuid v1.3.1
 	github.com/montanaflynn/stats v0.7.1
 	github.com/samber/lo v1.39.0
 	github.com/sirupsen/logrus v1.9.3

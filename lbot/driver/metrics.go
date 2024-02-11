@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/VictoriaMetrics/metrics"
+	"github.com/google/uuid"
 )
 
 type Metrics struct {
@@ -15,7 +16,8 @@ type Metrics struct {
 }
 
 func NewMetrics(job_name string) *Metrics {
-	jobLabel := "{job=\"" + job_name + "\"}"
+  // toto: move uuid to worker, and change label to worker uuid
+	jobLabel := "{job=\"" + job_name + "\", job_uuid=\"" + uuid.New().String() + "\"}"
 
 	return &Metrics{
 		requests:        metrics.NewCounter("requests_total" + jobLabel),
