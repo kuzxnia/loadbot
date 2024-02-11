@@ -40,6 +40,7 @@ func New(rootLogger *log.Entry, version string, commit string, date string) *cob
 				return fmt.Errorf("failed to configure logger: %w", err)
 			}
 
+      // move to driver group
 			agentUri, _ := f.GetString(AgentUri)
 			Conn, err = grpc.Dial(agentUri, grpc.WithInsecure())
 			// valiedate connection
@@ -57,6 +58,7 @@ func New(rootLogger *log.Entry, version string, commit string, date string) *cob
 		},
 	}
 	pf := cmd.PersistentFlags()
+  // move to driver group
 	pf.StringP(AgentUri, "u", "127.0.0.1:1234", "loadbot agent uri (default: 127.0.0.1:1234)")
 	pf.String(config.FlagLogLevel, applog.LevelInfo, fmt.Sprintf("log level, must be one of: %s", strings.Join(applog.Levels, ", ")))
 	pf.String(config.FlagLogFormat, applog.FormatFancy, fmt.Sprintf("log format, must be one of: %s", strings.Join(applog.Formats, ", ")))
