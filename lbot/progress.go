@@ -28,23 +28,32 @@ func (w *ProgressProcess) Run(request *proto.ProgressRequest, srv proto.Progress
 	}
 
 	// stats shouls be assigned to job/ worker
+	// todo: known issues, - stop when done
 	ticker := time.NewTicker(interval)
 	go func() {
 		for range ticker.C {
-      // add job name fileter
+			// add job name fileter
 			for _, worker := range w.lbot.workers {
 				resp := proto.ProgressResponse{
-          // add job name here
-					Requests:   worker.Metrics.Requests(),
-					Rps:        worker.Metrics.Rps(),
-					ErrorRate:  worker.Metrics.ErrorRate(),
-					Operations: worker.RequestedOperations(),
-					Duration:   worker.RequestedDurationSeconds(),
+					// add job name here
+					// add is job running
+					Requests:          worker.Metrics.Requests(),
+					Duration:          uint64(worker.Metrics.DurationSeconds()),
+					Rps:               worker.Metrics.Rps(),
+					ErrorRate:         worker.Metrics.ErrorRate(),
+					RequestOperations: worker.RequestedOperations(),
+					RequestDuration:   worker.RequestedDurationSeconds(),
 				}
 
 				if err := srv.Send(&resp); err != nil {
 					// todo: handle client not connected
 					log.Printf("client closed connection, closing channel done")
+					done <- true
+					return
+				}
+
+				if worker.IsDone() {
+					log.Printf("worker finished")
 					done <- true
 					return
 				}

@@ -15,10 +15,11 @@ message ProgressRequest {
 message ProgressResponse {
   // change reqeust total
   uint64 requests = 1;
-  float rps = 2;
-  float error_rate = 3;
+  uint64 duration = 2;
+  float rps = 3;
+  float error_rate = 4;
   // job type -
   // duration, operation, nolimit
-  uint64 duration = 4;
-  uint64 operations = 5;
+  uint64 request_duration = 5;
+  uint64 request_operations = 6;
 }

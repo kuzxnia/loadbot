@@ -25,6 +25,7 @@ type Worker struct {
 	pool        JobPool
 	dataPool    schema.DataPool
 	ticker      *time.Ticker
+	done        bool
 }
 
 func NewWorker(ctx context.Context, cfg *config.Config, job *config.Job, dataPool schema.DataPool) (*Worker, error) {
@@ -38,6 +39,7 @@ func NewWorker(ctx context.Context, cfg *config.Config, job *config.Job, dataPoo
 	worker.pool = NewJobPool(job)
 	worker.rateLimiter = NewLimiter(job)
 	worker.Metrics = NewMetrics(job.Name)
+  worker.done = false
 
 	// introduce no db worker
 	if job.Type != string(config.Sleep) {
@@ -76,6 +78,8 @@ func (w *Worker) Work() {
 		}()
 	}
 	w.wg.Wait()
+
+	// todo: mark as done
 	// w.Report.SetDuration(time.Since(w.startTime))
 }
 
@@ -114,7 +118,12 @@ func (w *Worker) Cancel() {
 	w.Close()
 }
 
+func (w *Worker) IsDone() bool {
+	return w.done
+}
+
 func (w *Worker) Close() {
+	w.done = true
 	if w.job.Type != string(config.Sleep) {
 		w.db.Disconnect()
 	}
