@@ -1,0 +1,178 @@
+---
+before:
+  hooks:
+    - go mod download
+
+builds:
+  - id: lbot
+    main: ./cmd/lbot
+    binary: lbot
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - darwin
+    goarch:
+      - amd64
+      - arm
+      - arm64
+    goarm:
+     - "7"
+    ignore:
+      - goos: darwin
+        goarch: arm
+
+  - id: lbot-agent
+    main: ./cmd/lbot-agent
+    binary: lbot-agent
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - darwin
+    goarch:
+      - amd64
+      - arm
+      - arm64
+    goarm:
+     - "7"
+    ignore:
+      - goos: darwin
+        goarch: arm
+
+archives:
+  - id: lbot-archive
+    rlcp: true
+    name_template: >-
+      {{ .ProjectName }}_
+      {{- .Tag }}_
+      {{- .Os }}_
+      {{- if eq .Arch "amd64" }}x86_64
+      {{- else if eq .Arch "386" }}i386
+      {{- else }}{{ .Arch }}{{ end }}
+      {{- with .Arm }}v{{ . }}{{ end }}
+      {{- with .Mips }}_{{ . }}{{ end }}
+      {{- if not (eq .Amd64 "v1") }}{{ .Amd64 }}{{ end }}
+    builds:
+      - lbot
+    files:
+      - LICENSE
+
+  - id: lbot-agent-archive
+    rlcp: true
+    name_template: >-
+      {{ .ProjectName }}_
+      {{- .Tag }}_
+      {{- .Os }}_
+      {{- if eq .Arch "amd64" }}x86_64
+      {{- else if eq .Arch "386" }}i386
+      {{- else }}{{ .Arch }}{{ end }}
+      {{- with .Arm }}v{{ . }}{{ end }}
+      {{- with .Mips }}_{{ . }}{{ end }}
+      {{- if not (eq .Amd64 "v1") }}{{ .Amd64 }}{{ end }}
+    builds:
+      - lbot-agent
+    files:
+      - LICENSE
+
+checksum:
+  name_template: checksums.txt
+  algorithm: sha256
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - '^build(\(.+\))?:'
+      - '^cd(\(.+\))?:'
+      - '^ci(\(.+\))?:'
+      - '^cicd(\(.+\))?:'
+      - '^docker(\(.+\))?:'
+      - '^docs(\(.+\))?:'
+      - '^refactor(\(.+\))?:'
+      - '^test(\(.+\))?:'
+      - Merge pull request
+      - Merge branch
+      - go mod tidy
+
+dockers:
+  - image_templates:
+      - docker.io/kuzxnia/lbot-agent:{{ .Tag }}-amd64
+    use: buildx
+    dockerfile: Dockerfile.agent
+    build_flag_templates:
+      - --platform=linux/amd64
+  - image_templates:
+      - docker.io/kuzxnia/lbot-agent:{{ .Tag }}-arm64
+    use: buildx
+    goarch: arm64
+    dockerfile: Dockerfile.agent
+    build_flag_templates:
+      - --platform=linux/arm64
+  - image_templates:
+      - docker.io/kuzxnia/lbot-agent:{{ .Tag }}-armv7
+    use: buildx
+    goarch: arm
+    goarm: "7"
+    dockerfile: Dockerfile.agent
+    build_flag_templates:
+      - --platform=linux/arm/v7
+
+  - image_templates:
+      - docker.io/kuzxnia/lbot:{{ .Tag }}-amd64
+    use: buildx
+    dockerfile: Dockerfile.lbot
+    build_flag_templates:
+      - --platform=linux/amd64
+  - image_templates:
+      - docker.io/kuzxnia/lbot:{{ .Tag }}-arm64
+    use: buildx
+    goarch: arm64
+    dockerfile: Dockerfile.lbot
+    build_flag_templates:
+      - --platform=linux/arm64
+  - image_templates:
+      - docker.io/kuzxnia/lbot:{{ .Tag }}-armv7
+    use: buildx
+    goarch: arm
+    goarm: "7"
+    dockerfile: Dockerfile.lbot
+    build_flag_templates:
+      - --platform=linux/arm/v7
+
+docker_manifests:
+  - name_template: docker.io/kuzxnia/lbot:{{ .Tag }}
+    image_templates:
+      - docker.io/kuzxnia/lbot:{{ .Tag }}-amd64
+      - docker.io/kuzxnia/lbot:{{ .Tag }}-arm64
+      - docker.io/kuzxnia/lbot:{{ .Tag }}-armv7
+
+  - name_template: docker.io/kuzxnia/lbot-agent:{{ .Tag }}
+    image_templates:
+      - docker.io/kuzxnia/lbot-agent:{{ .Tag }}-amd64
+      - docker.io/kuzxnia/lbot-agent:{{ .Tag }}-arm64
+      - docker.io/kuzxnia/lbot-agent:{{ .Tag }}-armv7
+
+# To test docker image push, uncomment the following and run
+# goreleaser release --skip-validate --rm-dist --debug
+#release:
+#  disable: true
+
+brews:
+  - tap:
+      owner: kuzxnia
+      name: homebrew-lbot
+      token: "{{ .Env.PRIVATE_ACCESS_TOKEN }}"
+    commit_author:
+      name: Kacper Kuźniarski
+      email: kacper.kuzniarski@gmail.com
+    folder: Formula
+    goarm: "7"
+    homepage: https://github.com/kuzxnia/loadbot
+    description: Workload database driver
+    license: Apache-2.0
+    test: |
+      system "#{bin}/loadbot -v"
+    install: |-
+      bin.install "lbot"
+      bin.install "lbot-agent"
