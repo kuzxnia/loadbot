@@ -13,8 +13,8 @@ import (
 )
 
 // todo: split this function to setup and to starting workers
-
 type Worker struct {
+	Metrics     *Metrics
 	ctx         context.Context
 	cfg         *config.Config
 	job         *config.Job
@@ -24,9 +24,8 @@ type Worker struct {
 	rateLimiter Limiter
 	pool        JobPool
 	dataPool    schema.DataPool
-	Report      Report
 	ticker      *time.Ticker
-	startTime   time.Time
+	done        bool
 }
 
 func NewWorker(ctx context.Context, cfg *config.Config, job *config.Job, dataPool schema.DataPool) (*Worker, error) {
@@ -37,9 +36,10 @@ func NewWorker(ctx context.Context, cfg *config.Config, job *config.Job, dataPoo
 	worker.cfg = cfg
 	worker.job = job
 	worker.wg.Add(int(job.Connections))
-	worker.Report = NewReport(job)
 	worker.pool = NewJobPool(job)
 	worker.rateLimiter = NewLimiter(job)
+	worker.Metrics = NewMetrics(job.Name)
+	worker.done = false
 
 	// introduce no db worker
 	if job.Type != string(config.Sleep) {
@@ -56,8 +56,6 @@ func NewWorker(ctx context.Context, cfg *config.Config, job *config.Job, dataPoo
 }
 
 func (w *Worker) Work() {
-	w.startTime = time.Now()
-
 	// something wrong with context propagation change this
 	// go func() {
 	// 	select {
@@ -72,35 +70,35 @@ func (w *Worker) Work() {
 			for w.pool.SpawnJob() {
 				w.rateLimiter.Take()
 				// perform operation
-				duration, error := w.handler.Handle()
-				w.Report.Add(duration, error)
-				// add debug of some kind
-				if error != nil {
-					// todo: debug
-					// log.Debug(error)
-				}
+
+				w.Metrics.Meter(w.handler.Execute)
+
 				w.pool.MarkJobDone()
 			}
 		}()
 	}
 	w.wg.Wait()
-	w.Report.SetDuration(time.Since(w.startTime))
+
+	// todo: mark as done
+	// w.Report.SetDuration(time.Since(w.startTime))
 }
 
-func (w *Worker) InitIntervalReportingSummary(logs chan string) {
-	reportingFormat := w.job.GetReport()
-	if reportingFormat == nil || reportingFormat.Interval == 0 {
-		// log.Info("Interval reporting skipped")
-		return
-	}
+func (w *Worker) InitMetrics() {
+	w.Metrics.Init()
+	// reportingFormat := w.job.GetReport()
+	// if reportingFormat == nil || reportingFormat.Interval == 0 {
+	// 	// log.Info("Interval reporting skipped")
+	// 	return
+	// }
 
-	w.ticker = time.NewTicker(reportingFormat.Interval)
-	go func(worker *Worker) {
-		for range w.ticker.C {
-			worker.Report.SetDuration(time.Since(w.startTime))
-			worker.Report.Summary(logs)
-		}
-	}(w)
+	// w.ticker = time.NewTicker(reportingFormat.Interval)
+	// go func(worker *Worker) {
+	// 	for range w.ticker.C {
+	// 		// todo: get metrics and push
+	// 		// worker.Report.SetDuration(time.Since(w.startTime))
+	// 		// worker.Report.Summary(logs)
+	// 	}
+	// }(w)
 }
 
 // todo: fix wrong place invalid
@@ -111,7 +109,7 @@ func (w *Worker) ExtendCopySavedFieldsToDataPool() {
 }
 
 func (w *Worker) Summary() {
-	w.Report.Summary(nil)
+	// w.Report.Summary(nil)
 }
 
 func (w *Worker) Cancel() {
@@ -120,11 +118,28 @@ func (w *Worker) Cancel() {
 	w.Close()
 }
 
+func (w *Worker) IsDone() bool {
+	return w.done
+}
+
 func (w *Worker) Close() {
+	w.done = true
 	if w.job.Type != string(config.Sleep) {
 		w.db.Disconnect()
 	}
 	if w.ticker != nil {
 		w.ticker.Stop()
 	}
+}
+
+func (w *Worker) JobName() string {
+	return w.job.Name
+}
+
+func (w *Worker) RequestedOperations() uint64 {
+	return w.job.Operations
+}
+
+func (w *Worker) RequestedDurationSeconds() uint64 {
+	return uint64(w.job.Duration.Seconds())
 }

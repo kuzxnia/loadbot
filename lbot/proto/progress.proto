@@ -1,0 +1,26 @@
+syntax = "proto3";
+
+package proto;
+
+option go_package = "proto/";
+
+service ProgressProcess {
+  rpc Run(ProgressRequest) returns (stream ProgressResponse) {}
+}
+
+message ProgressRequest {
+  string refresh_interval = 1;
+}
+
+message ProgressResponse {
+  // change reqeust total
+  uint64 requests = 1;
+  uint64 duration = 2;
+  uint64 rps = 3;
+  float error_rate = 4;
+  // job type -
+  // duration, operation, nolimit
+  string job_name = 5;
+  uint64 request_duration = 6;
+  uint64 request_operations = 7;
+}

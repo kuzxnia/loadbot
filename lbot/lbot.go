@@ -18,7 +18,6 @@ type Lbot struct {
 func NewLbot(ctx context.Context) *Lbot {
 	return &Lbot{
 		ctx:  ctx,
-    // todo: chanell max size one
 		logs: make(chan string),
 	}
 }
@@ -43,7 +42,7 @@ func (l *Lbot) Run() {
 				panic("Worker initialization error")
 			}
 			defer worker.Close()
-			worker.InitIntervalReportingSummary(l.logs)
+			worker.InitMetrics()
 			worker.Work()
 			worker.Summary()
 			worker.ExtendCopySavedFieldsToDataPool()
@@ -52,12 +51,6 @@ func (l *Lbot) Run() {
 }
 
 func (l *Lbot) Cancel() error {
-	// fmt.Println(&l.ctx)
-
-	// ctx, cancel := context.WithCancel(l.ctx)
-	// fmt.Println(&ctx)
-	// fmt.Printf("Canceling workload")
-	// cancel()
 	for _, worker := range l.workers {
 		worker.Cancel()
 	}

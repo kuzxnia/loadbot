@@ -82,13 +82,15 @@ func New(rootLogger *log.Entry, version string, commit string, date string) *cob
 }
 
 const (
-	CommandStartDriver  = "start"
-	CommandStopDriver   = "stop"
-	CommandWatchDriver  = "watch"
-	CommandConfigDriver = "config"
+	CommandStartDriver    = "start"
+	CommandStopDriver     = "stop"
+	CommandWatchDriver    = "watch"
+	CommandProgressDriver = "progress"
+	CommandConfigDriver   = "config"
 
 	// config args
 	ConfigFile = "config-file"
+	Interval   = "interval"
 	StdIn      = "stdin"
 )
 
@@ -124,7 +126,7 @@ func provideDriverCommands() []*cobra.Command {
 
 			// todo: switch to local model aka cli.StartRequest
 			request := proto.StopRequest{}
-      // response model could have worlkload id?
+			// response model could have worlkload id?
 
 			return StopDriver(Conn, &request)
 		},
@@ -141,12 +143,32 @@ func provideDriverCommands() []*cobra.Command {
 
 			// todo: switch to local model aka cli.StartRequest
 			request := proto.WatchRequest{}
-      // response model could have worlkload id?
+			// response model could have worlkload id?
 
 			return WatchDriver(Conn, &request)
 		},
 		GroupID: DriverGroup.ID,
 	}
+	progressCommand := cobra.Command{
+		Use:     CommandProgressDriver,
+		Aliases: []string{"i"},
+		Short:   "Watch stress test",
+		RunE: func(cmd *cobra.Command, args []string) (err error) {
+			flags := cmd.Flags()
+			interval, _ := flags.GetDuration(Interval)
+
+			request := proto.ProgressRequest{
+				RefreshInterval: interval.String(),
+			}
+
+			return WorkloadProgress(Conn, &request)
+		},
+		GroupID: DriverGroup.ID,
+	}
+	progressCommandFlags := progressCommand.Flags()
+	defaultInterval, _ := time.ParseDuration("1s")
+	progressCommandFlags.DurationP(Interval, "i", defaultInterval, "Progress refresh interval")
+
 	configCommand := cobra.Command{
 		Use:   CommandConfigDriver,
 		Short: "Config",
@@ -182,7 +204,7 @@ func provideDriverCommands() []*cobra.Command {
 	configCommandFlags.StringP(ConfigFile, "f", "", "file with workload configuration")
 	configCommandFlags.Bool(StdIn, false, "get workload configuration from stdin")
 
-	return []*cobra.Command{&startCommand, &stopCommand, &watchCommand, &configCommand}
+	return []*cobra.Command{&startCommand, &stopCommand, &watchCommand, &configCommand, &progressCommand}
 }
 
 // todo: generate complection
