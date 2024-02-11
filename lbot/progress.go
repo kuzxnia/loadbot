@@ -6,7 +6,6 @@ import (
 	"log"
 	"time"
 
-	"github.com/kuzxnia/loadbot/lbot/driver"
 	"github.com/kuzxnia/loadbot/lbot/proto"
 )
 
@@ -28,20 +27,27 @@ func (w *ProgressProcess) Run(request *proto.ProgressRequest, srv proto.Progress
 		return err
 	}
 
+	// stats shouls be assigned to job/ worker
 	ticker := time.NewTicker(interval)
 	go func() {
 		for range ticker.C {
-			resp := proto.ProgressResponse{
-				RequestsTotal: driver.Stats.Total(),
-				Rps:           driver.Stats.Rps(),
-				ErrorRate:     driver.Stats.ErrorRate(),
-			}
+      // add job name fileter
+			for _, worker := range w.lbot.workers {
+				resp := proto.ProgressResponse{
+          // add job name here
+					Requests:   worker.Metrics.Requests(),
+					Rps:        worker.Metrics.Rps(),
+					ErrorRate:  worker.Metrics.ErrorRate(),
+					Operations: worker.RequestedOperations(),
+					Duration:   worker.RequestedDurationSeconds(),
+				}
 
-			if err := srv.Send(&resp); err != nil {
-				// todo: handle client not connected
-				log.Printf("client closed connection, closing channel done")
-				done <- true
-				return
+				if err := srv.Send(&resp); err != nil {
+					// todo: handle client not connected
+					log.Printf("client closed connection, closing channel done")
+					done <- true
+					return
+				}
 			}
 		}
 	}()

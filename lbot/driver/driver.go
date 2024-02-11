@@ -14,6 +14,7 @@ import (
 
 // todo: split this function to setup and to starting workers
 type Worker struct {
+	Metrics     *Metrics
 	ctx         context.Context
 	cfg         *config.Config
 	job         *config.Job
@@ -23,7 +24,7 @@ type Worker struct {
 	rateLimiter Limiter
 	pool        JobPool
 	dataPool    schema.DataPool
-	ticker *time.Ticker
+	ticker      *time.Ticker
 }
 
 func NewWorker(ctx context.Context, cfg *config.Config, job *config.Job, dataPool schema.DataPool) (*Worker, error) {
@@ -36,6 +37,7 @@ func NewWorker(ctx context.Context, cfg *config.Config, job *config.Job, dataPoo
 	worker.wg.Add(int(job.Connections))
 	worker.pool = NewJobPool(job)
 	worker.rateLimiter = NewLimiter(job)
+	worker.Metrics = NewMetrics(job.Name)
 
 	// introduce no db worker
 	if job.Type != string(config.Sleep) {
@@ -67,7 +69,7 @@ func (w *Worker) Work() {
 				w.rateLimiter.Take()
 				// perform operation
 
-				Stats.Meter(w.handler.Execute)
+				w.Metrics.Meter(w.handler.Execute)
 
 				w.pool.MarkJobDone()
 			}
@@ -78,6 +80,7 @@ func (w *Worker) Work() {
 }
 
 func (w *Worker) InitMetrics() {
+	w.Metrics.Init()
 	// reportingFormat := w.job.GetReport()
 	// if reportingFormat == nil || reportingFormat.Interval == 0 {
 	// 	// log.Info("Interval reporting skipped")
@@ -118,4 +121,12 @@ func (w *Worker) Close() {
 	if w.ticker != nil {
 		w.ticker.Stop()
 	}
+}
+
+func (w *Worker) RequestedOperations() uint64 {
+	return w.job.Operations
+}
+
+func (w *Worker) RequestedDurationSeconds() uint64 {
+	return uint64(w.job.Duration.Seconds())
 }

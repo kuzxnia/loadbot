@@ -13,7 +13,12 @@ message ProgressRequest {
 }
 
 message ProgressResponse {
-  uint64 requests_total = 1;
+  // change reqeust total
+  uint64 requests = 1;
   float rps = 2;
   float error_rate = 3;
+  // job type -
+  // duration, operation, nolimit
+  uint64 duration = 4;
+  uint64 operations = 5;
 }

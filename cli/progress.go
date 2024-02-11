@@ -29,7 +29,7 @@ func WorkloadProgress(conn grpc.ClientConnInterface, request *proto.ProgressRequ
 		if err != nil {
 			log.Fatalf("cannot receive %v", err)
 		}
-    fmt.Fprintf(writer, "RPS: %.1f Requests: %d ErrorRate %.2f\n", resp.Rps, resp.RequestsTotal, resp.ErrorRate)
+    fmt.Fprintf(writer, "RPS: %.1f Requests: %d ErrorRate %.2f\n", resp.Rps, resp.Requests, resp.ErrorRate)
 	}
 	writer.Stop()
 

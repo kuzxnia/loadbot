@@ -42,7 +42,7 @@ func (l *Lbot) Run() {
 				panic("Worker initialization error")
 			}
 			defer worker.Close()
-			driver.Stats.Init()
+			worker.InitMetrics()
 			worker.Work()
 			worker.Summary()
 			worker.ExtendCopySavedFieldsToDataPool()
