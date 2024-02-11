@@ -55,7 +55,7 @@ func (m *GeneratorFieldMapper) Generate(field string) (result interface{}, err e
 }
 
 func (m *GeneratorFieldMapper) Set(field string, valueGenerator func(opts ...options.OptionFunc) string) {
-  m.FieldTypeMapper[field] = valueGenerator
+	m.FieldTypeMapper[field] = valueGenerator
 }
 
 type DataGenerator interface {

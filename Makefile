@@ -10,6 +10,14 @@ build-docker-lbot:
 build-docker-agent:
 	docker build -t lbot-agent -f docker/Dockerfile.agent .
 
+build-dev:
+	# only your platform
+	goreleaser build --snapshot --clean --single-target
+
+build-all:
+	# only your platform
+	goreleaser build --snapshot --clean
+
 run-docker-lbot:
 	@docker run --net=host -t --rm lbot $(call args,)
 run-docker-lbot-config:

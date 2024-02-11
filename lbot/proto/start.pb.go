@@ -4,7 +4,7 @@
 // 	protoc        v4.25.2
 // source: start/start.proto
 
-package proto 
+package proto
 
 import (
 	reflect "reflect"

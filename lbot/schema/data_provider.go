@@ -42,7 +42,7 @@ func (d *LiveDataProvider) GetSingleItem() interface{} {
 // todo: remote this, add abstraction with skipped keys or sth like that
 func (d *LiveDataProvider) GetSingleItemWithout(key string) interface{} {
 	singleItem, _ := d.dataGenerator.Generate()
-  v := singleItem.(map[string]interface{})
+	v := singleItem.(map[string]interface{})
 	delete(v, key)
 	return v
 }

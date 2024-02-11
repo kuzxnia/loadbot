@@ -23,10 +23,9 @@ var (
 )
 
 // wybranie odpowiedzniej strategii, potrzebuje dodstać jakiś request params
-// -- jeśli dał coś z k8s to helm 
+// -- jeśli dał coś z k8s to helm
 func GetResourceManager() (ResourceManager, error) {
-  // switch {
-  // }
+	// switch {
+	// }
 	return nameToStrategy[DefaultStrategy], nil
 }
-

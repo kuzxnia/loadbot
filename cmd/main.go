@@ -2,9 +2,10 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"os"
 
-	"github.com/kuzxnia/loadbot/lbot"
+	"github.com/kuzxnia/loadbot/cli"
 	"github.com/kuzxnia/loadbot/lbot/log"
 )
 
@@ -22,19 +23,24 @@ func main() {
 }
 
 func run() int {
-	// maxprocs.Set()
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
 	logger, err := log.NewLogger(ctx)
 	if err != nil {
-		panic(err)
+		fmt.Printf("❌ Error: %s\n", err.Error()) //nolint:forbidigo
+
+		return 1
 	}
-	cmd := lbot.BuildArgs(logger, version, commit, date)
-	err = cmd.ExecuteContext(ctx)
+
+	rootCmd := cli.New(logger, version, commit, date)
+
+	err = rootCmd.ExecuteContext(ctx)
+
 	if err != nil {
 		logger.Errorf("❌ Error: %s", err.Error())
 		return 1
 	}
+
 	return 0
 }

@@ -29,7 +29,7 @@ func New(rootLogger *log.Entry, version string, commit string, date string) *cob
 
 	cmd := cobra.Command{
 		Use:     "lbot",
-		Short:   "A command-line database workload ",
+		Short:   "A command-line database workload driver ",
 		Version: fmt.Sprintf("%s (commit: %s) (build date: %s)", version, commit, date),
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) (err error) {
 			f := cmd.Flags()
@@ -40,6 +40,7 @@ func New(rootLogger *log.Entry, version string, commit string, date string) *cob
 				return fmt.Errorf("failed to configure logger: %w", err)
 			}
 
+      // move to driver group
 			agentUri, _ := f.GetString(AgentUri)
 			Conn, err = grpc.Dial(agentUri, grpc.WithInsecure())
 			// valiedate connection
@@ -57,6 +58,7 @@ func New(rootLogger *log.Entry, version string, commit string, date string) *cob
 		},
 	}
 	pf := cmd.PersistentFlags()
+  // move to driver group
 	pf.StringP(AgentUri, "u", "127.0.0.1:1234", "loadbot agent uri (default: 127.0.0.1:1234)")
 	pf.String(config.FlagLogLevel, applog.LevelInfo, fmt.Sprintf("log level, must be one of: %s", strings.Join(applog.Levels, ", ")))
 	pf.String(config.FlagLogFormat, applog.FormatFancy, fmt.Sprintf("log format, must be one of: %s", strings.Join(applog.Formats, ", ")))
@@ -64,6 +66,8 @@ func New(rootLogger *log.Entry, version string, commit string, date string) *cob
 	// setup supcommands
 	// cmd.AddGroup(&OrchiestrationGroup)
 	// cmd.AddCommand(provideOrchiestrationCommands()...)
+	cmd.AddGroup(&AgentGroup)
+	cmd.AddCommand(provideAgentCommands()...)
 	cmd.AddGroup(&DriverGroup)
 	cmd.AddCommand(provideDriverCommands()...)
 
@@ -205,6 +209,43 @@ func provideDriverCommands() []*cobra.Command {
 	configCommandFlags.Bool(StdIn, false, "get workload configuration from stdin")
 
 	return []*cobra.Command{&startCommand, &stopCommand, &watchCommand, &configCommand, &progressCommand}
+}
+
+const (
+	CommandStartAgent = "start-agent"
+
+	// agent args
+	Port = "port"
+)
+
+var AgentGroup = cobra.Group{
+	ID:    "Agent",
+	Title: "Agent Commands:",
+}
+
+func provideAgentCommands() []*cobra.Command {
+	agentCommand := cobra.Command{
+		Use:     CommandStartAgent,
+		Aliases: []string{"a"},
+		Short:   "Start lbot-agent",
+		RunE: func(cmd *cobra.Command, args []string) (err error) {
+			flags := cmd.Flags()
+
+			configFile, _ := flags.GetString(ConfigFile)
+			stdin, _ := flags.GetBool(StdIn)
+			port, _ := flags.GetString(Port)
+
+			return StartAgent(cmd.Context(), stdin, port, configFile)
+		},
+		GroupID: AgentGroup.ID,
+	}
+
+	flags := agentCommand.Flags()
+	flags.StringP(ConfigFile, "f", "", "Config file for lbot-agent")
+	flags.StringP(Port, "p", "1234", "Agent port")
+	flags.Bool(StdIn, false, "get workload configuration from stdin")
+
+	return []*cobra.Command{&agentCommand}
 }
 
 // todo: generate complection

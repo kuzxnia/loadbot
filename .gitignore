@@ -3,7 +3,9 @@ _conn.txt
 _config.json
 _get_conn.py
 .venv
+dist/
 
 # MKDocs
 site/
 public/
+
