@@ -33,12 +33,11 @@ func WorkloadProgress(conn grpc.ClientConnInterface, request *proto.ProgressRequ
 
 		if !bar.IsInitialized() {
 			bar.Init(resp)
-      bar.Start()
+			bar.Start()
 		}
 
-    bar.Update(resp)
+		bar.Update(resp)
 	}
-
 
 	if bar.IsInitialized() {
 		bar.Finish()
@@ -96,7 +95,7 @@ func (b *ProgressBar) Init(resp *proto.ProgressResponse) {
 	bar.SetTemplateString(tmpl)
 	bar.SetWriter(os.Stdout)
 	bar.Set(pb.Static, true) // disable auto refresh
-	bar.Set("job", "Insert test")
+	bar.Set("job", resp.JobName)
 	bar.Set("requestOperations", resp.RequestOperations)
 	bar.Set("requestDuration", resp.RequestDuration)
 
@@ -121,5 +120,5 @@ func (b *ProgressBar) Update(resp *proto.ProgressResponse) {
 }
 
 func (b *ProgressBar) Finish() {
-  b.bar.Finish()
+	b.bar.Finish()
 }

@@ -39,7 +39,7 @@ func NewWorker(ctx context.Context, cfg *config.Config, job *config.Job, dataPoo
 	worker.pool = NewJobPool(job)
 	worker.rateLimiter = NewLimiter(job)
 	worker.Metrics = NewMetrics(job.Name)
-  worker.done = false
+	worker.done = false
 
 	// introduce no db worker
 	if job.Type != string(config.Sleep) {
@@ -130,6 +130,10 @@ func (w *Worker) Close() {
 	if w.ticker != nil {
 		w.ticker.Stop()
 	}
+}
+
+func (w *Worker) JobName() string {
+	return w.job.Name
 }
 
 func (w *Worker) RequestedOperations() uint64 {

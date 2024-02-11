@@ -4,7 +4,6 @@ import (
 	"time"
 
 	"github.com/VictoriaMetrics/metrics"
-	"github.com/samber/lo"
 )
 
 type Metrics struct {
@@ -35,7 +34,7 @@ func (m *Metrics) Meter(handler func() error) {
 
 	error := handler()
 
-	// handle size
+	// todo: handle size
 	m.requestDuration.UpdateDuration(startTime)
 	m.requests.Inc()
 	if error != nil {
@@ -43,9 +42,12 @@ func (m *Metrics) Meter(handler func() error) {
 	}
 }
 
-func (m *Metrics) Rps() float32 {
-	duration := time.Since(m.startTime)
-	return lo.If(duration != 0, float32(m.requests.Get())/m.DurationSeconds()).Else(0)
+func (m *Metrics) Rps() uint64 {
+	duration := time.Since(m.startTime).Seconds()
+	if duration == 0 {
+		return 0
+	}
+	return uint64(float64(m.requests.Get()) / duration)
 }
 
 func (m *Metrics) Requests() uint64 {
@@ -56,6 +58,6 @@ func (m *Metrics) ErrorRate() float32 {
 	return float32(m.requestsError.Get()) / float32(m.requests.Get())
 }
 
-func (m *Metrics) DurationSeconds() float32 {
-	return float32(time.Since(m.startTime).Seconds())
+func (m *Metrics) DurationSeconds() uint64 {
+	return uint64(time.Since(m.startTime).Round(time.Second).Seconds())
 }
