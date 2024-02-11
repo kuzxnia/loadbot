@@ -21,7 +21,6 @@ func HTTPClient(cfg *config.Job) *http.Client {
 	}
 }
 
-
 func FastHTTPClient(cfg *config.Job) *http.Client {
 	transport := &http.Transport{
 		Proxy:                 http.ProxyFromEnvironment,

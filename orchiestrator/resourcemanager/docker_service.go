@@ -1,4 +1,4 @@
-package resourcemanager 
+package resourcemanager
 
 import (
 	"context"
@@ -21,14 +21,11 @@ type DockerContainer struct {
 	Name string
 }
 
-
-
-
 type DockerService struct{}
 
-func (d *DockerService) Install() error {return nil}
-func (d *DockerService) UnInstall() error {return nil}
-func (d *DockerService) Suspend() error {return nil}
+func (d *DockerService) Install() error   { return nil }
+func (d *DockerService) UnInstall() error { return nil }
+func (d *DockerService) Suspend() error   { return nil }
 
 // add optional argument with chart version
 func NewDockerService() (*DockerService, error) {
