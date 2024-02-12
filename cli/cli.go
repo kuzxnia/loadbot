@@ -28,7 +28,7 @@ func New(rootLogger *log.Entry, version string, commit string, date string) *cob
 	Logger = rootLogger
 
 	cmd := cobra.Command{
-		Use:     "lbot",
+		Use:     "loadbot",
 		Short:   "A command-line database workload driver ",
 		Version: fmt.Sprintf("%s (commit: %s) (build date: %s)", version, commit, date),
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) (err error) {
@@ -45,7 +45,7 @@ func New(rootLogger *log.Entry, version string, commit string, date string) *cob
 			Conn, err = grpc.Dial(agentUri, grpc.WithInsecure())
 			// valiedate connection
 			if err != nil {
-				Logger.Fatal("Found errors trying to connect to lbot-agent:", err)
+				Logger.Fatal("Found errors trying to connect to loadbot-agent:", err)
 				return
 			}
 
@@ -227,7 +227,7 @@ func provideAgentCommands() []*cobra.Command {
 	agentCommand := cobra.Command{
 		Use:     CommandStartAgent,
 		Aliases: []string{"a"},
-		Short:   "Start lbot-agent",
+		Short:   "Start loadbot-agent",
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
 			flags := cmd.Flags()
 
@@ -241,7 +241,7 @@ func provideAgentCommands() []*cobra.Command {
 	}
 
 	flags := agentCommand.Flags()
-	flags.StringP(ConfigFile, "f", "", "Config file for lbot-agent")
+	flags.StringP(ConfigFile, "f", "", "Config file for loadbot-agent")
 	flags.StringP(Port, "p", "1234", "Agent port")
 	flags.Bool(StdIn, false, "get workload configuration from stdin")
 
