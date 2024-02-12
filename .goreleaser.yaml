@@ -61,14 +61,14 @@ changelog:
 
 dockers:
   - image_templates:
-      - docker.io/kuzxnia/lbot:{{ .Tag }}-amd64
+      - docker.io/kuzxnia/loadbot:{{ .Tag }}-amd64
     use: buildx
     dockerfile: Dockerfile
     build_flag_templates:
       - --platform=linux/amd64
 
   - image_templates:
-      - docker.io/kuzxnia/lbot:{{ .Tag }}-arm64
+      - docker.io/kuzxnia/loadbot:{{ .Tag }}-arm64
     use: buildx
     goarch: arm64
     dockerfile: Dockerfile
@@ -76,16 +76,15 @@ dockers:
       - --platform=linux/arm64
 
 docker_manifests:
-  - name_template: docker.io/kuzxnia/lbot:{{ .Tag }}
+  - name_template: docker.io/kuzxnia/loadbot:{{ .Tag }}
     image_templates:
-      - docker.io/kuzxnia/lbot:{{ .Tag }}-amd64
-      - docker.io/kuzxnia/lbot:{{ .Tag }}-arm64
+      - docker.io/kuzxnia/loadbot:{{ .Tag }}-amd64
+      - docker.io/kuzxnia/loadbot:{{ .Tag }}-arm64
 
 brews:
   - repository:
       owner: kuzxnia
-      name: homebrew-lbot
-      token: "{{ .Env.PRIVATE_ACCESS_TOKEN }}"
+      name: homebrew-loadbot
     commit_author:
       name: Kacper Kuźniarski
       email: kacper.kuzniarski@gmail.com
