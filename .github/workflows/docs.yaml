@@ -31,4 +31,4 @@ jobs:
       - name: Publish docs
         run: |
           mkdocs build
-          mkdocs gh-deploy --force --no-history
+          mkdocs gh-deploy --force --no-history --remote_branch docs
