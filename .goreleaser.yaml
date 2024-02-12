@@ -84,7 +84,8 @@ docker_manifests:
 brews:
   - repository:
       owner: kuzxnia
-      name: loadbot
+      name: homebrew-loadbot
+      token: "{{ .Env.PRIVATE_ACCESS_TOKEN }}"
     commit_author:
       name: Kacper Kuźniarski
       email: kacper.kuzniarski@gmail.com
