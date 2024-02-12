@@ -3,6 +3,7 @@ args = `arg="$(filter-out $@,$(MAKECMDGOALS))" && echo $${arg:-${1}}`
 CONFIG_FILE=
 
 
+
 build-docker: build-docker-lbot build-docker-agent
 
 build-docker-lbot:
@@ -25,5 +26,11 @@ run-docker-lbot-config:
 
 run-docker-agent:
 	docker run -p 1234:1234 -t --rm lbot-agent
+
+
+NEXT_VERSION=$(shell svu next)
+release:
+	git tag -a $(NEXT_VERSION) -m "Release $(NEXT_VERSION)"
+
 
 .PHONY: build-docker build-docker-agent build-docker-lbot run-docker-lbot run-docker-agent

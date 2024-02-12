@@ -81,11 +81,6 @@ docker_manifests:
       - docker.io/kuzxnia/lbot:{{ .Tag }}-amd64
       - docker.io/kuzxnia/lbot:{{ .Tag }}-arm64
 
-# To test docker image push, uncomment the following and run
-# goreleaser release --skip-validate --rm-dist --debug
-#release:
-#  disable: true
-
 brews:
   - repository:
       owner: kuzxnia
