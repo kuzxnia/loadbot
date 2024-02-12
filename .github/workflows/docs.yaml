@@ -4,6 +4,8 @@ name: "Docs"
 
 on:
   push:
+    branch:
+      - 'master'
 
 jobs:
   docs:
