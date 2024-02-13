@@ -7,7 +7,6 @@ brew tap kuzxnia/loadbot
 brew install loadbot
 ```
 
-
 ## Running directly in Docker container
 
 Alternatively, you can use the
@@ -16,7 +15,6 @@ that come with the `loadbot` binary pre-installed:
 ```bash
 docker run --rm kuzxnia/loadbot --help
 ```
-
 
 ## By downloading the binaries (MacOS/Linux)
 

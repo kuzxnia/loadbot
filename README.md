@@ -1,40 +1,57 @@
-# lbot - workload database driver (currently supporting only MongoDB)
+# loadbot 
 
 ## Introduction
-The purpose of this tool is to simulate workloads to facilitate testing the failover capabilities of database cluster under load. This code, being an open-source project, is in its early development stage and likely contains various bugs.
+
+Loadbot is a workload driver designed to simulate heavy loads on systems for performance testing and benchmarking purposes. It allows users to generate various types of workloads to stress-test their systems under different scenarios.
+
+This code, being an open-source project, is in its early development stage and likely contains various bugs. We welcome contributions from the community to help improve loadbot, make it more robust and reliable, and introduce new features.
 
 
-## How to use:
-1. Build image - `make build-docker`
-2. Run agent - `make run-docker-agent`
-3. Configure agent by running lbot config command - `make run-docker-lbot-config CONFIG_FILE="_config.json"`
-4. Run workload tests - `make run-docker-lbot start`
+## How to Install
+
+Using Homebrew (MacOS/Linux)💡
+
+```bash
+brew tap kuzxnia/loadbot
+brew install loadbot
+```
+
+Alternatively, you can install **loadbot** from sources or run it directly in a Docker container. For more information on these installation methods, please refer to the [documentation](https://kuzxnia.github.io/getting_started/install/).
+
+
+## Getting started
+After installing loadbot, you can quickly get started by following these steps:
+
+1. Run LoadBot agent with your desired configuration using the command:
+```bash
+loadbot start-agent -f config_file.json
+```
+
+2. Start the workload using the LoadBot client:
+```bash
+loadbot start
+```
+
+3. Monitor the progress of the workload using the command:
+```bash
+loadbot progress
+```
+
+4. To stop the workload, use the following command:
+```bash
+loadbot stop
+```
+
+For more information and detailed instructions, please refer to the [quick start guide](https://kuzxnia.github.io/getting_started/quick-start/).
+
+
+## Documentation
+For detailed documentation on how to use loadbot and its available features, please refer to the [official documentation](https://kuzxnia.github.io/loadbot/).
+
 
 > Note: If running with local db remember to use host network and configure connection_string to 127.0.0.1 `docker run --network="host" --rm -t mload < config_file.json` or check Makefile
 
 This tool offers two ways to access it: one through CLI arguments and the other via a configuration file. Utilizing the configuration file provides additional functionalities for the tool.
-
-### CLI usage:
-    A command-line database workload
-
-    Usage:
-      lbot [command]
-
-    Driver Commands:
-      config      Config
-      start       Start stress test
-      stop        Stop stress test
-
-    Additional Commands:
-      completion  Generate the autocompletion script for the specified shell
-      help        Help about any command
-
-    Flags:
-      -u, --agent-uri string    loadbot agent uri (default: 127.0.0.1:1234)
-      -h, --help                help for lbot
-      -v, --version             version for lbot
-
-    Use "lbot [command] --help" for more information about a command.
 
 
 Known issue:
