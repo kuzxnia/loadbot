@@ -1,5 +1,5 @@
 site_name: loadbot
-# site_url: "https://loadbot.github.com"
+site_url: "https://kuzxnia.github.io/loadbot/"
 site_description: "Workload database driver"
 repo_url: "https://github.com/kuzxnia/loadbot"
 repo_name: "kuzxnia/loadbot"
@@ -19,6 +19,7 @@ theme:
     - navigation.instant
     - navigation.tracking
     - navigation.tabs
+    - toc.integrate
   palette:
   - scheme: slate
     primary: teal
@@ -40,28 +41,28 @@ theme:
 
 nav:
   - Home:
-      # showcase and redirect to getting started
     - index.md
   - Getting Started:
-    - Intro: getting_started/intro.md
+    # - Intro: getting_started/intro.md
     - Install Guide: getting_started/install.md
     - Quick Start: getting_started/quick-start.md
-    - How it works: getting_started/how-it-works.md
+    # - How it works: getting_started/how-it-works.md
+
+  # - Command Line Usage:
+  #   - cli/loadbot.md
 
   - Setup:
-    - Configuration file: setup/index.md
+    - setup/index.md
     - Jobs: setup/job.md
-    - Schemas: setup/job.md
-    - Reporting formats: setup/job.md
-    # workloads / defining jobs / configuration
-      # examples
+    - Schemas: setup/schema.md
+    - Other features: setup/other.md
 
-      # introduction
-  - Command Line Usage:
-    # agent and cli 
-    # descriptive description of both cli's
-    - lbot: cli/lbot.md
-    - lbot-agent: cli/lbot-agent.md
+  - Contributing:
+    - Development: contributing/development.md
+    - Code of conduct: contributing/code_of_conduct.md
+    - License: contributing/license.md
+    - How to report a bug: contributing/bug_reporting.md
+    - Known issues: contributing/known_issues.md
       
 
 markdown_extensions:
