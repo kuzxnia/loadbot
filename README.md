@@ -47,14 +47,3 @@ For more information and detailed instructions, please refer to the [quick start
 
 ## Documentation
 For detailed documentation on how to use loadbot and its available features, please refer to the [official documentation](https://kuzxnia.github.io/loadbot/).
-
-
-> Note: If running with local db remember to use host network and configure connection_string to 127.0.0.1 `docker run --network="host" --rm -t mload < config_file.json` or check Makefile
-
-This tool offers two ways to access it: one through CLI arguments and the other via a configuration file. Utilizing the configuration file provides additional functionalities for the tool.
-
-
-Known issue:
-* srv not working with some DNS servers - golng 1.13+ issue see [this](https://github.com/golang/go/issues/37362) and [this](https://pkg.go.dev/go.mongodb.org/mongo-driver/mongo#hdr-Potential_DNS_Issues)
-
-    > Old versions of kube-dns and the native DNS resolver (systemd-resolver) on Ubuntu 18.04 are known to be non-compliant in this manner. 
