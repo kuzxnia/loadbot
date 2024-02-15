@@ -18,9 +18,9 @@ message ProgressResponse {
   uint64 duration = 2;
   uint64 rps = 3;
   float error_rate = 4;
-  // job type -
-  // duration, operation, nolimit
-  string job_name = 5;
-  uint64 request_duration = 6;
-  uint64 request_operations = 7;
+  bool is_finished = 5;
+  // workload data
+  string job_name = 6;
+  uint64 request_duration = 7;
+  uint64 request_operations = 8;
 }

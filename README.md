@@ -16,7 +16,7 @@ brew tap kuzxnia/loadbot
 brew install loadbot
 ```
 
-Alternatively, you can install **loadbot** from sources or run it directly in a Docker container. For more information on these installation methods, please refer to the [documentation](https://kuzxnia.github.io/getting_started/install/).
+Alternatively, you can install **loadbot** from sources or run it directly in a Docker container. For more information on these installation methods, please refer to the [documentation](https://kuzxnia.github.io/loadbot/getting_started/install/).
 
 
 ## Getting started
@@ -42,7 +42,7 @@ loadbot progress
 loadbot stop
 ```
 
-For more information and detailed instructions, please refer to the [quick start guide](https://kuzxnia.github.io/getting_started/quick-start/).
+For more information and detailed instructions, please refer to the [quick start guide](https://kuzxnia.github.io/loadbot/getting_started/quick-start/).
 
 
 ## Documentation
