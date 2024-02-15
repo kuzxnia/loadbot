@@ -30,7 +30,6 @@ type Worker struct {
 
 func NewWorker(ctx context.Context, cfg *config.Config, job *config.Job, dataPool schema.DataPool) (*Worker, error) {
 	// todo: check errors
-	fmt.Printf("Starting job: %s\n", lo.If(job.Name != "", job.Name).Else(job.Type))
 	worker := new(Worker)
 	worker.ctx = ctx
 	worker.cfg = cfg
@@ -56,6 +55,7 @@ func NewWorker(ctx context.Context, cfg *config.Config, job *config.Job, dataPoo
 }
 
 func (w *Worker) Work() {
+	fmt.Printf("Starting job: %s\n", lo.If(w.job.Name != "", w.job.Name).Else(w.job.Type))
 	// something wrong with context propagation change this
 	// go func() {
 	// 	select {
@@ -78,27 +78,13 @@ func (w *Worker) Work() {
 		}()
 	}
 	w.wg.Wait()
-
-	// todo: mark as done
+	w.done = true
+  // todo: set end date
 	// w.Report.SetDuration(time.Since(w.startTime))
 }
 
 func (w *Worker) InitMetrics() {
 	w.Metrics.Init()
-	// reportingFormat := w.job.GetReport()
-	// if reportingFormat == nil || reportingFormat.Interval == 0 {
-	// 	// log.Info("Interval reporting skipped")
-	// 	return
-	// }
-
-	// w.ticker = time.NewTicker(reportingFormat.Interval)
-	// go func(worker *Worker) {
-	// 	for range w.ticker.C {
-	// 		// todo: get metrics and push
-	// 		// worker.Report.SetDuration(time.Since(w.startTime))
-	// 		// worker.Report.Summary(logs)
-	// 	}
-	// }(w)
 }
 
 // todo: fix wrong place invalid
