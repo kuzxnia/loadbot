@@ -49,7 +49,6 @@ func (c *Job) UnmarshalJSON(data []byte) (err error) {
 		Database        string                 `json:"database"`
 		Collection      string                 `json:"collection"`
 		Schema          string                 `json:"template"`
-		ReportingFormat string                 `json:"format"`
 		Connections     uint64                 `json:"connections"`
 		Pace            uint64                 `json:"pace"`
 		DataSize        uint64                 `json:"data_size"`
@@ -71,7 +70,6 @@ func (c *Job) UnmarshalJSON(data []byte) (err error) {
 	c.Collection = tmp.Collection
 	c.Type = tmp.Type
 	c.Schema = tmp.Schema
-	c.ReportingFormat = tmp.ReportingFormat
 	c.Connections = tmp.Connections
 	c.Pace = tmp.Pace
 	c.DataSize = tmp.DataSize
@@ -91,29 +89,6 @@ func (c *Job) UnmarshalJSON(data []byte) (err error) {
 		}
 	}
 	c.Filter = tmp.Filter
-
-	return
-}
-
-func (c *ReportingFormat) UnmarshalJSON(data []byte) (err error) {
-	var tmp struct {
-		Name     string `json:"name"`
-		Interval string `json:"interval"`
-		Template string `json:"template"`
-	}
-
-	if err = json.Unmarshal(data, &tmp); err != nil {
-		return err
-	}
-
-	c.Name = tmp.Name
-	c.Template = tmp.Template
-
-	if tmp.Interval != "" {
-		if c.Interval, err = time.ParseDuration(tmp.Interval); err != nil {
-			return err
-		}
-	}
 
 	return
 }

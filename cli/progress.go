@@ -110,7 +110,7 @@ func (b *ProgressBar) Update(resp *proto.ProgressResponse) {
 
 	if resp.IsFinished {
 		bar.Finish()
-		fmt.Println() // flush stdout
+		fmt.Println()
 	}
 }
 

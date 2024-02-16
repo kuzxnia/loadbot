@@ -18,35 +18,27 @@ message SchemaRequest {
   repeated string save = 5;
 }
 
-message ReportingFormatRequest {
-  string name = 1;
-  string interval = 2;
-  string template = 3;
-}
-
 message JobRequest {
   string name = 1;
   string database = 2;
   string collection = 3;
   string type = 4;
   string schema = 5;
-  string reporting_format = 6;
-  uint64 connections = 7;
-  uint64 pace = 8;
-  uint64 data_size = 9;
-  uint64 batch_size = 10;
-  string duration = 11;
-  uint64 operations = 12;
-  string timeout = 13;
-  google.protobuf.Any filter = 14;
+  uint64 connections = 6;
+  uint64 pace = 7;
+  uint64 data_size = 8;
+  uint64 batch_size = 9;
+  string duration = 10;
+  uint64 operations = 11;
+  string timeout = 12;
+  google.protobuf.Any filter = 13;
 }
 
 message ConfigRequest {
   string connection_string = 1;
   repeated JobRequest jobs = 2;
   repeated SchemaRequest schemas = 3;
-  repeated ReportingFormatRequest reporting_formats = 4;
-  bool debug = 5;
+  bool debug = 4;
 }
 
 message ConfigResponse {}

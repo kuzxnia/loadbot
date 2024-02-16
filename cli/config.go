@@ -39,7 +39,6 @@ func BuildConfigRequest(request *lbot.ConfigRequest) *proto.ConfigRequest {
 		ConnectionString: request.ConnectionString,
 		Jobs:             make([]*proto.JobRequest, len(request.Jobs)),
 		Schemas:          make([]*proto.SchemaRequest, len(request.Schemas)),
-		ReportingFormats: make([]*proto.ReportingFormatRequest, len(request.ReportingFormats)),
 		Debug:            request.Debug,
 	}
 	for i, job := range request.Jobs {
@@ -49,7 +48,6 @@ func BuildConfigRequest(request *lbot.ConfigRequest) *proto.ConfigRequest {
 			Collection:      job.Collection,
 			Type:            job.Type,
 			Schema:          job.Schema,
-			ReportingFormat: job.ReportingFormat,
 			Connections:     job.Connections,
 			Pace:            job.Pace,
 			DataSize:        job.DataSize,
@@ -68,13 +66,6 @@ func BuildConfigRequest(request *lbot.ConfigRequest) *proto.ConfigRequest {
 			Collection: schema.Collection,
 			// Schema:     schema.Schema,
 			Save: schema.Save,
-		}
-	}
-	for i, rf := range request.ReportingFormats {
-		cfg.ReportingFormats[i] = &proto.ReportingFormatRequest{
-			Name:     rf.Name,
-			Interval: rf.Interval.String(),
-			Template: rf.Template,
 		}
 	}
 

@@ -19,26 +19,24 @@ func NewConfig(request *ConfigRequest) *config.Config {
 		ConnectionString: request.ConnectionString,
 		Jobs:             make([]*config.Job, len(request.Jobs)),
 		Schemas:          make([]*config.Schema, len(request.Schemas)),
-		ReportingFormats: make([]*config.ReportingFormat, len(request.ReportingFormats)),
 		Debug:            request.Debug,
 	}
 	for i, job := range request.Jobs {
 		cfg.Jobs[i] = &config.Job{
-			Name:            job.Name,
-			Parent:          cfg,
-			Database:        job.Database,
-			Collection:      job.Collection,
-			Type:            job.Type,
-			Schema:          job.Schema,
-			ReportingFormat: job.ReportingFormat,
-			Connections:     job.Connections,
-			Pace:            job.Pace,
-			DataSize:        job.DataSize,
-			BatchSize:       job.BatchSize,
-			Duration:        job.Duration,
-			Operations:      job.Operations,
-			Timeout:         job.Timeout,
-			Filter:          job.Filter,
+			Name:        job.Name,
+			Parent:      cfg,
+			Database:    job.Database,
+			Collection:  job.Collection,
+			Type:        job.Type,
+			Schema:      job.Schema,
+			Connections: job.Connections,
+			Pace:        job.Pace,
+			DataSize:    job.DataSize,
+			BatchSize:   job.BatchSize,
+			Duration:    job.Duration,
+			Operations:  job.Operations,
+			Timeout:     job.Timeout,
+			Filter:      job.Filter,
 		}
 	}
 	for i, schema := range request.Schemas {
@@ -50,13 +48,6 @@ func NewConfig(request *ConfigRequest) *config.Config {
 			Save:       schema.Save,
 		}
 	}
-	for i, rf := range request.ReportingFormats {
-		cfg.ReportingFormats[i] = &config.ReportingFormat{
-			Name:     rf.Name,
-			Interval: rf.Interval,
-			Template: rf.Template,
-		}
-	}
 
 	return cfg
 }
@@ -66,27 +57,25 @@ func NewConfigFromProtoConfigRequest(request *proto.ConfigRequest) *config.Confi
 		ConnectionString: request.ConnectionString,
 		Jobs:             make([]*config.Job, len(request.Jobs)),
 		Schemas:          make([]*config.Schema, len(request.Schemas)),
-		ReportingFormats: make([]*config.ReportingFormat, len(request.ReportingFormats)),
 		Debug:            request.Debug,
 	}
 	for i, job := range request.Jobs {
 		duration, _ := time.ParseDuration(job.Duration)
 		timeout, _ := time.ParseDuration(job.Timeout)
 		cfg.Jobs[i] = &config.Job{
-			Name:            job.Name,
-			Parent:          cfg,
-			Database:        job.Database,
-			Collection:      job.Collection,
-			Type:            job.Type,
-			Schema:          job.Schema,
-			ReportingFormat: job.ReportingFormat,
-			Connections:     job.Connections,
-			Pace:            job.Pace,
-			DataSize:        job.DataSize,
-			BatchSize:       job.BatchSize,
-			Duration:        duration,
-			Operations:      job.Operations,
-			Timeout:         timeout,
+			Name:        job.Name,
+			Parent:      cfg,
+			Database:    job.Database,
+			Collection:  job.Collection,
+			Type:        job.Type,
+			Schema:      job.Schema,
+			Connections: job.Connections,
+			Pace:        job.Pace,
+			DataSize:    job.DataSize,
+			BatchSize:   job.BatchSize,
+			Duration:    duration,
+			Operations:  job.Operations,
+			Timeout:     timeout,
 			// Filter:          job.Filter,
 		}
 	}
@@ -99,42 +88,31 @@ func NewConfigFromProtoConfigRequest(request *proto.ConfigRequest) *config.Confi
 			Save: schema.Save,
 		}
 	}
-	for i, rf := range request.ReportingFormats {
-		interval, _ := time.ParseDuration(rf.Interval)
-		cfg.ReportingFormats[i] = &config.ReportingFormat{
-			Name:     rf.Name,
-			Interval: interval,
-			Template: rf.Template,
-		}
-	}
-
 	return cfg
 }
 
 // todo: should be pointers
 type ConfigRequest struct {
-	ConnectionString string                    `json:"connection_string"`
-	Jobs             []*JobRequest             `json:"jobs"`
-	Schemas          []*SchemaRequest          `json:"schemas"`
-	ReportingFormats []*ReportingFormatRequest `json:"reporting_formats"`
-	Debug            bool                      `json:"debug"`
+	ConnectionString string           `json:"connection_string"`
+	Jobs             []*JobRequest    `json:"jobs"`
+	Schemas          []*SchemaRequest `json:"schemas"`
+	Debug            bool             `json:"debug"`
 }
 
 type JobRequest struct {
-	Name            string
-	Database        string
-	Collection      string
-	Type            string
-	Schema          string
-	ReportingFormat string
-	Connections     uint64 // Maximum number of concurrent connections
-	Pace            uint64 // rps limit / peace - if not set max
-	DataSize        uint64 // data size in bytes
-	BatchSize       uint64
-	Duration        time.Duration
-	Operations      uint64
-	Timeout         time.Duration // if not set, default
-	Filter          map[string]interface{}
+	Name        string
+	Database    string
+	Collection  string
+	Type        string
+	Schema      string
+	Connections uint64 // Maximum number of concurrent connections
+	Pace        uint64 // rps limit / peace - if not set max
+	DataSize    uint64 // data size in bytes
+	BatchSize   uint64
+	Duration    time.Duration
+	Operations  uint64
+	Timeout     time.Duration // if not set, default
+	Filter      map[string]interface{}
 }
 
 type SchemaRequest struct {
@@ -143,12 +121,6 @@ type SchemaRequest struct {
 	Collection string                 `json:"collection"`
 	Schema     map[string]interface{} `json:"schema"` // todo: introducte new type and parse
 	Save       []string               `json:"save"`
-}
-
-type ReportingFormatRequest struct {
-	Name     string
-	Interval time.Duration
-	Template string
 }
 
 type SetConfigProcess struct {
@@ -230,20 +202,19 @@ func standardizeJSON(b []byte) ([]byte, error) {
 
 func (c *JobRequest) UnmarshalJSON(data []byte) (err error) {
 	var tmp struct {
-		Name            string                 `json:"name"`
-		Type            string                 `json:"type"`
-		Database        string                 `json:"database"`
-		Collection      string                 `json:"collection"`
-		Schema          string                 `json:"template"`
-		ReportingFormat string                 `json:"format"`
-		Connections     uint64                 `json:"connections"`
-		Pace            uint64                 `json:"pace"`
-		DataSize        uint64                 `json:"data_size"`
-		BatchSize       uint64                 `json:"batch_size"`
-		Duration        string                 `json:"duration"`
-		Operations      uint64                 `json:"operations"`
-		Timeout         string                 `json:"timeout"` // if not set, default
-		Filter          map[string]interface{} `json:"filter"`
+		Name        string                 `json:"name"`
+		Type        string                 `json:"type"`
+		Database    string                 `json:"database"`
+		Collection  string                 `json:"collection"`
+		Schema      string                 `json:"template"`
+		Connections uint64                 `json:"connections"`
+		Pace        uint64                 `json:"pace"`
+		DataSize    uint64                 `json:"data_size"`
+		BatchSize   uint64                 `json:"batch_size"`
+		Duration    string                 `json:"duration"`
+		Operations  uint64                 `json:"operations"`
+		Timeout     string                 `json:"timeout"` // if not set, default
+		Filter      map[string]interface{} `json:"filter"`
 	}
 	// default values
 	tmp.Connections = 1
@@ -257,7 +228,6 @@ func (c *JobRequest) UnmarshalJSON(data []byte) (err error) {
 	c.Collection = tmp.Collection
 	c.Type = tmp.Type
 	c.Schema = tmp.Schema
-	c.ReportingFormat = tmp.ReportingFormat
 	c.Connections = tmp.Connections
 	c.Pace = tmp.Pace
 	c.DataSize = tmp.DataSize
@@ -281,34 +251,10 @@ func (c *JobRequest) UnmarshalJSON(data []byte) (err error) {
 	return
 }
 
-func (c *ReportingFormatRequest) UnmarshalJSON(data []byte) (err error) {
-	var tmp struct {
-		Name     string `json:"name"`
-		Interval string `json:"interval"`
-		Template string `json:"template"`
-	}
-
-	if err = json.Unmarshal(data, &tmp); err != nil {
-		return err
-	}
-
-	c.Name = tmp.Name
-	c.Template = tmp.Template
-
-	if tmp.Interval != "" {
-		if c.Interval, err = time.ParseDuration(tmp.Interval); err != nil {
-			return err
-		}
-	}
-
-	return
-}
-
 func (c *ConfigRequest) Validate() error {
 	validators := []func() error{
 		c.validateJobs,
 		// c.validateSchemas,
-		c.validateReportingFormats,
 	}
 
 	for _, validate := range validators {
@@ -328,19 +274,9 @@ func (c *ConfigRequest) validateJobs() error {
 	return nil
 }
 
-func (c *ConfigRequest) validateReportingFormats() error {
-	for _, reportingFormat := range c.ReportingFormats {
-		if error := reportingFormat.Validate(); error != nil {
-			return error
-		}
-	}
-	return nil
-}
-
 func (job *JobRequest) Validate() error {
 	validators := []func() error{
 		job.validateSchema,
-		job.validateReportFormat,
 		job.validateDatabase,
 		job.validateCollection,
 		job.validateType,
@@ -368,19 +304,6 @@ func (job *JobRequest) validateSchema() error {
 	// todo: to fix
 	// if !Contains(job.Parent.Schemas, func(s *Schema) bool { return s.Name == job.Schema }) {
 	// 	return errors.New("JobValidationError: job \"" + job.Name + "\" have invalid template \"" + job.Schema + "\"")
-	// }
-	return nil
-}
-
-func (job *JobRequest) validateReportFormat() error {
-	if job.ReportingFormat == "" {
-		return nil
-	}
-
-	// todo: to fix
-	// reportingFormats := append(job.Parent.ReportingFormats, DefaultReportFormats...)
-	// if !Contains(reportingFormats, func(s *ReportingFormat) bool { return s.Name == job.ReportingFormat }) {
-	// 	return errors.New("JobValidationError: job \"" + job.Name + "\" have invalid report_format \"" + job.ReportingFormat + "\"")
 	// }
 	return nil
 }
@@ -474,23 +397,6 @@ func (job *JobRequest) validateOperations() (err error) {
 		}
 	}
 	return
-}
-
-func (rp *ReportingFormatRequest) Validate() error {
-	validators := []func() error{
-		rp.validateReportingFormat,
-	}
-
-	for _, validate := range validators {
-		if error := validate(); error != nil {
-			return error
-		}
-	}
-	return nil
-}
-
-func (rpt *ReportingFormatRequest) validateReportingFormat() (err error) {
-	return nil
 }
 
 // todo: add schema validation
