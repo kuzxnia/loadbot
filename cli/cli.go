@@ -3,12 +3,9 @@ package cli
 import (
 	"errors"
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/kuzxnia/loadbot/lbot"
-	"github.com/kuzxnia/loadbot/lbot/config"
-	applog "github.com/kuzxnia/loadbot/lbot/log"
 	"github.com/kuzxnia/loadbot/lbot/proto"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -19,33 +16,21 @@ const (
 	AgentUri = "agent-uri"
 )
 
-var (
-	Logger *log.Entry
-	Conn   *grpc.ClientConn
-)
+var Conn *grpc.ClientConn
 
-func New(rootLogger *log.Entry, version string, commit string, date string) *cobra.Command {
-	Logger = rootLogger
-
+func New(version string, commit string, date string) *cobra.Command {
 	cmd := cobra.Command{
 		Use:     "loadbot",
 		Short:   "A command-line database workload driver ",
 		Version: fmt.Sprintf("%s (commit: %s) (build date: %s)", version, commit, date),
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) (err error) {
 			f := cmd.Flags()
-			loglvl, _ := f.GetString(config.FlagLogLevel)
-			logfmt, _ := f.GetString(config.FlagLogFormat)
-			err = applog.Configure(Logger, loglvl, logfmt)
-			if err != nil {
-				return fmt.Errorf("failed to configure logger: %w", err)
-			}
-
-      // move to driver group
+			// move to driver group
 			agentUri, _ := f.GetString(AgentUri)
 			Conn, err = grpc.Dial(agentUri, grpc.WithInsecure())
 			// valiedate connection
 			if err != nil {
-				Logger.Fatal("Found errors trying to connect to loadbot-agent:", err)
+				log.Fatal("Found errors trying to connect to loadbot-agent:", err)
 				return
 			}
 
@@ -58,10 +43,8 @@ func New(rootLogger *log.Entry, version string, commit string, date string) *cob
 		},
 	}
 	pf := cmd.PersistentFlags()
-  // move to driver group
+	// move to driver group
 	pf.StringP(AgentUri, "u", "127.0.0.1:1234", "loadbot agent uri (default: 127.0.0.1:1234)")
-	pf.String(config.FlagLogLevel, applog.LevelInfo, fmt.Sprintf("log level, must be one of: %s", strings.Join(applog.Levels, ", ")))
-	pf.String(config.FlagLogFormat, applog.FormatFancy, fmt.Sprintf("log format, must be one of: %s", strings.Join(applog.Formats, ", ")))
 
 	// setup supcommands
 	// cmd.AddGroup(&OrchiestrationGroup)

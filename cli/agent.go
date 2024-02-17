@@ -7,7 +7,7 @@ import (
 )
 
 // tutaj nie powinno wchodzić proto
-func StartAgent(context context.Context, stdin bool, port string, configFile string) (err error) {
+func StartAgent(context context.Context, stdin bool, cmdPort string, configFile string) (err error) {
 	var requestConfig *lbot.ConfigRequest
 
 	if stdin {
@@ -24,11 +24,13 @@ func StartAgent(context context.Context, stdin bool, port string, configFile str
 		}
 	}
 
-	agent := lbot.NewAgent(context, Logger)
+	if cmdPort != "" {
+		requestConfig.AgentPort = cmdPort
+	}
+	agent := lbot.NewAgent(context)
 	if requestConfig != nil {
 		agent.ApplyConfig(requestConfig)
 	}
-
-	agent.Listen(port)
+	agent.Listen()
 	return nil
 }

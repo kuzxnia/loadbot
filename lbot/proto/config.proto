@@ -36,9 +36,13 @@ message JobRequest {
 
 message ConfigRequest {
   string connection_string = 1;
-  repeated JobRequest jobs = 2;
-  repeated SchemaRequest schemas = 3;
-  bool debug = 4;
+  string agent_name = 2;
+  string agent_port = 3;
+  string metrics_export_url = 4;
+  string metrics_export_port = 5;
+  repeated JobRequest jobs = 6;
+  repeated SchemaRequest schemas = 7;
+  bool debug = 8;
 }
 
 message ConfigResponse {}

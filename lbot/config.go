@@ -16,10 +16,14 @@ import (
 
 func NewConfig(request *ConfigRequest) *config.Config {
 	cfg := &config.Config{
-		ConnectionString: request.ConnectionString,
-		Jobs:             make([]*config.Job, len(request.Jobs)),
-		Schemas:          make([]*config.Schema, len(request.Schemas)),
-		Debug:            request.Debug,
+		ConnectionString:  request.ConnectionString,
+		AgentName:         request.AgentName,
+		AgentPort:         request.AgentPort,
+		MetricsExportUrl:  request.MetricsExportUrl,
+		MetricsExportPort: request.MetricsExportPort,
+		Jobs:              make([]*config.Job, len(request.Jobs)),
+		Schemas:           make([]*config.Schema, len(request.Schemas)),
+		Debug:             request.Debug,
 	}
 	for i, job := range request.Jobs {
 		cfg.Jobs[i] = &config.Job{
@@ -54,10 +58,14 @@ func NewConfig(request *ConfigRequest) *config.Config {
 
 func NewConfigFromProtoConfigRequest(request *proto.ConfigRequest) *config.Config {
 	cfg := &config.Config{
-		ConnectionString: request.ConnectionString,
-		Jobs:             make([]*config.Job, len(request.Jobs)),
-		Schemas:          make([]*config.Schema, len(request.Schemas)),
-		Debug:            request.Debug,
+		ConnectionString:  request.ConnectionString,
+		AgentName:         request.AgentName,
+		AgentPort:         request.AgentPort,
+		MetricsExportUrl:  request.MetricsExportUrl,
+		MetricsExportPort: request.MetricsExportPort,
+		Jobs:              make([]*config.Job, len(request.Jobs)),
+		Schemas:           make([]*config.Schema, len(request.Schemas)),
+		Debug:             request.Debug,
 	}
 	for i, job := range request.Jobs {
 		duration, _ := time.ParseDuration(job.Duration)
@@ -93,10 +101,14 @@ func NewConfigFromProtoConfigRequest(request *proto.ConfigRequest) *config.Confi
 
 // todo: should be pointers
 type ConfigRequest struct {
-	ConnectionString string           `json:"connection_string"`
-	Jobs             []*JobRequest    `json:"jobs"`
-	Schemas          []*SchemaRequest `json:"schemas"`
-	Debug            bool             `json:"debug"`
+	ConnectionString  string           `json:"connection_string"`
+	AgentName         string           `json:"agent_name"`
+	AgentPort         string           `json:"agent_port"`
+	MetricsExportUrl  string           `json:"metrics_export_url"`
+	MetricsExportPort string           `json:"metrics_export_port"`
+	Jobs              []*JobRequest    `json:"jobs"`
+	Schemas           []*SchemaRequest `json:"schemas"`
+	Debug             bool             `json:"debug"`
 }
 
 type JobRequest struct {

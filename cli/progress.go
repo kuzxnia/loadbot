@@ -4,12 +4,12 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"log"
 	"os"
 
 	"github.com/cheggaaa/pb/v3"
 	"github.com/kuzxnia/loadbot/lbot/proto"
 	"github.com/samber/lo"
+	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 )
 
