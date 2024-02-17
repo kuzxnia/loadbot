@@ -18,6 +18,14 @@ message SchemaRequest {
   repeated string save = 5;
 }
 
+message AgentRequest {
+  string name = 1;
+  string port = 2;
+  string metrics_export_url = 3;
+  uint64 metrics_export_interval_seconds = 4;
+  string metrics_export_port = 5;
+}
+
 message JobRequest {
   string name = 1;
   string database = 2;
@@ -36,13 +44,10 @@ message JobRequest {
 
 message ConfigRequest {
   string connection_string = 1;
-  string agent_name = 2;
-  string agent_port = 3;
-  string metrics_export_url = 4;
-  string metrics_export_port = 5;
-  repeated JobRequest jobs = 6;
-  repeated SchemaRequest schemas = 7;
-  bool debug = 8;
+  AgentRequest agent = 2;
+  repeated JobRequest jobs = 3;
+  repeated SchemaRequest schemas = 4;
+  bool debug = 5;
 }
 
 message ConfigResponse {}

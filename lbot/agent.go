@@ -12,6 +12,7 @@ import (
 
 	"github.com/VictoriaMetrics/metrics"
 	"github.com/kuzxnia/loadbot/lbot/proto"
+	"github.com/samber/lo"
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
@@ -47,42 +48,43 @@ func (a *Agent) Listen() error {
 	signal.Notify(
 		stopSignal, os.Interrupt, syscall.SIGHUP, syscall.SIGINT, syscall.SIGQUIT, syscall.SIGTERM,
 	)
-
-	log.Info("waiting for new config version")
-
-	address := "0.0.0.0:" + a.lbot.config.AgentPort
-	tcpListener, err := net.Listen("tcp", address)
-	if err != nil {
-		log.Fatal("listen error:", err)
-		return err
-	}
-	defer tcpListener.Close()
-
-	log.Info("Started lbot-agent on " + address)
+	address := "0.0.0.0:" + a.lbot.config.Agent.Port
 
 	defer func() {
 		log.Info("Stopped lbot-agent started on " + address)
 		a.grpcServer.GracefulStop()
 	}()
+
 	go func() {
+		log.Info("Started lbot-agent on " + address)
+		tcpListener, err := net.Listen("tcp", address)
+		if err != nil {
+			log.Fatal("listen error:", err)
+			panic(err)
+		}
 		if err := a.grpcServer.Serve(tcpListener); err != nil {
 			log.Fatalf("failed to serve: %s", err)
 		}
 	}()
 
-	if a.lbot.config.MetricsExportPort != "" {
+	if a.lbot.config.Agent.MetricsExportPort != "" {
 		http.HandleFunc("/metrics", func(w http.ResponseWriter, req *http.Request) {
 			metrics.WritePrometheus(w, true)
 		})
 		go func() {
-			log.Infof("Started metrics exporter on :%s/metrics", a.lbot.config.MetricsExportPort)
-			http.ListenAndServe(":"+a.lbot.config.MetricsExportPort, nil)
+			log.Infof("Started metrics exporter on :%s/metrics", a.lbot.config.Agent.MetricsExportPort)
+			http.ListenAndServe(":"+a.lbot.config.Agent.MetricsExportPort, nil)
 		}()
-	} else if a.lbot.config.MetricsExportUrl != "" {
-		log.Info("Started exporting metrics :", a.lbot.config.MetricsExportPort)
-		metricsLabels := fmt.Sprintf(`instance="%s"`, a.lbot.config.AgentName)
+	} else if a.lbot.config.Agent.MetricsExportUrl != "" {
+		log.Info("Started exporting metrics :", a.lbot.config.Agent.MetricsExportPort)
+
+		metricsLabels := lo.If(
+			a.lbot.config.Agent.Name != "",
+			fmt.Sprintf(`instance="%s"`, a.lbot.config.Agent.Name),
+		).Else("")
+
 		metrics.InitPush(
-			a.lbot.config.MetricsExportUrl,
+			a.lbot.config.Agent.MetricsExportUrl,
 			10*time.Second, // todo: add interval param
 			metricsLabels,
 			true,
@@ -90,8 +92,7 @@ func (a *Agent) Listen() error {
 	}
 
 	<-stopSignal
-	fmt.Println("Received stop signal. Exiting.")
-	// a.grpcServer.GracefulStop()
+	fmt.Println("\nReceived stop signal. Exiting.")
 
 	// is this needed?
 	_, cancel := context.WithCancel(a.ctx)

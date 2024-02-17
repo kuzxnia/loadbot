@@ -198,7 +198,11 @@ const (
 	CommandStartAgent = "start-agent"
 
 	// agent args
-	Port = "port"
+	AgentName                    = "name"
+	AgentPort                    = "port"
+	MetricsExportUrl             = "metrics_export_url"
+	MetricsExportIntervalSeconds = "metrics_export_interval_seconds"
+	MetricsExportPort            = "metrics_export_port"
 )
 
 var AgentGroup = cobra.Group{
@@ -209,24 +213,40 @@ var AgentGroup = cobra.Group{
 func provideAgentCommands() []*cobra.Command {
 	agentCommand := cobra.Command{
 		Use:     CommandStartAgent,
-		Aliases: []string{"a"},
 		Short:   "Start loadbot-agent",
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
 			flags := cmd.Flags()
 
+			name, _ := flags.GetString(AgentName)
+			port, _ := flags.GetString(AgentPort)
+			metricsExportUrl, _ := flags.GetString(MetricsExportUrl)
+			metricsExportIntervalSeconds, _ := flags.GetUint64(MetricsExportIntervalSeconds)
+			metricsExportPort, _ := flags.GetString(MetricsExportPort)
+
+			agentConfig := &lbot.AgentRequest{
+				Name:                         name,
+				Port:                         port,
+				MetricsExportUrl:             metricsExportUrl,
+				MetricsExportIntervalSeconds: metricsExportIntervalSeconds,
+				MetricsExportPort:            metricsExportPort,
+			}
+
 			configFile, _ := flags.GetString(ConfigFile)
 			stdin, _ := flags.GetBool(StdIn)
-			port, _ := flags.GetString(Port)
 
-			return StartAgent(cmd.Context(), stdin, port, configFile)
+			return StartAgent(cmd.Context(), agentConfig, stdin, configFile)
 		},
 		GroupID: AgentGroup.ID,
 	}
 
 	flags := agentCommand.Flags()
+	flags.StringP(AgentName, "n", "", "Agent name")
 	flags.StringP(ConfigFile, "f", "", "Config file for loadbot-agent")
-	flags.StringP(Port, "p", "1234", "Agent port")
-	flags.Bool(StdIn, false, "get workload configuration from stdin")
+	flags.Bool(StdIn, false, "Provide configuration from stdin.")
+	flags.StringP(AgentPort, "p", "", "Agent port")
+	flags.String(MetricsExportUrl, "", "Prometheus export url used for pushing metrics")
+	flags.Uint64(MetricsExportIntervalSeconds, 0, "Prometheus export push interval")
+	flags.String(MetricsExportPort, "", "Expose metrics on port instead pushing to prometheus")
 
 	return []*cobra.Command{&agentCommand}
 }

@@ -16,14 +16,17 @@ import (
 
 func NewConfig(request *ConfigRequest) *config.Config {
 	cfg := &config.Config{
-		ConnectionString:  request.ConnectionString,
-		AgentName:         request.AgentName,
-		AgentPort:         request.AgentPort,
-		MetricsExportUrl:  request.MetricsExportUrl,
-		MetricsExportPort: request.MetricsExportPort,
-		Jobs:              make([]*config.Job, len(request.Jobs)),
-		Schemas:           make([]*config.Schema, len(request.Schemas)),
-		Debug:             request.Debug,
+		ConnectionString: request.ConnectionString,
+		Agent: &config.Agent{
+			Name:                         request.Agent.Name,
+			Port:                         request.Agent.Port,
+			MetricsExportUrl:             request.Agent.MetricsExportUrl,
+			MetricsExportIntervalSeconds: request.Agent.MetricsExportIntervalSeconds,
+			MetricsExportPort:            request.Agent.MetricsExportPort,
+		},
+		Jobs:    make([]*config.Job, len(request.Jobs)),
+		Schemas: make([]*config.Schema, len(request.Schemas)),
+		Debug:   request.Debug,
 	}
 	for i, job := range request.Jobs {
 		cfg.Jobs[i] = &config.Job{
@@ -58,14 +61,17 @@ func NewConfig(request *ConfigRequest) *config.Config {
 
 func NewConfigFromProtoConfigRequest(request *proto.ConfigRequest) *config.Config {
 	cfg := &config.Config{
-		ConnectionString:  request.ConnectionString,
-		AgentName:         request.AgentName,
-		AgentPort:         request.AgentPort,
-		MetricsExportUrl:  request.MetricsExportUrl,
-		MetricsExportPort: request.MetricsExportPort,
-		Jobs:              make([]*config.Job, len(request.Jobs)),
-		Schemas:           make([]*config.Schema, len(request.Schemas)),
-		Debug:             request.Debug,
+		ConnectionString: request.ConnectionString,
+		Agent: &config.Agent{
+			Name:                         request.Agent.Name,
+			Port:                         request.Agent.Port,
+			MetricsExportUrl:             request.Agent.MetricsExportUrl,
+			MetricsExportIntervalSeconds: request.Agent.MetricsExportIntervalSeconds,
+			MetricsExportPort:            request.Agent.MetricsExportPort,
+		},
+		Jobs:    make([]*config.Job, len(request.Jobs)),
+		Schemas: make([]*config.Schema, len(request.Schemas)),
+		Debug:   request.Debug,
 	}
 	for i, job := range request.Jobs {
 		duration, _ := time.ParseDuration(job.Duration)
@@ -101,14 +107,19 @@ func NewConfigFromProtoConfigRequest(request *proto.ConfigRequest) *config.Confi
 
 // todo: should be pointers
 type ConfigRequest struct {
-	ConnectionString  string           `json:"connection_string"`
-	AgentName         string           `json:"agent_name"`
-	AgentPort         string           `json:"agent_port"`
-	MetricsExportUrl  string           `json:"metrics_export_url"`
-	MetricsExportPort string           `json:"metrics_export_port"`
-	Jobs              []*JobRequest    `json:"jobs"`
-	Schemas           []*SchemaRequest `json:"schemas"`
-	Debug             bool             `json:"debug"`
+	ConnectionString string           `json:"connection_string"`
+	Agent            *AgentRequest    `json:"agent"`
+	Jobs             []*JobRequest    `json:"jobs"`
+	Schemas          []*SchemaRequest `json:"schemas"`
+	Debug            bool             `json:"debug"`
+}
+
+type AgentRequest struct {
+	Name                         string `json:"name"`
+	Port                         string `json:"port"`
+	MetricsExportUrl             string `json:"metrics_export_url"`
+	MetricsExportIntervalSeconds uint64 `json:"metrics_export_interval_seconds"`
+	MetricsExportPort            string `json:"metrics_export_port"`
 }
 
 type JobRequest struct {

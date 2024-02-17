@@ -5,14 +5,19 @@ import (
 )
 
 type Config struct {
-	ConnectionString  string    `json:"connection_string"`
-	AgentName         string    `json:"agent_name"`
-	AgentPort         string    `json:"agent_port"`
-	MetricsExportUrl  string    `json:"metrics_export_url"`
-	MetricsExportPort string    `json:"metrics_export_port"`
-	Jobs              []*Job    `json:"jobs"`
-	Schemas           []*Schema `json:"schemas"`
-	Debug             bool      `json:"debug"`
+	ConnectionString string    `json:"connection_string"`
+	Agent            *Agent    `json:"agent"`
+	Jobs             []*Job    `json:"jobs"`
+	Schemas          []*Schema `json:"schemas"`
+	Debug            bool      `json:"debug"`
+}
+
+type Agent struct {
+	Name                         string `json:"name"`
+	Port                         string `json:"port"`
+	MetricsExportUrl             string `json:"metrics_export_url"`
+	MetricsExportIntervalSeconds uint64 `json:"metrics_export_interval_seconds"`
+	MetricsExportPort            string `json:"metrics_export_port"`
 }
 
 type Job struct {
