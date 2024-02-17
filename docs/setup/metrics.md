@@ -59,3 +59,5 @@ The `job_uuid` label distinguishes between different job runs/attempts, allowing
 Metrics have been extracted from VictoriaMetrics sources. For more in-depth information about VictoriaMetrics, you can refer to the following article: [VictoriaMetrics: Creating the Best Remote Storage for Prometheus](https://faun.pub/victoriametrics-creating-the-best-remote-storage-for-prometheus-5d92d66787ac).
 
 You can also refer to an excellent article discussing Prometheus metrics in Go, which can provide further insights (Prometheus Go Metrics)[https://povilasv.me/prometheus-go-metrics/].
+
+Example Grafana Golang dashboard [template](https://grafana.com/grafana/dashboards/10376-generic-go-process/).
