@@ -40,7 +40,7 @@ func New(rootLogger *log.Entry, version string, commit string, date string) *cob
 				return fmt.Errorf("failed to configure logger: %w", err)
 			}
 
-      // move to driver group
+			// move to driver group
 			agentUri, _ := f.GetString(AgentUri)
 			Conn, err = grpc.Dial(agentUri, grpc.WithInsecure())
 			// valiedate connection
@@ -58,7 +58,7 @@ func New(rootLogger *log.Entry, version string, commit string, date string) *cob
 		},
 	}
 	pf := cmd.PersistentFlags()
-  // move to driver group
+	// move to driver group
 	pf.StringP(AgentUri, "u", "127.0.0.1:1234", "loadbot agent uri (default: 127.0.0.1:1234)")
 	pf.String(config.FlagLogLevel, applog.LevelInfo, fmt.Sprintf("log level, must be one of: %s", strings.Join(applog.Levels, ", ")))
 	pf.String(config.FlagLogFormat, applog.FormatFancy, fmt.Sprintf("log format, must be one of: %s", strings.Join(applog.Formats, ", ")))
@@ -110,16 +110,32 @@ func provideDriverCommands() []*cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
 			// building parameters for start
 			// check for params
+			flags := cmd.Flags()
+
+			progress, _ := flags.GetBool("progress")
 
 			// todo: switch to local model aka cli.StartRequest
 			request := proto.StartRequest{
 				Watch: false,
 			}
 
-			return StartDriver(Conn, &request)
+			StartDriver(Conn, &request)
+
+			if progress {
+				request := proto.ProgressRequest{
+					RefreshInterval: "5s",
+				}
+
+				return WorkloadProgress(Conn, &request)
+			}
+
+			return
 		},
 		GroupID: DriverGroup.ID,
 	}
+
+	startCommandFlags := startCommand.Flags()
+	startCommandFlags.BoolP("progress", "p", false, "Show progress of stress test")
 
 	stopCommand := cobra.Command{
 		Use:   CommandStopDriver,
