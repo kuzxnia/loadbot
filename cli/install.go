@@ -4,6 +4,7 @@ import (
 	"net/rpc"
 
 	"github.com/kuzxnia/loadbot/orchiestrator"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
 
@@ -38,19 +39,19 @@ func installationHandler(cmd *cobra.Command, args []string) error {
 	}
 	var reply int
 
-	Logger.Info("🚀 Starting installation process")
+	log.Info("🚀 Starting installation process")
 
 	client, err := rpc.DialHTTP("tcp", "127.0.0.1:1234")
 	if err != nil {
-		Logger.Fatal("Found errors trying to connect to lbot-agent:", err)
+		log.Fatal("Found errors trying to connect to lbot-agent:", err)
 	}
 
 	err = client.Call("InstallationProcess.Run", request, &reply)
 	if err != nil {
-		Logger.Fatal("InstallationProcess error:", err)
+		log.Fatal("InstallationProcess error:", err)
 	}
 
-	Logger.Info("✅ Installation process succeeded")
+	log.Info("✅ Installation process succeeded")
 
 	return nil
 }

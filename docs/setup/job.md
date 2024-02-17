@@ -8,7 +8,6 @@
 - `schema`(string, optional) - string foreign-key to schemas list
 - `filter`(string, required for read and update) - filter schema
 - `indexes`(list, optional) - list of indexes to create (only for type "create_index") 
-- `format`(string, optional) - string foreign-key to reporting_formats list
 - `collection`(string, required if schema is not set) - collection name
 - `connection`(unsigned int) - number of concurrent connections, number is not limited to physical threads number
 - `data_size`(unsigned int) - data size inserted (currently only works for default schema)

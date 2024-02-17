@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/kuzxnia/loadbot/lbot/proto"
+	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 )
 
@@ -13,7 +14,7 @@ import (
 // tutaj nie powinno wchodzić proto
 func StartDriver(conn grpc.ClientConnInterface, request *proto.StartRequest) (err error) {
 	// todo: mapowanie to proto
-	Logger.Info("🚀 Starting stress test")
+	log.Info("🚀 Starting stress test")
 
 	client := proto.NewStartProcessClient(conn)
 
@@ -22,8 +23,8 @@ func StartDriver(conn grpc.ClientConnInterface, request *proto.StartRequest) (er
 		return fmt.Errorf("starting stress test failed: %w", err)
 	}
 
-	Logger.Infof("Received: %v", reply)
-	Logger.Info("✅ Starting stress test succeeded")
+	log.Infof("Received: %v", reply)
+	log.Info("✅ Starting stress test succeeded")
 
 	return
 }

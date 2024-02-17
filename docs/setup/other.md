@@ -1,6 +1,6 @@
 # Other features
 
-- JSON standardization - comments and trailing commas support ex.
+- config file JSON standardization - comments and trailing commas support ex.
 ```json
 {
     "jobs": [
