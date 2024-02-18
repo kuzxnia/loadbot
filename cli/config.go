@@ -12,7 +12,6 @@ import (
 
 	"github.com/kuzxnia/loadbot/lbot"
 	"github.com/kuzxnia/loadbot/lbot/proto"
-	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 )
 
@@ -21,16 +20,15 @@ import (
 func SetConfigDriver(conn *grpc.ClientConn, parsedConfig *lbot.ConfigRequest) (err error) {
 	requestConfig := BuildConfigRequest(parsedConfig)
 
-	log.Info("🚀 Setting new config")
+	fmt.Println("🚀 Setting new config")
 
 	client := proto.NewSetConfigProcessClient(conn)
-	reply, err := client.Run(context.TODO(), requestConfig)
+	_, err = client.Run(context.TODO(), requestConfig)
 	if err != nil {
 		return fmt.Errorf("Setting config failed: %w", err)
 	}
 
-	log.Infof("Received: %v", reply)
-	log.Info("✅ Setting config succeeded")
+	fmt.Println("✅ Setting config succeeded")
 
 	return
 }

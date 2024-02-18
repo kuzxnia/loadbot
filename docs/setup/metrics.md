@@ -26,7 +26,7 @@ Configure the [agent](/loadbot/setup/agent/) using the following flags:
 
 The metrics available for monitoring encompass both system-level metrics and custom metrics related to your workloads. Here are some popular metrics from a Go application's perspective:
 
-System Metrics:
+##### System Metrics:
 
 - `go_goroutines`
 - `go_threads`
@@ -35,20 +35,20 @@ System Metrics:
 - `go_memstats_alloc_bytes_total`
 - `process_resident_memory_bytes`
 
-Custom Workload Metrics:
+##### Custom Workload Metrics:
 
 - `requests_total`
 - `requests_error`
-- `requests_duration_seconds (histogram)`
+- `requests_duration_seconds`
 
 #### Labels for Querying
-When querying metrics, you can utilize labels to specify job-related information:
+When querying custom workload metrics, you can utilize labels to specify job-related information:
 
 ```
-{job="job_name_here", job_uuid="auto_generate_uuid", agent="agent_name_here"}
+{job="job_name_here", job_uuid="auto_generate_uuid", job_type="write|bulk_write|read|update..." agent="agent_name_here"}
 ```
 
-Example query:
+##### Example query:
 ```
 requests_total{job="workload 1", agent="186.12.9.19"}
 ```
