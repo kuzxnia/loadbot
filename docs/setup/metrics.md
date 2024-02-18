@@ -26,7 +26,7 @@ Configure the [agent](/loadbot/setup/agent/) using the following flags:
 
 The metrics available for monitoring encompass both system-level metrics and custom metrics related to your workloads. Here are some popular metrics from a Go application's perspective:
 
-System Metrics:
+##### System Metrics:
 
 - `go_goroutines`
 - `go_threads`
@@ -35,20 +35,20 @@ System Metrics:
 - `go_memstats_alloc_bytes_total`
 - `process_resident_memory_bytes`
 
-Custom Workload Metrics:
+##### Custom Workload Metrics:
 
 - `requests_total`
 - `requests_error`
-- `requests_duration_seconds (histogram)`
+- `requests_duration_seconds`
 
 #### Labels for Querying
-When querying metrics, you can utilize labels to specify job-related information:
+When querying custom workload metrics, you can utilize labels to specify job-related information:
 
 ```
-{job="job_name_here", job_uuid="auto_generate_uuid", agent="agent_name_here"}
+{job="job_name_here", job_uuid="auto_generate_uuid", job_type="write|bulk_write|read|update..." agent="agent_name_here"}
 ```
 
-Example query:
+##### Example query:
 ```
 requests_total{job="workload 1", agent="186.12.9.19"}
 ```
@@ -59,3 +59,5 @@ The `job_uuid` label distinguishes between different job runs/attempts, allowing
 Metrics have been extracted from VictoriaMetrics sources. For more in-depth information about VictoriaMetrics, you can refer to the following article: [VictoriaMetrics: Creating the Best Remote Storage for Prometheus](https://faun.pub/victoriametrics-creating-the-best-remote-storage-for-prometheus-5d92d66787ac).
 
 You can also refer to an excellent article discussing Prometheus metrics in Go, which can provide further insights (Prometheus Go Metrics)[https://povilasv.me/prometheus-go-metrics/].
+
+Example Grafana Golang dashboard [template](https://grafana.com/grafana/dashboards/10376-generic-go-process/).

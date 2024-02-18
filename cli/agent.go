@@ -37,9 +37,6 @@ func StartAgent(context context.Context, config *lbot.AgentRequest, stdin bool, 
 	if lo.IsEmpty(requestConfig.Agent.Port) {
 		requestConfig.Agent.Port = "1234"
 	}
-	if lo.IsEmpty(requestConfig.Agent.MetricsExportPort) {
-		requestConfig.Agent.MetricsExportPort = "9090"
-	}
 
 	if lo.IsNotEmpty(config.Name) {
 		requestConfig.Agent.Name = config.Name

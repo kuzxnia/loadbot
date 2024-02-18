@@ -44,7 +44,7 @@ For more information on defining [jobs](https://kuzxnia.github.io/loadbot/loadbo
       "connections": 100,
       "duration": "20s",
     },
-    {  // gile little rest to db
+    {  // give little rest to db
       "type": "sleep",
       "duration": "5s",
       "format": "simple"

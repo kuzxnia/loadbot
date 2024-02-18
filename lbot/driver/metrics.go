@@ -1,10 +1,12 @@
 package driver
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/VictoriaMetrics/metrics"
 	"github.com/google/uuid"
+	"github.com/kuzxnia/loadbot/lbot/config"
 )
 
 type Metrics struct {
@@ -15,9 +17,8 @@ type Metrics struct {
 	// ResponseSize    *metrics.Histogram
 }
 
-func NewMetrics(job_name string) *Metrics {
-	// toto: move uuid to worker, and change label to worker uuid
-	jobLabel := "{job=\"" + job_name + "\", job_uuid=\"" + uuid.New().String() + "\"}"
+func NewMetrics(job *config.Job) *Metrics {
+	jobLabel := fmt.Sprintf(`{job="%s",job_uuid="%s",job_type="%s"}`, job.Name, uuid.New().String(), job.Type)
 
 	return &Metrics{
 		requests:        metrics.NewCounter("requests_total" + jobLabel),

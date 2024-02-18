@@ -67,7 +67,7 @@ func (a *Agent) Listen() error {
 		}
 	}()
 
-	if a.lbot.config.Agent.MetricsExportPort != "" {
+	if lo.IsNotEmpty(a.lbot.config.Agent.MetricsExportPort) {
 		http.HandleFunc("/metrics", func(w http.ResponseWriter, req *http.Request) {
 			metrics.WritePrometheus(w, true)
 		})
@@ -75,8 +75,8 @@ func (a *Agent) Listen() error {
 			log.Infof("Started metrics exporter on :%s/metrics", a.lbot.config.Agent.MetricsExportPort)
 			http.ListenAndServe(":"+a.lbot.config.Agent.MetricsExportPort, nil)
 		}()
-	} else if a.lbot.config.Agent.MetricsExportUrl != "" {
-		log.Info("Started exporting metrics :", a.lbot.config.Agent.MetricsExportPort)
+	} else if lo.IsNotEmpty(a.lbot.config.Agent.MetricsExportUrl) {
+		log.Info("Started exporting metrics to ", a.lbot.config.Agent.MetricsExportUrl)
 
 		metricsLabels := lo.If(
 			a.lbot.config.Agent.Name != "",
