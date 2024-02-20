@@ -10,7 +10,7 @@ import (
 	"google.golang.org/grpc"
 )
 
-func WatchDriver(conn grpc.ClientConnInterface, request *proto.WatchRequest) (err error) {
+func WatchWorkload(conn grpc.ClientConnInterface, request *proto.WatchRequest) (err error) {
 	log.Info("🚀 Starting stress test")
 
 	client := proto.NewWatchProcessClient(conn)

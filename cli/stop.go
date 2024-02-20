@@ -9,7 +9,7 @@ import (
 	"google.golang.org/grpc"
 )
 
-func StopDriver(conn grpc.ClientConnInterface, request *proto.StopRequest) (err error) {
+func StopWorkload(conn grpc.ClientConnInterface, request *proto.StopRequest) (err error) {
 	fmt.Println("🚀 Stopping stress test")
 
 	client := proto.NewStopProcessClient(conn)
