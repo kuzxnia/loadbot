@@ -4,8 +4,11 @@ option go_package = "proto/";
 
 package proto;
 
+import "common.proto";
+
 service StartProcess {
   rpc Run(StartRequest) returns (StartResponse) {}
+  rpc RunWithProgress(StartWithProgressRequest) returns (stream common.ProgressResponse) {}
 }
 
 message StartRequest {
@@ -15,3 +18,6 @@ message StartRequest {
 message StartResponse {
 }
 
+message StartWithProgressRequest {
+  string refresh_interval = 1;
+}

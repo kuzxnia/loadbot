@@ -114,22 +114,20 @@ func provideDriverCommands() []*cobra.Command {
 
 			progress, _ := flags.GetBool("progress")
 
-			// todo: switch to local model aka cli.StartRequest
-			request := proto.StartRequest{
-				Watch: false,
-			}
-
-			StartDriver(Conn, &request)
-
 			if progress {
-				request := proto.ProgressRequest{
-					RefreshInterval: "5s",
+				request := proto.StartWithProgressRequest{
+					RefreshInterval: "1s",
+				}
+				return StartWithProgressDriver(Conn, &request)
+			} else {
+				// todo: switch to local model aka cli.StartRequest
+				request := proto.StartRequest{
+					Watch: false,
 				}
 
-				return WorkloadProgress(Conn, &request)
+				return StartDriver(Conn, &request)
 			}
 
-			return
 		},
 		GroupID: DriverGroup.ID,
 	}
