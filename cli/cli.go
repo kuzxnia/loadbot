@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/kuzxnia/loadbot/cli/cluster"
+	"github.com/kuzxnia/loadbot/cli/workload"
 	"github.com/kuzxnia/loadbot/lbot"
 	"github.com/kuzxnia/loadbot/lbot/proto"
 	log "github.com/sirupsen/logrus"
@@ -12,63 +14,30 @@ import (
 	"google.golang.org/grpc"
 )
 
-const (
-	AgentUri = "agent-uri"
-)
-
-var Conn *grpc.ClientConn
-
 func New(version string, commit string, date string) *cobra.Command {
 	cmd := cobra.Command{
 		Use:     "loadbot",
 		Short:   "A command-line database workload driver ",
 		Version: fmt.Sprintf("%s (commit: %s) (build date: %s)", version, commit, date),
-		PersistentPreRunE: func(cmd *cobra.Command, args []string) (err error) {
-			f := cmd.Flags()
-			// move to driver group
-			agentUri, _ := f.GetString(AgentUri)
-			Conn, err = grpc.Dial(agentUri, grpc.WithInsecure())
-			// valiedate connection
-			if err != nil {
-				log.Fatal("Found errors trying to connect to loadbot-agent:", err)
-				return
-			}
-
-			return
-		},
-		PersistentPostRunE: func(cmd *cobra.Command, args []string) (err error) {
-			defer Conn.Close()
-
-			return
-		},
 	}
-	pf := cmd.PersistentFlags()
-	// move to driver group
-	pf.StringP(AgentUri, "u", "127.0.0.1:1234", "loadbot agent uri (default: 127.0.0.1:1234)")
-
-	// setup supcommands
-	// cmd.AddGroup(&OrchiestrationGroup)
-	// cmd.AddCommand(provideOrchiestrationCommands()...)
-	cmd.AddGroup(&AgentGroup)
-	cmd.AddCommand(provideAgentCommands()...)
-	cmd.AddGroup(&WorkloadGroup)
-	cmd.AddCommand(provideWorkloadCommands()...)
-
-	// by default run in docker container
-	// agent save config file in /tmp/lbot/ .*
-	// if you want to change file you need to reconfigure or kill process and start
-
-	// todo: validate connection to agent when calling without args
-	// default localhost
-	// add arg param agent-uri, if agent is somewhere else
-
-	// jeśli stworzone było lokalnie to bij do lokalnego,
-	// jeśli na k8s to bijesz po k8s-selector, jeśli wiele to bijesz do wielu,
+	cmd.AddCommand(
+		provideWorkloadCommands(),
+		provideAgentCommand(),
+		provideClusterCommands(),
+	)
+	cmd.Root().CompletionOptions.HiddenDefaultCmd = true
 
 	return &cmd
 }
 
+var (
+	Conn                       *grpc.ClientConn
+	DefaultProgressInterval, _ = time.ParseDuration("200ms")
+)
+
 const (
+	WorkloadRootCommand = "workload"
+
 	CommandStartWorkload    = "start"
 	CommandStopWorkload     = "stop"
 	CommandWatchWorkload    = "watch"
@@ -77,22 +46,39 @@ const (
 
 	// config args
 	ConfigFile = "config-file"
+	AgentUri   = "agent-uri"
 	Interval   = "interval"
 	StdIn      = "stdin"
 )
 
-var WorkloadGroup = cobra.Group{
-	ID:    "workload",
-	Title: "Workload Commands:",
-}
+func provideWorkloadCommands() *cobra.Command {
+	persistentPreRunE := func(cmd *cobra.Command, args []string) (err error) {
+		f := cmd.Flags()
+		agentUri, _ := f.GetString(AgentUri)
+		Conn, err = grpc.Dial(agentUri, grpc.WithInsecure())
+		// valiedate connection
+		if err != nil {
+			log.Fatal("Found errors trying to connect to loadbot-agent:", err)
+			return
+		}
+		return
+	}
+	persistentPostRun := func(cmd *cobra.Command, args []string) {
+		Conn.Close()
+	}
+	workloadRootCommand := cobra.Command{
+		Use:               WorkloadRootCommand,
+		Short:             "Start workload",
+		PersistentPreRunE: persistentPreRunE,
+		PersistentPostRun: persistentPostRun,
+	}
 
-func provideWorkloadCommands() []*cobra.Command {
 	startCommand := cobra.Command{
-		Use:   CommandStartWorkload,
-		Short: "Start workload",
+		Use:               CommandStartWorkload,
+		Short:             "Start workload",
+		PersistentPreRunE: persistentPreRunE,
+		PersistentPostRun: persistentPostRun,
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
-			// building parameters for start
-			// check for params
 			flags := cmd.Flags()
 
 			progress, _ := flags.GetBool("progress")
@@ -102,45 +88,45 @@ func provideWorkloadCommands() []*cobra.Command {
 				request := proto.StartWithProgressRequest{
 					RefreshInterval: interval.String(),
 				}
-				return StartWorkloadWithProgress(Conn, &request)
+				return workload.StartWorkloadWithProgress(Conn, &request)
 			} else {
 				// todo: switch to local model aka cli.StartRequest
 				request := proto.StartRequest{
 					Watch: false,
 				}
 
-				return StartWorkload(Conn, &request)
+				return workload.StartWorkload(Conn, &request)
 			}
-
 		},
-		GroupID: WorkloadGroup.ID,
 	}
 
 	startCommandFlags := startCommand.Flags()
 	startCommandFlags.BoolP("progress", "p", false, "Show progress of stress test")
-	defaultProgressInterval, _ := time.ParseDuration("1s")
-	startCommandFlags.DurationP(Interval, "i", defaultProgressInterval, "Progress refresh interval")
+	startCommandFlags.DurationP(Interval, "i", DefaultProgressInterval, "Progress refresh interval")
+	// todo: add parent command and inherit this flag
+	startCommandFlags.StringP(AgentUri, "u", "127.0.0.1:1234", "loadbot agent uri (default: 127.0.0.1:1234)")
 
 	stopCommand := cobra.Command{
-		Use:   CommandStopWorkload,
-		Short: "Stop workload",
+		Use:               CommandStopWorkload,
+		Short:             "Stop workload",
+		PersistentPreRunE: persistentPreRunE,
+		PersistentPostRun: persistentPostRun,
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
-			// building parameters for stop
-			// check for params
-
 			// todo: switch to local model aka cli.StartRequest
 			request := proto.StopRequest{}
 			// response model could have worlkload id?
 
-			return StopWorkload(Conn, &request)
+			return workload.StopWorkload(Conn, &request)
 		},
-		GroupID: WorkloadGroup.ID,
 	}
+	stopCommandFlags := stopCommand.Flags()
+	stopCommandFlags.StringP(AgentUri, "u", "127.0.0.1:1234", "loadbot agent uri (default: 127.0.0.1:1234)")
 
 	watchCommand := cobra.Command{
-		Use:     CommandWatchWorkload,
-		Aliases: []string{"i"},
-		Short:   "Watch stress test",
+		Use:               CommandWatchWorkload,
+		Short:             "Watch stress test",
+		PersistentPreRunE: persistentPreRunE,
+		PersistentPostRun: persistentPostRun,
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
 			// building parameters for stop
 			// check for params
@@ -149,14 +135,17 @@ func provideWorkloadCommands() []*cobra.Command {
 			request := proto.WatchRequest{}
 			// response model could have worlkload id?
 
-			return WatchWorkload(Conn, &request)
+			return workload.WatchWorkload(Conn, &request)
 		},
-		GroupID: WorkloadGroup.ID,
 	}
+	watchCommandFlags := watchCommand.Flags()
+	watchCommandFlags.StringP(AgentUri, "u", "127.0.0.1:1234", "loadbot agent uri (default: 127.0.0.1:1234)")
+
 	progressCommand := cobra.Command{
-		Use:     CommandProgressWorkload,
-		Aliases: []string{"i"},
-		Short:   "Watch workload progress",
+		Use:               CommandProgressWorkload,
+		Short:             "Watch workload progress",
+		PersistentPreRunE: persistentPreRunE,
+		PersistentPostRun: persistentPostRun,
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
 			flags := cmd.Flags()
 			interval, _ := flags.GetDuration(Interval)
@@ -165,13 +154,12 @@ func provideWorkloadCommands() []*cobra.Command {
 				RefreshInterval: interval.String(),
 			}
 
-			return WorkloadProgress(Conn, &request)
+			return workload.WorkloadProgress(Conn, &request)
 		},
-		GroupID: WorkloadGroup.ID,
 	}
 	progressCommandFlags := progressCommand.Flags()
-	defaultInterval, _ := time.ParseDuration("1s")
-	progressCommandFlags.DurationP(Interval, "i", defaultInterval, "Progress refresh interval")
+	progressCommandFlags.DurationP(Interval, "i", DefaultProgressInterval, "Progress refresh interval")
+	progressCommandFlags.StringP(AgentUri, "u", "127.0.0.1:1234", "loadbot agent uri (default: 127.0.0.1:1234)")
 
 	configCommand := cobra.Command{
 		Use:   CommandConfigWorkload,
@@ -200,19 +188,21 @@ func provideWorkloadCommands() []*cobra.Command {
 				}
 			}
 
-			return SetConfigWorkload(Conn, parsedConfig)
+			return workload.SetConfigWorkload(Conn, parsedConfig)
 		},
-		GroupID: WorkloadGroup.ID,
 	}
 	configCommandFlags := configCommand.Flags()
 	configCommandFlags.StringP(ConfigFile, "f", "", "file with workload configuration")
 	configCommandFlags.Bool(StdIn, false, "get workload configuration from stdin")
+	configCommandFlags.StringP(AgentUri, "u", "127.0.0.1:1234", "loadbot agent uri (default: 127.0.0.1:1234)")
 
-	return []*cobra.Command{&startCommand, &stopCommand, &watchCommand, &configCommand, &progressCommand}
+	workloadRootCommand.AddCommand(&startCommand, &stopCommand, &watchCommand, &configCommand, &progressCommand)
+	return &workloadRootCommand
 }
 
 const (
-	CommandStartAgent = "start-agent"
+	AgentRootCommand  = "agent"
+	AgentStartCommand = "start"
 
 	// agent args
 	AgentName                    = "name"
@@ -222,15 +212,15 @@ const (
 	MetricsExportPort            = "metrics_export_port"
 )
 
-var AgentGroup = cobra.Group{
-	ID:    "Agent",
-	Title: "Agent Commands:",
-}
+func provideAgentCommand() *cobra.Command {
+	agentRootCommand := cobra.Command{
+		Use:   AgentRootCommand,
+		Short: "Agent Commands",
+	}
 
-func provideAgentCommands() []*cobra.Command {
-	agentCommand := cobra.Command{
-		Use:   CommandStartAgent,
-		Short: "Start loadbot-agent",
+	startAgentCommand := cobra.Command{
+		Use:   AgentStartCommand,
+		Short: "Start agent",
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
 			flags := cmd.Flags()
 
@@ -253,10 +243,9 @@ func provideAgentCommands() []*cobra.Command {
 
 			return StartAgent(cmd.Context(), agentConfig, stdin, configFile)
 		},
-		GroupID: AgentGroup.ID,
 	}
 
-	flags := agentCommand.Flags()
+	flags := startAgentCommand.Flags()
 	flags.StringP(AgentName, "n", "", "Agent name")
 	flags.StringP(ConfigFile, "f", "", "Config file for loadbot-agent")
 	flags.Bool(StdIn, false, "Provide configuration from stdin.")
@@ -265,10 +254,83 @@ func provideAgentCommands() []*cobra.Command {
 	flags.Uint64(MetricsExportIntervalSeconds, 0, "Prometheus export push interval")
 	flags.String(MetricsExportPort, "", "Expose metrics on port instead pushing to prometheus")
 
-	return []*cobra.Command{&agentCommand}
+	agentRootCommand.AddCommand(&startAgentCommand)
+
+	return &agentRootCommand
 }
 
-// todo: generate complection
+const (
+	ClusterRootCommand = "cluster"
+	// cluster commands
+	InitClusterCommand            = "init"
+	ConfigClusterCommand          = "config"
+	StatusClusterCommand          = "status"
+	AddAgentToClusterCommand      = "add-agent"
+	RemoveAgentFromClusterCommand = "remove-agent"
+)
+
+func provideClusterCommands() *cobra.Command {
+	clusterRootCommand := cobra.Command{
+		Use:   ClusterRootCommand,
+		Short: "Cluster Commands",
+	}
+
+	initCommand := cobra.Command{
+		Use:   InitClusterCommand,
+		Short: "Initialize cluster - transform standalone agents into agentset",
+		Args:  cobra.ExactArgs(installationArgsNum),
+		RunE: func(cmd *cobra.Command, args []string) (err error) {
+			// todo: provide config
+
+			// or list of ips with ports
+			// - dummy way,
+			// because without setting priority, voting
+			return cluster.InitCluster()
+		},
+	}
+
+	configCommand := cobra.Command{
+		Use:   ConfigClusterCommand,
+		Short: "Cluster config",
+		Args:  cobra.ExactArgs(installationArgsNum),
+		RunE: func(cmd *cobra.Command, args []string) (err error) {
+			return cluster.InitCluster()
+		},
+	}
+	statusCommand := cobra.Command{
+		Use:   StatusClusterCommand,
+		Short: "Cluster status",
+		Args:  cobra.ExactArgs(installationArgsNum),
+		RunE: func(cmd *cobra.Command, args []string) (err error) {
+			return cluster.InitCluster()
+		},
+	}
+	addAgentCommand := cobra.Command{
+		Use:   AddAgentToClusterCommand,
+		Short: "Cluster status",
+		Args:  cobra.ExactArgs(installationArgsNum),
+		RunE: func(cmd *cobra.Command, args []string) (err error) {
+			return cluster.InitCluster()
+		},
+	}
+	removeAgentCommand := cobra.Command{
+		Use:   RemoveAgentFromClusterCommand,
+		Short: "Cluster status",
+		Args:  cobra.ExactArgs(installationArgsNum),
+		RunE: func(cmd *cobra.Command, args []string) (err error) {
+			return cluster.InitCluster()
+		},
+	}
+	clusterRootCommand.AddCommand(
+		&initCommand,
+		&configCommand,
+		&statusCommand,
+		&addAgentCommand,
+		&removeAgentCommand,
+	)
+
+	return &clusterRootCommand
+}
 
 const (
 	CommandInstall   = "install"
@@ -288,11 +350,6 @@ const (
 	installationArgsNum = 1
 )
 
-var OrchiestrationGroup = cobra.Group{
-	ID:    "orchiestration",
-	Title: "Resource Orchiestration Commands:",
-}
-
 func provideOrchiestrationCommands() []*cobra.Command {
 	installationCommand := cobra.Command{
 		Use:     CommandInstall + " <config-file>",
@@ -300,7 +357,6 @@ func provideOrchiestrationCommands() []*cobra.Command {
 		Short:   "Install workload driver with helm charts on k8s or only with docker locally",
 		Args:    cobra.ExactArgs(installationArgsNum),
 		RunE:    installationHandler,
-		GroupID: OrchiestrationGroup.ID,
 	}
 
 	flags := installationCommand.Flags()
@@ -326,8 +382,9 @@ func provideOrchiestrationCommands() []*cobra.Command {
 		Aliases: []string{"i"},
 		Short:   "Uninstall workload driver",
 		RunE:    unInstallationHandler,
-		GroupID: OrchiestrationGroup.ID,
 	}
 
 	return []*cobra.Command{&installationCommand, &unInstallationCommand}
 }
+
+// todo: generate complection

@@ -1,4 +1,4 @@
-package cli
+package workload 
 
 // 1. without args, just prints configfile
 
