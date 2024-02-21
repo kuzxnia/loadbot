@@ -29,7 +29,7 @@ func StartWorkload(conn grpc.ClientConnInterface, request *proto.StartRequest) (
 	return
 }
 
-func StartWithProgressDriver(conn grpc.ClientConnInterface, request *proto.StartWithProgressRequest) (err error) {
+func StartWorkloadWithProgress(conn grpc.ClientConnInterface, request *proto.StartWithProgressRequest) (err error) {
 	// todo: mapowanie to proto
 	fmt.Println("🚀 Starting stress test")
 

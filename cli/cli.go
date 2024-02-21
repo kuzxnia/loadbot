@@ -102,7 +102,7 @@ func provideWorkloadCommands() []*cobra.Command {
 				request := proto.StartWithProgressRequest{
 					RefreshInterval: interval.String(),
 				}
-				return StartWithProgressDriver(Conn, &request)
+				return StartWorkloadWithProgress(Conn, &request)
 			} else {
 				// todo: switch to local model aka cli.StartRequest
 				request := proto.StartRequest{
