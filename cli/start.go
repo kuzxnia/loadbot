@@ -31,7 +31,7 @@ func StartDriver(conn grpc.ClientConnInterface, request *proto.StartRequest) (er
 
 func StartWithProgressDriver(conn grpc.ClientConnInterface, request *proto.StartWithProgressRequest) (err error) {
 	// todo: mapowanie to proto
-	Logger.Info("🚀 Starting stress test")
+	fmt.Println("🚀 Starting stress test")
 
 	client := proto.NewStartProcessClient(conn)
 
@@ -40,7 +40,7 @@ func StartWithProgressDriver(conn grpc.ClientConnInterface, request *proto.Start
 		return fmt.Errorf("starting stress test failed: %w", err)
 	}
 
-	Logger.Info("✅ Starting stress test succeeded")
+	fmt.Println("✅ Starting stress test succeeded")
 
 	bar := NewProgressBar()
 	for {

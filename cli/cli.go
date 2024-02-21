@@ -96,10 +96,11 @@ func provideDriverCommands() []*cobra.Command {
 			flags := cmd.Flags()
 
 			progress, _ := flags.GetBool("progress")
+			interval, _ := flags.GetDuration(Interval)
 
 			if progress {
 				request := proto.StartWithProgressRequest{
-					RefreshInterval: "1s",
+					RefreshInterval: interval.String(),
 				}
 				return StartWithProgressDriver(Conn, &request)
 			} else {
@@ -117,6 +118,8 @@ func provideDriverCommands() []*cobra.Command {
 
 	startCommandFlags := startCommand.Flags()
 	startCommandFlags.BoolP("progress", "p", false, "Show progress of stress test")
+	defaultProgressInterval, _ := time.ParseDuration("1s")
+	startCommandFlags.DurationP(Interval, "i", defaultProgressInterval, "Progress refresh interval")
 
 	stopCommand := cobra.Command{
 		Use:   CommandStopDriver,
@@ -226,8 +229,8 @@ var AgentGroup = cobra.Group{
 
 func provideAgentCommands() []*cobra.Command {
 	agentCommand := cobra.Command{
-		Use:     CommandStartAgent,
-		Short:   "Start loadbot-agent",
+		Use:   CommandStartAgent,
+		Short: "Start loadbot-agent",
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
 			flags := cmd.Flags()
 
