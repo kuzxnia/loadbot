@@ -51,10 +51,12 @@ nav:
   # - Command Line Usage:
   #   - cli/loadbot.md
 
-  - Setup:
+  - Configuration:
     - setup/index.md
+    - Agent: setup/agent.md
     - Jobs: setup/job.md
     - Schemas: setup/schema.md
+    - Prometheus metrics export: setup/metrics.md
     - Other features: setup/other.md
 
   - Contributing:

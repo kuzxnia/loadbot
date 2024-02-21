@@ -8,7 +8,6 @@ func (c *Config) Validate() error {
 	validators := []func() error{
 		c.validateJobs,
 		// c.validateSchemas,
-		c.validateReportingFormats,
 	}
 
 	for _, validate := range validators {
@@ -28,19 +27,9 @@ func (c *Config) validateJobs() error {
 	return nil
 }
 
-func (c *Config) validateReportingFormats() error {
-	for _, reportingFormat := range c.ReportingFormats {
-		if error := reportingFormat.Validate(); error != nil {
-			return error
-		}
-	}
-	return nil
-}
-
 func (job *Job) Validate() error {
 	validators := []func() error{
 		job.validateSchema,
-		job.validateReportFormat,
 		job.validateDatabase,
 		job.validateCollection,
 		job.validateType,
@@ -67,18 +56,6 @@ func (job *Job) validateSchema() error {
 
 	if !Contains(job.Parent.Schemas, func(s *Schema) bool { return s.Name == job.Schema }) {
 		return errors.New("JobValidationError: job \"" + job.Name + "\" have invalid template \"" + job.Schema + "\"")
-	}
-	return nil
-}
-
-func (job *Job) validateReportFormat() error {
-	if job.ReportingFormat == "" {
-		return nil
-	}
-
-	reportingFormats := append(job.Parent.ReportingFormats, DefaultReportFormats...)
-	if !Contains(reportingFormats, func(s *ReportingFormat) bool { return s.Name == job.ReportingFormat }) {
-		return errors.New("JobValidationError: job \"" + job.Name + "\" have invalid report_format \"" + job.ReportingFormat + "\"")
 	}
 	return nil
 }
@@ -172,23 +149,6 @@ func (job *Job) validateOperations() (err error) {
 		}
 	}
 	return
-}
-
-func (rp *ReportingFormat) Validate() error {
-	validators := []func() error{
-		rp.validateReportingFormat,
-	}
-
-	for _, validate := range validators {
-		if error := validate(); error != nil {
-			return error
-		}
-	}
-	return nil
-}
-
-func (rpt *ReportingFormat) validateReportingFormat() (err error) {
-	return nil
 }
 
 // todo: add schema validation

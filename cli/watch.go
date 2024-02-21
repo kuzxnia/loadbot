@@ -4,14 +4,14 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"log"
 
 	"github.com/kuzxnia/loadbot/lbot/proto"
+	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 )
 
 func WatchDriver(conn grpc.ClientConnInterface, request *proto.WatchRequest) (err error) {
-	Logger.Info("🚀 Starting stress test")
+	log.Info("🚀 Starting stress test")
 
 	client := proto.NewWatchProcessClient(conn)
 
@@ -38,7 +38,7 @@ func WatchDriver(conn grpc.ClientConnInterface, request *proto.WatchRequest) (er
 
 	<-done // we will wait until all response is received
 
-	Logger.Info("✅ Starting stress test succeeded")
+	log.Info("✅ Starting stress test succeeded")
 
 	return
 }

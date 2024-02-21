@@ -44,13 +44,6 @@ Example file:
         "special_name"  // will be avaliable in job.filter under "#special_name"
       ]
     },
-  ],
-  "reporting_formats": [
-    {
-      "name": "simple",
-      "interval": "5s",
-      "template": "Job: {{.JobType}}, total reqs: {{.TotalReqs}}, RPS {{f2 .Rps}} success: {{.SuccessReqs}}\n\n"
-    }
   ]
 }
 ```

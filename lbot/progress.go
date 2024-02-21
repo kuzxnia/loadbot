@@ -3,12 +3,12 @@ package lbot
 import (
 	"context"
 	"fmt"
-	"log"
 	"time"
 
 	"github.com/kuzxnia/loadbot/lbot/driver"
 	"github.com/kuzxnia/loadbot/lbot/proto"
 	"github.com/samber/lo"
+	log "github.com/sirupsen/logrus"
 )
 
 type ProgressProcess struct {

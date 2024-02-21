@@ -37,7 +37,7 @@ func NewWorker(ctx context.Context, cfg *config.Config, job *config.Job, dataPoo
 	worker.wg.Add(int(job.Connections))
 	worker.pool = NewJobPool(job)
 	worker.rateLimiter = NewLimiter(job)
-	worker.Metrics = NewMetrics(job.Name)
+	worker.Metrics = NewMetrics(job)
 	worker.done = false
 
 	// introduce no db worker

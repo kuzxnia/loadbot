@@ -2,24 +2,25 @@ package cli
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/kuzxnia/loadbot/lbot/proto"
+	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 )
 
 func StopDriver(conn grpc.ClientConnInterface, request *proto.StopRequest) (err error) {
-	Logger.Info("🚀 Stopping stress test")
+	fmt.Println("🚀 Stopping stress test")
 
 	client := proto.NewStopProcessClient(conn)
 
-	reply, err := client.Run(context.TODO(), request)
+	_, err = client.Run(context.TODO(), request)
 	if err != nil {
-		Logger.Fatal("arith error:", err)
+		log.Fatal("arith error:", err)
 		return
 	}
 
-	Logger.Infof("Received: %v", reply)
-	Logger.Info("✅ Stopping stress test succeeded")
+	fmt.Println("✅ Stopping stress test succeeded")
 
 	return nil
 }
