@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/kuzxnia/loadbot/lbot/driver"
 	"github.com/kuzxnia/loadbot/lbot/proto"
+	"github.com/kuzxnia/loadbot/lbot/worker"
 	"github.com/samber/lo"
 	log "github.com/sirupsen/logrus"
 )
@@ -21,13 +21,13 @@ func NewProgressProcess(ctx context.Context, lbot *Lbot) *ProgressProcess {
 	return &ProgressProcess{ctx: ctx, lbot: lbot}
 }
 
-func (w *ProgressProcess) Run(request *proto.ProgressRequest, srv proto.ProgressProcess_RunServer) error {
+func (p *ProgressProcess) Run(request *proto.ProgressRequest, srv proto.ProgressProcess_RunServer) error {
 	interval, err := time.ParseDuration(request.RefreshInterval)
 	if err != nil {
 		return err
 	}
 	// refactor
-	if len(lo.Filter(w.lbot.workers, func(worker *driver.Worker, index int) bool { return !worker.IsDone() })) == 0 {
+	if len(lo.Filter(p.lbot.workers, func(worker *worker.Worker, index int) bool { return !worker.IsDone() })) == 0 {
 		log.Printf("There are no running jobs")
 		return nil
 	}
@@ -35,21 +35,21 @@ func (w *ProgressProcess) Run(request *proto.ProgressRequest, srv proto.Progress
 	done := make(chan bool)
 	ticker := time.NewTicker(interval)
 	go func() {
-		notDoneWorkers := lo.Filter(w.lbot.workers, func(worker *driver.Worker, index int) bool {
+		notDoneWorkers := lo.Filter(p.lbot.workers, func(worker *worker.Worker, index int) bool {
 			return !worker.IsDone()
 		})
 		for range ticker.C {
-			for _, worker := range notDoneWorkers {
-				isWorkerFinished := worker.IsDone()
+			for _, w := range notDoneWorkers {
+				isWorkerFinished := w.IsDone()
 				resp := proto.ProgressResponse{
-					Requests:          worker.Metrics.Requests(),
-					Duration:          uint64(worker.Metrics.DurationSeconds()),
-					Rps:               worker.Metrics.Rps(),
-					ErrorRate:         worker.Metrics.ErrorRate(),
+					Requests:          w.Metrics.Requests(),
+					Duration:          uint64(w.Metrics.DurationSeconds()),
+					Rps:               w.Metrics.Rps(),
+					ErrorRate:         w.Metrics.ErrorRate(),
 					IsFinished:        isWorkerFinished,
-					JobName:           worker.JobName(),
-					RequestOperations: worker.RequestedOperations(),
-					RequestDuration:   worker.RequestedDurationSeconds(),
+					JobName:           w.JobName(),
+					RequestOperations: w.RequestedOperations(),
+					RequestDuration:   w.RequestedDurationSeconds(),
 				}
 				if err := srv.Send(&resp); err != nil {
 					// todo: handle client not connected
@@ -58,12 +58,12 @@ func (w *ProgressProcess) Run(request *proto.ProgressRequest, srv proto.Progress
 					return
 				}
 				if isWorkerFinished {
-					notDoneWorkers = lo.Filter(w.lbot.workers, func(worker *driver.Worker, index int) bool {
+					notDoneWorkers = lo.Filter(p.lbot.workers, func(worker *worker.Worker, index int) bool {
 						return !worker.IsDone()
 					})
 				}
 				select {
-				case <-w.lbot.done:
+				case <-p.lbot.done:
 					fmt.Println("workload done")
 					done <- true
 				default:

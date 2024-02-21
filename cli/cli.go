@@ -51,8 +51,8 @@ func New(version string, commit string, date string) *cobra.Command {
 	// cmd.AddCommand(provideOrchiestrationCommands()...)
 	cmd.AddGroup(&AgentGroup)
 	cmd.AddCommand(provideAgentCommands()...)
-	cmd.AddGroup(&DriverGroup)
-	cmd.AddCommand(provideDriverCommands()...)
+	cmd.AddGroup(&WorkloadGroup)
+	cmd.AddCommand(provideWorkloadCommands()...)
 
 	// by default run in docker container
 	// agent save config file in /tmp/lbot/ .*
@@ -69,11 +69,11 @@ func New(version string, commit string, date string) *cobra.Command {
 }
 
 const (
-	CommandStartDriver    = "start"
-	CommandStopDriver     = "stop"
-	CommandWatchDriver    = "watch"
-	CommandProgressDriver = "progress"
-	CommandConfigDriver   = "config"
+	CommandStartWorkload    = "start"
+	CommandStopWorkload     = "stop"
+	CommandWatchWorkload    = "watch"
+	CommandProgressWorkload = "progress"
+	CommandConfigWorkload   = "config"
 
 	// config args
 	ConfigFile = "config-file"
@@ -81,15 +81,15 @@ const (
 	StdIn      = "stdin"
 )
 
-var DriverGroup = cobra.Group{
-	ID:    "driver",
-	Title: "Driver Commands:",
+var WorkloadGroup = cobra.Group{
+	ID:    "workload",
+	Title: "Workload Commands:",
 }
 
-func provideDriverCommands() []*cobra.Command {
+func provideWorkloadCommands() []*cobra.Command {
 	startCommand := cobra.Command{
-		Use:   CommandStartDriver,
-		Short: "Start stress test",
+		Use:   CommandStartWorkload,
+		Short: "Start workload",
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
 			// building parameters for start
 			// check for params
@@ -102,18 +102,18 @@ func provideDriverCommands() []*cobra.Command {
 				request := proto.StartWithProgressRequest{
 					RefreshInterval: interval.String(),
 				}
-				return StartWithProgressDriver(Conn, &request)
+				return StartWorkloadWithProgress(Conn, &request)
 			} else {
 				// todo: switch to local model aka cli.StartRequest
 				request := proto.StartRequest{
 					Watch: false,
 				}
 
-				return StartDriver(Conn, &request)
+				return StartWorkload(Conn, &request)
 			}
 
 		},
-		GroupID: DriverGroup.ID,
+		GroupID: WorkloadGroup.ID,
 	}
 
 	startCommandFlags := startCommand.Flags()
@@ -122,8 +122,8 @@ func provideDriverCommands() []*cobra.Command {
 	startCommandFlags.DurationP(Interval, "i", defaultProgressInterval, "Progress refresh interval")
 
 	stopCommand := cobra.Command{
-		Use:   CommandStopDriver,
-		Short: "Stopping stress test",
+		Use:   CommandStopWorkload,
+		Short: "Stop workload",
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
 			// building parameters for stop
 			// check for params
@@ -132,13 +132,13 @@ func provideDriverCommands() []*cobra.Command {
 			request := proto.StopRequest{}
 			// response model could have worlkload id?
 
-			return StopDriver(Conn, &request)
+			return StopWorkload(Conn, &request)
 		},
-		GroupID: DriverGroup.ID,
+		GroupID: WorkloadGroup.ID,
 	}
 
 	watchCommand := cobra.Command{
-		Use:     CommandWatchDriver,
+		Use:     CommandWatchWorkload,
 		Aliases: []string{"i"},
 		Short:   "Watch stress test",
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
@@ -149,14 +149,14 @@ func provideDriverCommands() []*cobra.Command {
 			request := proto.WatchRequest{}
 			// response model could have worlkload id?
 
-			return WatchDriver(Conn, &request)
+			return WatchWorkload(Conn, &request)
 		},
-		GroupID: DriverGroup.ID,
+		GroupID: WorkloadGroup.ID,
 	}
 	progressCommand := cobra.Command{
-		Use:     CommandProgressDriver,
+		Use:     CommandProgressWorkload,
 		Aliases: []string{"i"},
-		Short:   "Watch stress test",
+		Short:   "Watch workload progress",
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
 			flags := cmd.Flags()
 			interval, _ := flags.GetDuration(Interval)
@@ -167,14 +167,14 @@ func provideDriverCommands() []*cobra.Command {
 
 			return WorkloadProgress(Conn, &request)
 		},
-		GroupID: DriverGroup.ID,
+		GroupID: WorkloadGroup.ID,
 	}
 	progressCommandFlags := progressCommand.Flags()
 	defaultInterval, _ := time.ParseDuration("1s")
 	progressCommandFlags.DurationP(Interval, "i", defaultInterval, "Progress refresh interval")
 
 	configCommand := cobra.Command{
-		Use:   CommandConfigDriver,
+		Use:   CommandConfigWorkload,
 		Short: "Config",
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
 			flags := cmd.Flags()
@@ -200,9 +200,9 @@ func provideDriverCommands() []*cobra.Command {
 				}
 			}
 
-			return SetConfigDriver(Conn, parsedConfig)
+			return SetConfigWorkload(Conn, parsedConfig)
 		},
-		GroupID: DriverGroup.ID,
+		GroupID: WorkloadGroup.ID,
 	}
 	configCommandFlags := configCommand.Flags()
 	configCommandFlags.StringP(ConfigFile, "f", "", "file with workload configuration")

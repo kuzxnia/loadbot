@@ -13,7 +13,7 @@ import (
 // checks if process is running in local system
 
 // tutaj nie powinno wchodzić proto
-func StartDriver(conn grpc.ClientConnInterface, request *proto.StartRequest) (err error) {
+func StartWorkload(conn grpc.ClientConnInterface, request *proto.StartRequest) (err error) {
 	// todo: mapowanie to proto
 	fmt.Println("🚀 Starting stress test")
 
@@ -29,7 +29,7 @@ func StartDriver(conn grpc.ClientConnInterface, request *proto.StartRequest) (er
 	return
 }
 
-func StartWithProgressDriver(conn grpc.ClientConnInterface, request *proto.StartWithProgressRequest) (err error) {
+func StartWorkloadWithProgress(conn grpc.ClientConnInterface, request *proto.StartWithProgressRequest) (err error) {
 	// todo: mapowanie to proto
 	fmt.Println("🚀 Starting stress test")
 

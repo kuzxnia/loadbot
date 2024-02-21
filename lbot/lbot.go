@@ -5,14 +5,14 @@ import (
 	"fmt"
 
 	"github.com/kuzxnia/loadbot/lbot/config"
-	"github.com/kuzxnia/loadbot/lbot/driver"
 	"github.com/kuzxnia/loadbot/lbot/schema"
+	"github.com/kuzxnia/loadbot/lbot/worker"
 )
 
 type Lbot struct {
 	ctx     context.Context
 	config  *config.Config
-	workers []*driver.Worker
+	workers []*worker.Worker
 	done    chan bool
 }
 
@@ -23,7 +23,7 @@ func NewLbot(ctx context.Context) *Lbot {
 }
 
 func (l *Lbot) Run() {
-  l.done = make(chan bool)
+	l.done = make(chan bool)
 	// todo: ping db, before workers init
 	// init datapools
 	dataPools := make(map[string]schema.DataPool)
@@ -35,7 +35,7 @@ func (l *Lbot) Run() {
 	for _, job := range l.config.Jobs {
 		func() {
 			dataPool := dataPools[job.Schema]
-			worker, error := driver.NewWorker(l.ctx, l.config, job, dataPool)
+			worker, error := worker.NewWorker(l.ctx, l.config, job, dataPool)
 			if error != nil {
 				panic("Worker initialization error")
 			}
@@ -49,7 +49,7 @@ func (l *Lbot) Run() {
 			worker.ExtendCopySavedFieldsToDataPool()
 		}()
 	}
-  l.done <- true
+	l.done <- true
 }
 
 func (l *Lbot) Cancel() error {

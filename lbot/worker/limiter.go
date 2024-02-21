@@ -1,4 +1,4 @@
-package driver
+package worker
 
 import (
 	"github.com/kuzxnia/loadbot/lbot/config"
