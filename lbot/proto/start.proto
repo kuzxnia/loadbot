@@ -4,11 +4,11 @@ option go_package = "proto/";
 
 package proto;
 
-import "common.proto";
+import "progress.proto";
 
 service StartProcess {
   rpc Run(StartRequest) returns (StartResponse) {}
-  rpc RunWithProgress(StartWithProgressRequest) returns (stream common.ProgressResponse) {}
+  rpc RunWithProgress(StartWithProgressRequest) returns (stream progress.ProgressResponse) {}
 }
 
 message StartRequest {
