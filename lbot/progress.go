@@ -39,6 +39,12 @@ func (p *ProgressProcess) Run(request *proto.ProgressRequest, srv proto.Progress
 			return !worker.IsDone()
 		})
 		for range ticker.C {
+			select {
+			case <-p.lbot.done:
+				fmt.Println("workload done")
+				done <- true
+			default:
+			}
 			for _, w := range notDoneWorkers {
 				isWorkerFinished := w.IsDone()
 				resp := proto.ProgressResponse{
@@ -61,12 +67,6 @@ func (p *ProgressProcess) Run(request *proto.ProgressRequest, srv proto.Progress
 					notDoneWorkers = lo.Filter(p.lbot.workers, func(worker *worker.Worker, index int) bool {
 						return !worker.IsDone()
 					})
-				}
-				select {
-				case <-p.lbot.done:
-					fmt.Println("workload done")
-					done <- true
-				default:
 				}
 
 			}
