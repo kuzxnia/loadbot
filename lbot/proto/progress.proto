@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package proto;
+package progress;
 
 option go_package = "proto/";
 
@@ -13,7 +13,7 @@ message ProgressRequest {
 }
 
 message ProgressResponse {
-  // change reqeust total
+  // change request total
   uint64 requests = 1;
   uint64 duration = 2;
   uint64 rps = 3;
