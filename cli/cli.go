@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/kuzxnia/loadbot/cli/cluster"
 	"github.com/kuzxnia/loadbot/cli/workload"
 	"github.com/kuzxnia/loadbot/lbot"
 	"github.com/kuzxnia/loadbot/lbot/proto"
@@ -23,7 +22,6 @@ func New(version string, commit string, date string) *cobra.Command {
 	cmd.AddCommand(
 		provideWorkloadCommands(),
 		provideAgentCommand(),
-		provideClusterCommands(),
 	)
 	cmd.Root().CompletionOptions.HiddenDefaultCmd = true
 
@@ -241,7 +239,11 @@ func provideAgentCommand() *cobra.Command {
 			configFile, _ := flags.GetString(ConfigFile)
 			stdin, _ := flags.GetBool(StdIn)
 
-			return StartAgent(cmd.Context(), agentConfig, stdin, configFile)
+			return StartAgent(
+				cmd.Context(), agentConfig, stdin, configFile,
+				// cluster agrs
+				// snapshotDir, internalCommunicationPort, nodeID, initCluster,
+			)
 		},
 	}
 
@@ -257,79 +259,6 @@ func provideAgentCommand() *cobra.Command {
 	agentRootCommand.AddCommand(&startAgentCommand)
 
 	return &agentRootCommand
-}
-
-const (
-	ClusterRootCommand = "cluster"
-	// cluster commands
-	InitClusterCommand            = "init"
-	ConfigClusterCommand          = "config"
-	StatusClusterCommand          = "status"
-	AddAgentToClusterCommand      = "add-agent"
-	RemoveAgentFromClusterCommand = "remove-agent"
-)
-
-func provideClusterCommands() *cobra.Command {
-	clusterRootCommand := cobra.Command{
-		Use:   ClusterRootCommand,
-		Short: "Cluster Commands",
-	}
-
-	initCommand := cobra.Command{
-		Use:   InitClusterCommand,
-		Short: "Initialize cluster - transform standalone agents into agentset",
-		Args:  cobra.ExactArgs(installationArgsNum),
-		RunE: func(cmd *cobra.Command, args []string) (err error) {
-			// todo: provide config
-
-			// or list of ips with ports
-			// - dummy way,
-			// because without setting priority, voting
-			return cluster.InitCluster()
-		},
-	}
-
-	configCommand := cobra.Command{
-		Use:   ConfigClusterCommand,
-		Short: "Cluster config",
-		Args:  cobra.ExactArgs(installationArgsNum),
-		RunE: func(cmd *cobra.Command, args []string) (err error) {
-			return cluster.InitCluster()
-		},
-	}
-	statusCommand := cobra.Command{
-		Use:   StatusClusterCommand,
-		Short: "Cluster status",
-		Args:  cobra.ExactArgs(installationArgsNum),
-		RunE: func(cmd *cobra.Command, args []string) (err error) {
-			return cluster.InitCluster()
-		},
-	}
-	addAgentCommand := cobra.Command{
-		Use:   AddAgentToClusterCommand,
-		Short: "Cluster status",
-		Args:  cobra.ExactArgs(installationArgsNum),
-		RunE: func(cmd *cobra.Command, args []string) (err error) {
-			return cluster.InitCluster()
-		},
-	}
-	removeAgentCommand := cobra.Command{
-		Use:   RemoveAgentFromClusterCommand,
-		Short: "Cluster status",
-		Args:  cobra.ExactArgs(installationArgsNum),
-		RunE: func(cmd *cobra.Command, args []string) (err error) {
-			return cluster.InitCluster()
-		},
-	}
-	clusterRootCommand.AddCommand(
-		&initCommand,
-		&configCommand,
-		&statusCommand,
-		&addAgentCommand,
-		&removeAgentCommand,
-	)
-
-	return &clusterRootCommand
 }
 
 const (
@@ -370,11 +299,6 @@ func provideOrchiestrationCommands() []*cobra.Command {
 	flags.StringSlice(FlagHelmSet, nil, "set additional Helm values on the command line (can specify multiple or separate values with commas: key1=val1,key2=val2)")
 	flags.StringSlice(FlagHelmSetString, nil, "set additional Helm STRING values on the command line (can specify multiple or separate values with commas: key1=val1,key2=val2)")
 	flags.StringSlice(FlagHelmSetFile, nil, "set additional Helm values from respective files specified via the command line (can specify multiple or separate values with commas: key1=path1,key2=path2)")
-
-	// if no flags provided, install as local, simply start
-	// skipCleanup
-	// helmTimeout
-	// helmValues
 
 	unInstallationCommand := cobra.Command{
 		// todo: where to keep configuration? there will be couple workloads at the same time

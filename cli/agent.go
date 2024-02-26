@@ -4,11 +4,13 @@ import (
 	"context"
 
 	"github.com/kuzxnia/loadbot/lbot"
+	"github.com/kuzxnia/loadbot/lbot/agent"
 	"github.com/samber/lo"
 )
 
-// tutaj nie powinno wchodzić proto
-func StartAgent(context context.Context, config *lbot.AgentRequest, stdin bool, configFile string) (err error) {
+func StartAgent(
+	context context.Context, config *lbot.AgentRequest, stdin bool, configFile string,
+) (err error) {
 	var requestConfig *lbot.ConfigRequest
 
 	if stdin {
@@ -54,10 +56,13 @@ func StartAgent(context context.Context, config *lbot.AgentRequest, stdin bool, 
 		requestConfig.Agent.MetricsExportPort = config.MetricsExportPort
 	}
 
-	agent := lbot.NewAgent(context)
+	loadbot := lbot.NewLbot(context)
+
+	agent := agent.NewAgent(context, loadbot)
 	if requestConfig != nil {
 		agent.ApplyConfig(requestConfig)
 	}
-	agent.Listen()
+	agent.Start()
+
 	return nil
 }

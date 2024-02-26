@@ -5,7 +5,9 @@ import (
 	"time"
 
 	"github.com/kuzxnia/loadbot/lbot/config"
+	"github.com/pkg/errors"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
@@ -62,6 +64,28 @@ func NewMongoClient(connectionString string, cfg *config.Job, schema *config.Sch
 	return &MongoClient{ctx: ctx, client: client, collection: collection}, err
 }
 
+func NewInternalMongoClient(connectionString string) (*MongoClient, error) {
+	opts := &options.ClientOptions{
+		HTTPClient: HTTPClient(nil),
+	}
+	opts = opts.
+		ApplyURI(connectionString).
+		SetReadPreference(readpref.SecondaryPreferred()).
+		SetMaxConnecting(100).
+		SetMaxConnIdleTime(90 * time.Second)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	client, err := mongo.Connect(ctx, opts)
+	if err != nil {
+		panic(err)
+	}
+	err = client.Ping(ctx, readpref.Primary())
+
+	return &MongoClient{ctx: ctx, client: client, collection: nil}, err
+}
+
 func (c *MongoClient) Disconnect() (err error) {
 	err = c.client.Disconnect(c.ctx)
 	if err != nil {
@@ -105,18 +129,6 @@ func (c *MongoClient) ReadMany(filter interface{}) (bool, error) {
 
 	defer cursor.Close(context.TODO())
 
-	// var results []Book
-	// if err = cursor.All(context.Background(), &results); err != nil {
-	// 	panic(err)
-	// }
-
-	//  println(len(results))
-
-	// for _, book := range results {
-	// 	res, _ := json.Marshal(book)
-	// 	fmt.Println(string(res))
-	// }
-
 	totalFound := 0
 	for cursor.Next(context.Background()) {
 		var data bson.M
@@ -146,4 +158,61 @@ func (c *MongoClient) UpdateOne(filter interface{}, data interface{}) (bool, err
 
 func (c *MongoClient) DropCollection() error {
 	return c.collection.Drop(context.TODO())
+}
+
+func (c *MongoClient) ClusterTime() (*primitive.DateTime, error) {
+	res := c.client.Database(config.DB).RunCommand(context.TODO(), bson.D{{"isMaster", 1}})
+
+	if err := res.Err(); err != nil {
+		return nil, errors.WithMessage(err, "cmd: isMaster")
+	}
+
+	result := &NodeInfo{}
+	err := res.Decode(&result)
+
+	return result.LocalTime, errors.WithMessage(err, "decode")
+}
+
+func (c *MongoClient) GetAgentWithHeartbeatWithin(timeSinceLastHb time.Duration) (uint64, error) {
+	ct, err := c.ClusterTime()
+	if err != nil {
+		return 0, errors.Wrap(err, "get cluster time")
+	}
+	lastHbTime := ct.Time().Add(timeSinceLastHb)
+
+	cursor, err := c.client.Database(config.DB).Collection(config.AgentStatusCollection).Find(
+		context.TODO(), bson.M{"heartbeat": bson.M{"$gte": lastHbTime}},
+	)
+	defer cursor.Close(context.TODO())
+
+	totalFound := 0
+	for cursor.Next(context.Background()) {
+		var data bson.M
+
+		if err = cursor.Decode(&data); err != nil {
+			return 0, errors.Wrap(err, "error decoding agent")
+		}
+		totalFound++
+	}
+	return uint64(totalFound), nil
+}
+
+func (c *MongoClient) SetAgentStatus(stat AgentStatus) error {
+	ct, err := c.ClusterTime()
+	if err != nil {
+		return errors.Wrap(err, "get cluster time")
+	}
+	stat.Heartbeat = *ct
+
+	_, err = c.client.Database(config.DB).Collection(config.AgentStatusCollection).ReplaceOne(
+		context.TODO(), bson.M{"name": stat.Name}, stat, options.Replace().SetUpsert(true),
+	)
+	return errors.Wrap(err, "write into db")
+}
+
+func (c *MongoClient) RemoveAgentStatus(stat AgentStatus) error {
+	_, err := c.client.Database(config.DB).Collection(config.AgentStatusCollection).DeleteOne(
+		context.TODO(), bson.M{"name": stat.Name},
+	)
+	return errors.WithMessage(err, "query")
 }

@@ -5,9 +5,16 @@ import (
 	"time"
 
 	"github.com/kuzxnia/loadbot/lbot/config"
+	"github.com/samber/lo"
 )
 
 func HTTPClient(cfg *config.Job) *http.Client {
+	if lo.IsNil(cfg) {
+		return &http.Client{
+			Transport: http.DefaultTransport,
+			Timeout:   time.Second * 5,
+		}
+	}
 	transport := &http.Transport{
 		Proxy:                 http.ProxyFromEnvironment,
 		MaxIdleConns:          int(cfg.Connections),

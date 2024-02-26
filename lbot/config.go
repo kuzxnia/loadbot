@@ -114,6 +114,10 @@ type ConfigRequest struct {
 	Debug            bool             `json:"debug"`
 }
 
+// todo: change or even remove, 
+// yes, remove - there will be multiple agents, and agent will be configred from commandline 
+// todo: move agentn-name nad add new config flage - custom metrics label or similar
+// purpose is to export metrics with cluster name 
 type AgentRequest struct {
 	Name                         string `json:"name"`
 	Port                         string `json:"port"`

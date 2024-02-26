@@ -3,22 +3,30 @@ package lbot
 import (
 	"context"
 	"fmt"
+	"sync/atomic"
+	"time"
 
 	"github.com/kuzxnia/loadbot/lbot/config"
+	"github.com/kuzxnia/loadbot/lbot/database"
 	"github.com/kuzxnia/loadbot/lbot/schema"
 	"github.com/kuzxnia/loadbot/lbot/worker"
+	log "github.com/sirupsen/logrus"
 )
 
 type Lbot struct {
-	ctx     context.Context
-	config  *config.Config
-	workers []*worker.Worker
-	done    chan bool
+	Config        *config.Config
+	ctx           context.Context
+	workers       []*worker.Worker
+	done          chan bool
+	runningAgents uint64
+	changed       chan uint64
 }
 
 func NewLbot(ctx context.Context) *Lbot {
 	return &Lbot{
-		ctx: ctx,
+		ctx:           ctx,
+		runningAgents: 1,
+		changed:       make(chan uint64),
 	}
 }
 
@@ -27,15 +35,16 @@ func (l *Lbot) Run() {
 	// todo: ping db, before workers init
 	// init datapools
 	dataPools := make(map[string]schema.DataPool)
-	for _, sh := range l.config.Schemas {
+	for _, sh := range l.Config.Schemas {
 		dataPools[sh.Name] = schema.NewDataPool(sh)
 	}
 
 	// // todo: in a parallel depending on type
-	for _, job := range l.config.Jobs {
+	for _, job := range l.Config.Jobs {
 		func() {
 			dataPool := dataPools[job.Schema]
-			worker, error := worker.NewWorker(l.ctx, l.config, job, dataPool)
+
+			worker, error := worker.NewWorker(l.ctx, l.Config, job, dataPool, l.runningAgents)
 			if error != nil {
 				panic("Worker initialization error")
 			}
@@ -44,7 +53,8 @@ func (l *Lbot) Run() {
 			// todo: fix here, no schema data pool will be nill
 			defer worker.Close()
 			worker.InitMetrics()
-			worker.Work()
+			// workaround
+			worker.Work(l.changed)
 			// worker.Summary()
 			worker.ExtendCopySavedFieldsToDataPool()
 		}()
@@ -61,6 +71,43 @@ func (l *Lbot) Cancel() error {
 	return nil
 }
 
+func (l *Lbot) RefreshAgentStatus(name string) error {
+  // todo: change to generic abstraction
+	client, err := database.NewInternalMongoClient(l.Config.ConnectionString)
+	if err != nil {
+		return err
+	}
+
+	agentStatus := database.AgentStatus{
+		Name: name,
+	}
+
+	return client.SetAgentStatus(agentStatus)
+}
+
+func (l *Lbot) UpdateRunningAgents() error {
+	client, err := database.NewInternalMongoClient(l.Config.ConnectionString)
+	if err != nil {
+		return err
+	}
+
+	runningAgents, err := client.GetAgentWithHeartbeatWithin(time.Duration(config.AgentsHeartbeatExpiration))
+	if err != nil {
+		return err
+	}
+	if runningAgents != l.runningAgents {
+		log.Info("New running agents value ", runningAgents)
+		atomic.StoreUint64(&l.runningAgents, runningAgents)
+		select {
+		case l.changed <- runningAgents:
+			log.Info("Workers notified, new running agents value ", runningAgents)
+		default:
+		}
+	}
+
+	return nil
+}
+
 func (l *Lbot) SetConfig(config *config.Config) {
-	l.config = config
+	l.Config = config
 }
