@@ -46,10 +46,12 @@ nav:
     # - Intro: getting_started/intro.md
     - Install Guide: getting_started/install.md
     - Quick Start: getting_started/quick-start.md
-    # - How it works: getting_started/how-it-works.md
+    - How it works: getting_started/how-it-works.md
+    - Multi instance: getting_started/multi-instance.md
+    - K8S orchiestration: getting_started/k8s-orchiestration.md
 
-  # - Command Line Usage:
-  #   - cli/loadbot.md
+  - Command Line Usage:
+    - cli/loadbot.md
 
   - Configuration:
     - setup/index.md

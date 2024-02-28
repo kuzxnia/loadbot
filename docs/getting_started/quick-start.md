@@ -6,17 +6,13 @@ After installing loadbot, you can quickly get started by following these steps:
 loadbot start-agent -f config_file.json
 ```
 
-2. Start the workload using the loadbot client:
+2. Start and watch the workload using the loadbot client:
 ```bash
-loadbot start
+loadbot start --progress
+Job "My first job" |██████████████████████████████████████████████████████████████████| 30/30S 50RPS 1509REQ
 ```
 
-3. Monitor the progress of the workload using the command:
-```bash
-loadbot progress
-```
-
-4. To stop the workload, use the following command:
+3. To stop the workload, use the following command:
 ```bash
 loadbot stop
 ```
