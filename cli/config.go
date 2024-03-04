@@ -36,6 +36,13 @@ func SetConfigDriver(conn *grpc.ClientConn, parsedConfig *lbot.ConfigRequest) (e
 func BuildConfigRequest(request *lbot.ConfigRequest) *proto.ConfigRequest {
 	cfg := &proto.ConfigRequest{
 		ConnectionString: request.ConnectionString,
+		Agent: &proto.AgentRequest{
+			Name:                         request.Agent.Name,
+			Port:                         request.Agent.Port,
+			MetricsExportUrl:             request.Agent.MetricsExportUrl,
+			MetricsExportIntervalSeconds: request.Agent.MetricsExportIntervalSeconds,
+			MetricsExportPort:            request.Agent.MetricsExportPort,
+		},
 		Jobs:             make([]*proto.JobRequest, len(request.Jobs)),
 		Schemas:          make([]*proto.SchemaRequest, len(request.Schemas)),
 		Debug:            request.Debug,
