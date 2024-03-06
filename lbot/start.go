@@ -23,12 +23,8 @@ func NewStartProcess(ctx context.Context, lbot *Lbot) *StartProcess {
 }
 
 func (c *StartProcess) Run(ctx context.Context, request *proto.StartRequest) (*proto.StartResponse, error) {
-	// if watch arg - run watch
-
-	// validate is configured
 	go c.lbot.Run()
 
-	// before starting process it will varify health of cluster, if pods
 	return &proto.StartResponse{}, nil
 }
 

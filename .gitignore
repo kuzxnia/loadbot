@@ -2,6 +2,7 @@ main
 _conn.txt
 _config.json
 _config2.json
+_conf_bin.json
 _get_conn.py
 .venv
 dist/

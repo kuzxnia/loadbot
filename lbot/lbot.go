@@ -30,7 +30,23 @@ func NewLbot(ctx context.Context) *Lbot {
 	}
 }
 
-func (l *Lbot) Run() {
+func (l *Lbot) Run() error {
+	client, err := database.NewInternalMongoClient(l.Config.ConnectionString)
+	if err != nil {
+		return err
+	}
+
+	for _, job := range l.Config.Jobs {
+		client.RunJob(*job)
+	}
+
+	return nil
+}
+
+func (l *Lbot) StartWorkload(command *database.Command) {
+  if command == nil {
+    return
+  }
 	l.done = make(chan bool)
 	// todo: ping db, before workers init
 	// init datapools
@@ -39,26 +55,25 @@ func (l *Lbot) Run() {
 		dataPools[sh.Name] = schema.NewDataPool(sh)
 	}
 
+	job := command.Data
 	// // todo: in a parallel depending on type
-	for _, job := range l.Config.Jobs {
-		func() {
-			dataPool := dataPools[job.Schema]
+	func() {
+		dataPool := dataPools[job.Schema]
 
-			worker, error := worker.NewWorker(l.ctx, l.Config, job, dataPool, l.runningAgents)
-			if error != nil {
-				panic("Worker initialization error")
-			}
-			fmt.Printf("init worker with job %s\n", job.Name)
-			l.workers = append(l.workers, worker)
-			// todo: fix here, no schema data pool will be nill
-			defer worker.Close()
-			worker.InitMetrics()
-			// workaround
-			worker.Work(l.changed)
-			// worker.Summary()
-			worker.ExtendCopySavedFieldsToDataPool()
-		}()
-	}
+		worker, error := worker.NewWorker(l.ctx, l.Config, &job, dataPool, l.runningAgents)
+		if error != nil {
+			panic("Worker initialization error")
+		}
+		fmt.Printf("init worker with job %s\n", job.Name)
+		l.workers = append(l.workers, worker)
+		// todo: fix here, no schema data pool will be nill
+		defer worker.Close()
+		worker.InitMetrics()
+		// workaround
+		worker.Work(l.changed)
+		// worker.Summary()
+		worker.ExtendCopySavedFieldsToDataPool()
+	}()
 	l.done <- true
 }
 
@@ -72,7 +87,7 @@ func (l *Lbot) Cancel() error {
 }
 
 func (l *Lbot) RefreshAgentStatus(name string) error {
-  // todo: change to generic abstraction
+	// todo: change to generic abstraction
 	client, err := database.NewInternalMongoClient(l.Config.ConnectionString)
 	if err != nil {
 		return err
@@ -83,6 +98,26 @@ func (l *Lbot) RefreshAgentStatus(name string) error {
 	}
 
 	return client.SetAgentStatus(agentStatus)
+}
+
+func (l *Lbot) HandleCommands() {
+	// todo: change to generic abstraction
+	client, err := database.NewInternalMongoClient(l.Config.ConnectionString)
+	if err != nil {
+		return
+	}
+
+	// todo: change to commands
+	command, err := client.GetNewCommand()
+	if err != nil {
+		return
+	}
+	switch command.Type {
+	case database.CommandTypeStartWorkload.String():
+		go l.StartWorkload(command)
+	case database.CommandTypeStopWorkload.String():
+		go l.Cancel()
+	}
 }
 
 func (l *Lbot) UpdateRunningAgents() error {

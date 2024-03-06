@@ -208,7 +208,7 @@ var AgentGroup = cobra.Group{
 }
 
 const (
-	AgentStartCommand = "run-agent"
+	AgentStartCommand = "start-agent"
 
 	// agent args
 	AgentName                    = "name"

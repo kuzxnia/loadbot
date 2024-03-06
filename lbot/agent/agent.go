@@ -152,5 +152,32 @@ func (a *Agent) Heartbeat() error {
 	return nil
 }
 
+// add command struct
+
+// start command
+// 1. adds command to db "command", 'config' - because config could change later
+// - workload uuid - require to distinguish workload
+// workload state - or is finished
+
+//
+// divide workload into groups?
+// when adding new agent, stop worklflow, make snapshot, recalculate jobs, and then start
+// workload command is root command, each agent creates own workload version, or is part of this command(inside as list item)
+//
+
+func (a *Agent) ListenCommands() error {
+	ticker := time.NewTicker(config.AgentsHeartbeatInterval)
+	defer ticker.Stop()
+
+	for range ticker.C {
+		// check for running commands
+		a.lbot.HandleCommands()
+
+		// biorę commendę, która nie jest done
+	}
+
+	return nil
+}
+
 // agent config should be removed from base config and later
 // zarzadzanie workloadem przez

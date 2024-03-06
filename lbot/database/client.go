@@ -173,6 +173,49 @@ func (c *MongoClient) ClusterTime() (*primitive.DateTime, error) {
 	return result.LocalTime, errors.WithMessage(err, "decode")
 }
 
+// workload
+func (c *MongoClient) RunJob(job config.Job) error {
+	// add lock??
+	ct, err := c.ClusterTime()
+	if err != nil {
+		return errors.Wrap(err, "get cluster time")
+	}
+
+	cmd := Command{
+		Data:      job,
+		Type:      CommandTypeStartWorkload.String(),
+		State:     CommandStateCreated.String(),
+		CreatedAt: *ct,
+	}
+
+	_, err = c.client.Database(config.DB).Collection(config.CommandCollection).
+		InsertOne(context.TODO(), cmd)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// todo: temp change to stream for commands
+func (c *MongoClient) GetNewCommand() (*Command, error) {
+	// add lock??
+	var cmd Command
+	err := c.client.Database(config.DB).Collection(config.CommandCollection).
+		FindOne(context.TODO(), bson.M{"state": CommandStateCreated.String()}).
+		Decode(&cmd)
+	if err != nil {
+		return nil, err
+	}
+
+	return &cmd, nil
+}
+
+func (c *MongoClient) CancelCommand() error {
+	return nil
+}
+
+// agent
 func (c *MongoClient) GetAgentWithHeartbeatWithin(timeSinceLastHb time.Duration) (uint64, error) {
 	ct, err := c.ClusterTime()
 	if err != nil {
