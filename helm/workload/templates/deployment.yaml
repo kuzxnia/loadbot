@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: workload-{{ .Values.workload.name }}
+  namespace: default
+spec:
+  replicas: {{ .Values.workload.replicas }}
+  selector:
+    matchLabels:
+      role: workload
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        role: workload 
+    spec:
+      containers:
+        - name: agent
+          image: {{ .Values.workload.agent.image }}
+          command: ["/usr/local/bin/loadbot"]
+          args: ["start-agent"]
+          ports: 
+            - containerPort: {{ .Values.workload.agent.port }}
+          # move to values, helper
+          resources:
+            limits:
+              memory: 4Gi
+              cpu: 8000m
+            requests:
+              cpu: 4000m
+              memory: 2Gi
