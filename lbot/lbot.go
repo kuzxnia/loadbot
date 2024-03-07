@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"sync/atomic"
-	"time"
 
 	"github.com/kuzxnia/loadbot/lbot/config"
 	"github.com/kuzxnia/loadbot/lbot/database"
@@ -44,9 +43,9 @@ func (l *Lbot) Run() error {
 }
 
 func (l *Lbot) StartWorkload(command *database.Command) {
-  if command == nil {
-    return
-  }
+	if command == nil {
+		return
+	}
 	l.done = make(chan bool)
 	// todo: ping db, before workers init
 	// init datapools
@@ -120,13 +119,22 @@ func (l *Lbot) HandleCommands() {
 	}
 }
 
+func (l *Lbot) IsMasterAgent(name string) (bool, error) {
+	client, err := database.NewInternalMongoClient(l.Config.ConnectionString)
+	if err != nil {
+		return false, err
+	}
+	return client.IsMasterAgent(name)
+}
+
+// depricated, to be removed
 func (l *Lbot) UpdateRunningAgents() error {
 	client, err := database.NewInternalMongoClient(l.Config.ConnectionString)
 	if err != nil {
 		return err
 	}
 
-	runningAgents, err := client.GetAgentWithHeartbeatWithin(time.Duration(config.AgentsHeartbeatExpiration))
+	runningAgents, err := client.GetAgentWithHeartbeatWithin()
 	if err != nil {
 		return err
 	}
@@ -140,6 +148,22 @@ func (l *Lbot) UpdateRunningAgents() error {
 		}
 	}
 
+	return nil
+}
+
+func (l *Lbot) GetNotFinishedCommands() ([]*database.Command, error) {
+	return nil, nil
+}
+
+func (l *Lbot) GenerateWorkerSubCommands() ([]*database.SubCommand, error) {
+	return nil, nil
+}
+
+func (l *Lbot) SetCommandFinished(command *database.Command) error {
+	return nil
+}
+
+func (l *Lbot) InsertWorkerSubCommands(subCommands []*database.SubCommand) error {
 	return nil
 }
 

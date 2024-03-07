@@ -27,6 +27,14 @@ type Command struct {
 	CreatedAt primitive.DateTime `bson:"created_at"`
 }
 
+type SubCommand struct {
+	Id        primitive.ObjectID `bson:"_id"`
+	Data      config.Job         `bson:"data"`
+	Type      string             `bson:"state"`
+	State     string             `bson:"state"`
+	CreatedAt primitive.DateTime `bson:"created_at"`
+}
+
 // todo: move to different place
 //
 //go:generate stringer -type=CommandState -trimprefix=CommandState

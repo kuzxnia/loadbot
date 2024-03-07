@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"sync"
 	"syscall"
 	"time"
 
@@ -20,18 +21,25 @@ import (
 	"google.golang.org/grpc/reflection"
 )
 
+//go:generate stringer -type=AgentState -trimprefix=AgentState
+type AgentState int
+
+const (
+	AgentStateLeader AgentState = iota
+	AgentStateFollower
+)
+
 type Agent struct {
 	ctx        context.Context
 	lbot       *lbot.Lbot
 	grpcServer *grpc.Server
+	state      AgentState
+	mutex      sync.RWMutex
 }
 
 func NewAgent(ctx context.Context, loadbot *lbot.Lbot) *Agent {
-	// loadbot := lbot.NewLbot(ctx)
-
 	grpcServer := grpc.NewServer()
 	// register commands
-	// worker commands
 	proto.RegisterStartProcessServer(grpcServer, lbot.NewStartProcess(ctx, loadbot))
 	proto.RegisterStopProcessServer(grpcServer, lbot.NewStoppingProcess(ctx, loadbot))
 	proto.RegisterSetConfigProcessServer(grpcServer, lbot.NewSetConfigProcess(ctx, loadbot))
@@ -44,13 +52,15 @@ func NewAgent(ctx context.Context, loadbot *lbot.Lbot) *Agent {
 		ctx:        ctx,
 		lbot:       loadbot,
 		grpcServer: grpcServer,
+		state:      AgentStateFollower,
 	}
 }
 
 func (a *Agent) Start() error {
-	go a.Listen()
+	go a.ServeGrpc()
 	go a.Metrics()
 	go a.Heartbeat()
+	go a.Listen()
 
 	stopSignal := make(chan os.Signal, 1)
 	signal.Notify(
@@ -67,7 +77,7 @@ func (a *Agent) Start() error {
 }
 
 // właściwie to nie ma potrzeby nasłuchiwać na grpc dla każdego followera
-func (a *Agent) Listen() error {
+func (a *Agent) ServeGrpc() error {
 	address := "0.0.0.0:" + a.lbot.Config.Agent.Port
 
 	defer func() {
@@ -131,22 +141,76 @@ func (a *Agent) Heartbeat() error {
 
 	// if new, and command is running
 
+	// flow:
+	// agent have two modes:
+	// worker or coordinator
+
+	// worker requirements
+	// - do the work (process commands)
+	// - send heartbeats about his state
+	// - check if is master
+	// store his internal state somewhere (to know where did he finished when crushed) ? - not for this version
+
+	// coordinator / master: when i can be elected as master? when I'm oldest node in set
+	// - publish work batch requests to queue
+	// 1. adds command to db "command", 'config' - because config could change later
+	// - workload uuid - require to distinguish workload
+	// workload state - or is finished
+
+	// default batch size is rps * 10(approx 10s of work), or 10s(timed job), or just generate batch for every agent (job without limits)
+	// - get agent states (needed to know to wchich agent we should to create batches)
+	// - send heartbeats about his state
+
+	// master ticker should run more often, hint ticker.reset
+
 	for range ticker.C {
-		// check how many agents are reachable
-		// check only on oldest node, no need for thread race
-
-		// flush workload progress to command
-		// ?? colleciton lbotWorkloadState ? and state inserted per agent per workload
-
 		err := a.lbot.RefreshAgentStatus(a.lbot.Config.Agent.Name)
 		if err != nil {
 			log.Error("agent status failed", err)
+		}
+
+		// todo: name should be on agent
+		// todo: need to notify listen goroutine about data change
+		shouldIBeLeader, err := a.lbot.IsMasterAgent(a.lbot.Config.Agent.Name)
+		amILeader := a.state == AgentStateLeader
+		if shouldIBeLeader != amILeader {
+			a.mutex.Lock()
+			a.state = lo.If(shouldIBeLeader == true, AgentStateLeader).Else(AgentStateFollower)
+			// todo: log
+			a.mutex.Unlock()
 		}
 
 		err = a.lbot.UpdateRunningAgents()
 		if err != nil {
 			log.Error("agent list failed", err)
 		}
+
+		if a.state == AgentStateLeader {
+			commands, err := a.lbot.GetNotFinishedCommands()
+			if err != nil {
+				break
+			}
+
+			for _, command := range commands {
+				subCommands, err := a.lbot.GenerateWorkerSubCommands()
+				if err != nil {
+					break
+				}
+
+				if len(subCommands) == 0 {
+					err = a.lbot.SetCommandFinished(command)
+					if err != nil {
+						break
+					}
+				} else {
+					err := a.lbot.InsertWorkerSubCommands(subCommands)
+					if err != nil {
+						break
+					}
+				}
+			}
+		}
+
 	}
 
 	return nil
@@ -155,17 +219,13 @@ func (a *Agent) Heartbeat() error {
 // add command struct
 
 // start command
-// 1. adds command to db "command", 'config' - because config could change later
-// - workload uuid - require to distinguish workload
-// workload state - or is finished
-
 //
 // divide workload into groups?
 // when adding new agent, stop worklflow, make snapshot, recalculate jobs, and then start
 // workload command is root command, each agent creates own workload version, or is part of this command(inside as list item)
 //
 
-func (a *Agent) ListenCommands() error {
+func (a *Agent) Listen() error {
 	ticker := time.NewTicker(config.AgentsHeartbeatInterval)
 	defer ticker.Stop()
 

@@ -216,12 +216,12 @@ func (c *MongoClient) CancelCommand() error {
 }
 
 // agent
-func (c *MongoClient) GetAgentWithHeartbeatWithin(timeSinceLastHb time.Duration) (uint64, error) {
+func (c *MongoClient) GetAgentWithHeartbeatWithin() (uint64, error) {
 	ct, err := c.ClusterTime()
 	if err != nil {
 		return 0, errors.Wrap(err, "get cluster time")
 	}
-	lastHbTime := ct.Time().Add(timeSinceLastHb)
+	lastHbTime := ct.Time().Add(config.AgentsHeartbeatExpiration)
 
 	cursor, err := c.client.Database(config.DB).Collection(config.AgentStatusCollection).Find(
 		context.TODO(), bson.M{"heartbeat": bson.M{"$gte": lastHbTime}},
@@ -238,6 +238,24 @@ func (c *MongoClient) GetAgentWithHeartbeatWithin(timeSinceLastHb time.Duration)
 		totalFound++
 	}
 	return uint64(totalFound), nil
+}
+
+func (c *MongoClient) IsMasterAgent(name string) (bool, error) {
+	ct, err := c.ClusterTime()
+	if err != nil {
+		return false, errors.Wrap(err, "get cluster time")
+	}
+	lastHbTime := ct.Time().Add(config.AgentsHeartbeatExpiration)
+
+	var agent *AgentStatus
+	err = c.client.Database(config.DB).Collection(config.AgentStatusCollection).
+		FindOne(context.TODO(), bson.M{"heartbeat": bson.M{"$gte": lastHbTime}}, &options.FindOneOptions{Sort: bson.D{{"created_at", -1}}}).
+		Decode(agent)
+	if err != nil {
+		return false, err
+	}
+
+	return agent.Name == name, nil
 }
 
 func (c *MongoClient) SetAgentStatus(stat AgentStatus) error {
