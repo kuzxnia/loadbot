@@ -213,6 +213,7 @@ const (
 	// agent args
 	AgentName                    = "name"
 	AgentPort                    = "port"
+	WatchConfigFileChanges       = "watch-config"
 	MetricsExportUrl             = "metrics_export_url"
 	MetricsExportIntervalSeconds = "metrics_export_interval_seconds"
 	MetricsExportPort            = "metrics_export_port"
@@ -228,6 +229,7 @@ func provideAgentCommand() *cobra.Command {
 
 			name, _ := flags.GetString(AgentName)
 			port, _ := flags.GetString(AgentPort)
+			watchConfigFileChanges, _ := flags.GetBool(WatchConfigFileChanges)
 			metricsExportUrl, _ := flags.GetString(MetricsExportUrl)
 			metricsExportIntervalSeconds, _ := flags.GetUint64(MetricsExportIntervalSeconds)
 			metricsExportPort, _ := flags.GetString(MetricsExportPort)
@@ -244,7 +246,7 @@ func provideAgentCommand() *cobra.Command {
 			stdin, _ := flags.GetBool(StdIn)
 
 			return StartAgent(
-				cmd.Context(), agentConfig, stdin, configFile,
+				cmd.Context(), agentConfig, watchConfigFileChanges, stdin, configFile,
 			)
 		},
 	}
@@ -253,6 +255,7 @@ func provideAgentCommand() *cobra.Command {
 	flags.StringP(AgentName, "n", "", "Agent name")
 	flags.StringP(ConfigFile, "f", "", "Config file for loadbot-agent")
 	flags.Bool(StdIn, false, "Provide configuration from stdin.")
+	flags.Bool(WatchConfigFileChanges, false, "Watch config file changes.")
 	flags.StringP(AgentPort, "p", "", "Agent port")
 	flags.String(MetricsExportUrl, "", "Prometheus export url used for pushing metrics")
 	flags.Uint64(MetricsExportIntervalSeconds, 0, "Prometheus export push interval")

@@ -13,8 +13,8 @@ type JobHandler interface {
 	Execute() error
 }
 
-func NewJobHandler(job *config.Job, client database.Client, dataPool schema.DataPool) JobHandler {
-	dataProvider := schema.NewDataProvider(job)
+func NewJobHandler(job *config.Job, client database.Client, dataPool schema.DataPool, s *config.Schema) JobHandler {
+	dataProvider := schema.NewDataProvider(job, s)
 	handler := BaseHandler{
 		job:          job,
 		client:       client,

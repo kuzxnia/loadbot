@@ -2,16 +2,19 @@ package agent
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net"
 	"net/http"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"sync"
 	"syscall"
 	"time"
 
 	"github.com/VictoriaMetrics/metrics"
+	"github.com/fsnotify/fsnotify"
 	"github.com/kuzxnia/loadbot/lbot"
 	"github.com/kuzxnia/loadbot/lbot/config"
 	"github.com/kuzxnia/loadbot/lbot/proto"
@@ -30,11 +33,12 @@ const (
 )
 
 type Agent struct {
-	ctx        context.Context
-	lbot       *lbot.Lbot
-	grpcServer *grpc.Server
-	state      AgentState
-	mutex      sync.RWMutex
+	ctx          context.Context
+	lbot         *lbot.Lbot
+	grpcServer   *grpc.Server
+	state        AgentState
+	stateChange  *sync.Cond
+	configChange *fsnotify.Watcher
 }
 
 func NewAgent(ctx context.Context, loadbot *lbot.Lbot) *Agent {
@@ -49,14 +53,21 @@ func NewAgent(ctx context.Context, loadbot *lbot.Lbot) *Agent {
 	reflection.Register(grpcServer)
 
 	return &Agent{
-		ctx:        ctx,
-		lbot:       loadbot,
-		grpcServer: grpcServer,
-		state:      AgentStateFollower,
+		ctx:         ctx,
+		lbot:        loadbot,
+		grpcServer:  grpcServer,
+		state:       AgentStateFollower,
+		stateChange: sync.NewCond(&sync.Mutex{}),
 	}
 }
 
 func (a *Agent) Start() error {
+	defer func() {
+		if a.configChange != nil {
+			a.configChange.Close()
+		}
+	}()
+
 	go a.ServeGrpc()
 	go a.Metrics()
 	go a.Heartbeat()
@@ -131,6 +142,16 @@ func (a *Agent) ApplyConfig(request *lbot.ConfigRequest) error {
 	return nil
 }
 
+func (a *Agent) ApplyConfigFromFile(path string) error {
+	request, err := lbot.ParseConfigFile(path)
+	if err != nil {
+		return err
+	}
+	cfg := lbot.NewConfig(request)
+	a.lbot.SetConfig(cfg)
+	return nil
+}
+
 func (a *Agent) Heartbeat() error {
 	ticker := time.NewTicker(config.AgentsHeartbeatInterval)
 	defer ticker.Stop()
@@ -174,10 +195,12 @@ func (a *Agent) Heartbeat() error {
 		shouldIBeLeader, err := a.lbot.IsMasterAgent(a.lbot.Config.Agent.Name)
 		amILeader := a.state == AgentStateLeader
 		if shouldIBeLeader != amILeader {
-			a.mutex.Lock()
+			a.stateChange.L.Lock()
 			a.state = lo.If(shouldIBeLeader == true, AgentStateLeader).Else(AgentStateFollower)
+			log.Println("new state: ", a.state)
+			a.stateChange.L.Unlock()
+			a.stateChange.Signal()
 			// todo: log
-			a.mutex.Unlock()
 		}
 
 		err = a.lbot.UpdateRunningAgents()
@@ -226,6 +249,11 @@ func (a *Agent) Heartbeat() error {
 //
 
 func (a *Agent) Listen() error {
+	// a.lbot.HandleCommands()
+	// todo: change to stream - subscribe, only new commands
+
+
+  // each worker subscribe on subcommands
 	ticker := time.NewTicker(config.AgentsHeartbeatInterval)
 	defer ticker.Stop()
 
@@ -237,6 +265,67 @@ func (a *Agent) Listen() error {
 	}
 
 	return nil
+}
+
+func (a *Agent) WatchConfigFile(configFile string) (err error) {
+	// Start listening for events.
+	if a.configChange == nil {
+		watcher, err := fsnotify.NewWatcher()
+		if err != nil {
+			log.Fatal(err)
+		}
+		a.configChange = watcher
+	}
+
+	go func() {
+		for {
+			if a.state != AgentStateLeader {
+				a.stateChange.L.Lock()
+				log.Println("waiting for node to be elected as master")
+				a.stateChange.Wait() // wait until state change
+				log.Println("node is master")
+			}
+
+			select {
+			case err, ok := <-a.configChange.Errors:
+				if !ok { // channel was closed (i.e. Watcher.Close() was called)
+					return
+				}
+				log.Println("error:", err)
+			case event, ok := <-a.configChange.Events:
+				if !ok { // channel was closed (i.e. Watcher.Close() was called)
+					return
+				}
+
+				// Ignore files we're not interested in. Can use a
+				if event.Name != configFile {
+					continue
+				}
+				if event.Has(fsnotify.Write) {
+					log.Println("modified file:", event.Name, " applying new configuration")
+					a.ApplyConfigFromFile(event.Name)
+				}
+			}
+		}
+	}()
+
+	st, err := os.Lstat(configFile)
+	if err != nil {
+		return
+	}
+
+	if st.IsDir() {
+		return errors.New(configFile + " is a directory, not a file")
+	}
+
+	// Watch the directory, not the file itself. This solves various issues where files are frequently
+	// renamed, such as editors saving them.
+	err = a.configChange.Add(filepath.Dir(configFile))
+	if err != nil {
+		log.Fatal(err)
+		return
+	}
+	return
 }
 
 // agent config should be removed from base config and later

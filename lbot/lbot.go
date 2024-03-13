@@ -3,6 +3,7 @@ package lbot
 import (
 	"context"
 	"fmt"
+	"sync"
 	"sync/atomic"
 
 	"github.com/kuzxnia/loadbot/lbot/config"
@@ -15,9 +16,10 @@ import (
 type Lbot struct {
 	Config        *config.Config
 	ctx           context.Context
-	workers       []*worker.Worker
+	mutext        sync.Mutex
+	workers       map[string]*worker.Worker
 	done          chan bool
-	runningAgents uint64
+	runningAgents uint64 // todo: remove from here
 	changed       chan uint64
 }
 
@@ -26,6 +28,7 @@ func NewLbot(ctx context.Context) *Lbot {
 		ctx:           ctx,
 		runningAgents: 1,
 		changed:       make(chan uint64),
+		workers:       map[string]*worker.Worker{},
 	}
 }
 
@@ -36,16 +39,42 @@ func (l *Lbot) Run() error {
 	}
 
 	for _, job := range l.Config.Jobs {
-		client.RunJob(*job)
+		err = client.RunJob(*job)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
+}
+
+// temp
+func (l *Lbot) SetCommandRunning(command *database.Command) error {
+	client, err := database.NewInternalMongoClient(l.Config.ConnectionString)
+	if err != nil {
+		return err
+	}
+	return client.SetCommandRunning(command)
+}
+
+func (l *Lbot) SetCommandDone(command *database.Command) error {
+	client, err := database.NewInternalMongoClient(l.Config.ConnectionString)
+	if err != nil {
+		return err
+	}
+	return client.SetCommandDone(command)
 }
 
 func (l *Lbot) StartWorkload(command *database.Command) {
 	if command == nil {
 		return
 	}
+
+	if _, ok := l.workers[command.Id.String()]; ok {
+		log.Println("Command ", command.Id.String(), " is running")
+		return
+	}
+
 	l.done = make(chan bool)
 	// todo: ping db, before workers init
 	// init datapools
@@ -64,14 +93,33 @@ func (l *Lbot) StartWorkload(command *database.Command) {
 			panic("Worker initialization error")
 		}
 		fmt.Printf("init worker with job %s\n", job.Name)
-		l.workers = append(l.workers, worker)
+
+		l.mutext.Lock()
+		err := l.SetCommandRunning(command)
+		if err != nil {
+			log.Println("error found setting command done", err)
+			return
+		}
+		l.workers[command.Id.String()] = worker
+		l.mutext.Unlock()
 		// todo: fix here, no schema data pool will be nill
+
+		// update: command state
+
 		defer worker.Close()
 		worker.InitMetrics()
 		// workaround
 		worker.Work(l.changed)
 		// worker.Summary()
 		worker.ExtendCopySavedFieldsToDataPool()
+
+		l.mutext.Lock()
+		err = l.SetCommandDone(command)
+		if err != nil {
+			log.Println("error found setting command done", err)
+		}
+		delete(l.workers, command.Id.String())
+		l.mutext.Unlock()
 	}()
 	l.done <- true
 }
@@ -80,7 +128,7 @@ func (l *Lbot) Cancel() error {
 	for _, worker := range l.workers {
 		worker.Cancel()
 	}
-	l.workers = nil
+	l.workers = map[string]*worker.Worker{}
 
 	return nil
 }
@@ -111,10 +159,15 @@ func (l *Lbot) HandleCommands() {
 	if err != nil {
 		return
 	}
+	log.Println("Fetched new command with type: ", command.Type)
+
 	switch command.Type {
 	case database.CommandTypeStartWorkload.String():
 		go l.StartWorkload(command)
 	case database.CommandTypeStopWorkload.String():
+		// remove awaiting batches
+		// change
+		// send stop commands
 		go l.Cancel()
 	}
 }

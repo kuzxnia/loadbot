@@ -39,10 +39,10 @@ func NewWorker(ctx context.Context, cfg *config.Config, job *config.Job, dataPoo
 	worker.rateLimiter = NewLimiter(job.Pace / runningAgents)
 	worker.Metrics = NewMetrics(job)
 	worker.done = false
-
+	jobSchema := cfg.GetSchema(job.Schema)
 	// introduce no db worker
 	if job.Type != string(config.Sleep) {
-		db, err := database.NewMongoClient(cfg.ConnectionString, job, job.GetSchema())
+		db, err := database.NewMongoClient(cfg.ConnectionString, job, jobSchema)
 		if err != nil {
 			return nil, err
 		}
@@ -50,7 +50,7 @@ func NewWorker(ctx context.Context, cfg *config.Config, job *config.Job, dataPoo
 	}
 
 	worker.dataPool = dataPool
-	worker.handler = NewJobHandler(job, worker.db, dataPool)
+	worker.handler = NewJobHandler(job, worker.db, dataPool, jobSchema)
 	return worker, nil
 }
 

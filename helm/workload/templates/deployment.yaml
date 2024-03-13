@@ -20,6 +20,7 @@ spec:
           image: {{ .Values.workload.agent.image }}
           command: ["/usr/local/bin/loadbot"]
           args: ["start-agent"]
+          # todo: add config map
           ports: 
             - containerPort: {{ .Values.workload.agent.port }}
           # move to values, helper

@@ -6,7 +6,7 @@ import (
 )
 
 type AgentStatus struct {
-	Name string `bson:"name"`
+	Name string             `bson:"name"`
 
 	// todo: add host
 
@@ -22,7 +22,7 @@ type AgentStatus struct {
 type Command struct {
 	Id        primitive.ObjectID `bson:"_id"`
 	Data      config.Job         `bson:"data"`
-	Type      string             `bson:"state"`
+	Type      string             `bson:"type"`
 	State     string             `bson:"state"`
 	CreatedAt primitive.DateTime `bson:"created_at"`
 }

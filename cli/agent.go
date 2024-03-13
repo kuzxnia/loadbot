@@ -9,7 +9,7 @@ import (
 )
 
 func StartAgent(
-	context context.Context, config *lbot.AgentRequest, stdin bool, configFile string,
+	context context.Context, config *lbot.AgentRequest, watchConfigFile bool, stdin bool, configFile string,
 ) (err error) {
 	var requestConfig *lbot.ConfigRequest
 
@@ -61,6 +61,12 @@ func StartAgent(
 	agent := agent.NewAgent(context, loadbot)
 	if requestConfig != nil {
 		agent.ApplyConfig(requestConfig)
+		if watchConfigFile {
+			err = agent.WatchConfigFile(configFile)
+			if err != nil {
+				return err
+			}
+		}
 	}
 	agent.Start()
 

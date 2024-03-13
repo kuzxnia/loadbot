@@ -54,9 +54,10 @@ func (job *Job) validateSchema() error {
 		return nil
 	}
 
-	if !Contains(job.Parent.Schemas, func(s *Schema) bool { return s.Name == job.Schema }) {
-		return errors.New("JobValidationError: job \"" + job.Name + "\" have invalid template \"" + job.Schema + "\"")
-	}
+  // todo: fix validate schema
+	// if !Contains(job.Parent.Schemas, func(s *Schema) bool { return s.Name == job.Schema }) {
+	// 	return errors.New("JobValidationError: job \"" + job.Name + "\" have invalid template \"" + job.Schema + "\"")
+	// }
 	return nil
 }
 

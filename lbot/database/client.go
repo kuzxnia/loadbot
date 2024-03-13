@@ -167,7 +167,7 @@ func (c *MongoClient) ClusterTime() (*primitive.DateTime, error) {
 		return nil, errors.WithMessage(err, "cmd: isMaster")
 	}
 
-	result := &NodeInfo{}
+	result := NodeInfo{}
 	err := res.Decode(&result)
 
 	return result.LocalTime, errors.WithMessage(err, "decode")
@@ -181,7 +181,11 @@ func (c *MongoClient) RunJob(job config.Job) error {
 		return errors.Wrap(err, "get cluster time")
 	}
 
+	// drop circular reference
+	// job.Parent = nil
+
 	cmd := Command{
+		Id:        primitive.NewObjectID(),
 		Data:      job,
 		Type:      CommandTypeStartWorkload.String(),
 		State:     CommandStateCreated.String(),
@@ -190,6 +194,31 @@ func (c *MongoClient) RunJob(job config.Job) error {
 
 	_, err = c.client.Database(config.DB).Collection(config.CommandCollection).
 		InsertOne(context.TODO(), cmd)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (c *MongoClient) SetCommandRunning(command *Command) error {
+	command.State = CommandStateRunning.String()
+
+	_, err := c.client.Database(config.DB).Collection(config.CommandCollection).
+		UpdateByID(context.TODO(), command.Id, bson.M{"$set": command})
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (c *MongoClient) SetCommandDone(command *Command) error {
+	command.State = CommandStateDone.String()
+
+	_, err := c.client.Database(config.DB).Collection(config.CommandCollection).
+		UpdateByID(context.TODO(), command.Id, bson.M{"$set": command})
 	if err != nil {
 		return err
 	}
@@ -245,12 +274,13 @@ func (c *MongoClient) IsMasterAgent(name string) (bool, error) {
 	if err != nil {
 		return false, errors.Wrap(err, "get cluster time")
 	}
-	lastHbTime := ct.Time().Add(config.AgentsHeartbeatExpiration)
+	lastHbTime := primitive.NewDateTimeFromTime(ct.Time().Add(config.AgentsHeartbeatExpiration))
 
-	var agent *AgentStatus
+	var agent AgentStatus
 	err = c.client.Database(config.DB).Collection(config.AgentStatusCollection).
-		FindOne(context.TODO(), bson.M{"heartbeat": bson.M{"$gte": lastHbTime}}, &options.FindOneOptions{Sort: bson.D{{"created_at", -1}}}).
-		Decode(agent)
+		FindOne(context.TODO(), bson.M{"heartbeat": bson.M{"$gte": lastHbTime}}, &options.FindOneOptions{Sort: bson.M{"created_at": -1}}).
+		Decode(&agent)
+
 	if err != nil {
 		return false, err
 	}

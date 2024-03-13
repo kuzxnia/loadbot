@@ -26,9 +26,9 @@ func ParseConfigFile(configFile string) (*Config, error) {
 		return nil, errors.New("Error during Unmarshal(): " + err.Error())
 	}
 
-	for _, job := range cfg.Jobs {
-		job.Parent = &cfg
-	}
+	// for _, job := range cfg.Jobs {
+	// 	job.Parent = &cfg
+	// }
 
 	return &cfg, err
 }

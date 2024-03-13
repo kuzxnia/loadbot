@@ -23,9 +23,9 @@ func NewStartProcess(ctx context.Context, lbot *Lbot) *StartProcess {
 }
 
 func (c *StartProcess) Run(ctx context.Context, request *proto.StartRequest) (*proto.StartResponse, error) {
-	go c.lbot.Run()
+	err := c.lbot.Run()
 
-	return &proto.StartResponse{}, nil
+	return &proto.StartResponse{}, err
 }
 
 func (c *StartProcess) RunWithProgress(request *proto.StartWithProgressRequest, srv proto.StartProcess_RunWithProgressServer) error {
@@ -55,7 +55,7 @@ func (c *StartProcess) RunWithProgress(request *proto.StartWithProgressRequest, 
 			default:
 			}
 			if notDoneWorkers == nil || len(notDoneWorkers) == 0 {
-				notDoneWorkers = lo.Filter(c.lbot.workers, func(worker *worker.Worker, index int) bool {
+				notDoneWorkers = lo.Filter(lo.Values(c.lbot.workers), func(worker *worker.Worker, index int) bool {
 					return !worker.IsDone()
 				})
 			}
@@ -77,7 +77,7 @@ func (c *StartProcess) RunWithProgress(request *proto.StartWithProgressRequest, 
 					return
 				}
 				if isWorkerFinished {
-					notDoneWorkers = lo.Filter(c.lbot.workers, func(worker *worker.Worker, index int) bool {
+					notDoneWorkers = lo.Filter(lo.Values(c.lbot.workers), func(worker *worker.Worker, index int) bool {
 						return !worker.IsDone()
 					})
 				}

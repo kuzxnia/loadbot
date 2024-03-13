@@ -27,7 +27,7 @@ func (p *ProgressProcess) Run(request *proto.ProgressRequest, srv proto.Progress
 		return err
 	}
 	// refactor
-	if len(lo.Filter(p.lbot.workers, func(worker *worker.Worker, index int) bool { return !worker.IsDone() })) == 0 {
+	if len(lo.Filter(lo.Values(p.lbot.workers), func(worker *worker.Worker, index int) bool { return !worker.IsDone() })) == 0 {
 		log.Printf("There are no running jobs")
 		return nil
 	}
@@ -35,7 +35,7 @@ func (p *ProgressProcess) Run(request *proto.ProgressRequest, srv proto.Progress
 	done := make(chan bool)
 	ticker := time.NewTicker(interval)
 	go func() {
-		notDoneWorkers := lo.Filter(p.lbot.workers, func(worker *worker.Worker, index int) bool {
+    notDoneWorkers := lo.Filter(lo.Values(p.lbot.workers), func(worker *worker.Worker, index int) bool {
 			return !worker.IsDone()
 		})
 		for range ticker.C {
@@ -64,7 +64,7 @@ func (p *ProgressProcess) Run(request *proto.ProgressRequest, srv proto.Progress
 					return
 				}
 				if isWorkerFinished {
-					notDoneWorkers = lo.Filter(p.lbot.workers, func(worker *worker.Worker, index int) bool {
+					notDoneWorkers = lo.Filter(lo.Values(p.lbot.workers), func(worker *worker.Worker, index int) bool {
 						return !worker.IsDone()
 					})
 				}
