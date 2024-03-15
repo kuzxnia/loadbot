@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: workload-{{ .Values.workload.name }}
-  namespace: default
+  namespace: {{ .Values.workload.namespace }}
 spec:
   replicas: {{ .Values.workload.replicas }}
   selector:
@@ -19,11 +19,15 @@ spec:
         - name: agent
           image: {{ .Values.workload.agent.image }}
           command: ["/usr/local/bin/loadbot"]
+          {{- if .Values.workload.config -}}
+          args: ["start-agent", "-f", "/workload-config.json"]
+          {{- else}}
           args: ["start-agent"]
-          # todo: add config map
+          {{- end}}
+          {{/* args: ["start-agent", "-f", "/workload-config.json", "--watch-config"] */}}
           ports: 
             - containerPort: {{ .Values.workload.agent.port }}
-          # move to values, helper
+          # todo: move to values, helper
           resources:
             limits:
               memory: 4Gi
@@ -31,3 +35,16 @@ spec:
             requests:
               cpu: 4000m
               memory: 2Gi
+          {{- if .Values.workload.config -}}
+          volumeMounts:
+            - name: config
+              subPath: workload-config.json
+              mountPath: /workload-config.json
+          {{- end}}
+      {{- if .Values.workload.config -}}
+      volumes:
+        - name: config
+          secret:
+            secretName: workload-{{ .Values.workload.name }}-secret
+            defaultMode: 0400
+      {{- end}}
