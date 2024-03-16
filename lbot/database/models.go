@@ -6,16 +6,11 @@ import (
 )
 
 type AgentStatus struct {
-	Name string             `bson:"name"`
-
-	// todo: add host
-
-	// todo: add version
-
-	// config??
-
+	Id        primitive.ObjectID `bson:"_id"`
+	Name      string             `bson:"name"`
+	Host      string             `bson:"host"`
+  // add state
 	CreatedAt primitive.DateTime `bson:"created_at"`
-
 	Heartbeat primitive.DateTime `bson:"heartbeat"`
 }
 
@@ -25,18 +20,34 @@ type Command struct {
 	Type      string             `bson:"type"`
 	State     string             `bson:"state"`
 	CreatedAt primitive.DateTime `bson:"created_at"`
+	Version   primitive.ObjectID `bson:"version"`
 }
 
-type SubCommand struct {
+type Workload struct {
 	Id        primitive.ObjectID `bson:"_id"`
+	CommandId primitive.ObjectID `bson:"command_id"`
+	AgentId   primitive.ObjectID `bson:"agent_id"`
 	Data      config.Job         `bson:"data"`
-	Type      string             `bson:"state"`
 	State     string             `bson:"state"`
 	CreatedAt primitive.DateTime `bson:"created_at"`
+	Version   primitive.ObjectID `bson:"version"`
 }
 
 // todo: move to different place
 //
+//go:generate stringer -type=WorkloadState -trimprefix=WorkloadState
+type WorkloadState int
+
+const (
+	WorkloadStateCreated WorkloadState = iota
+	WorkloadStateToRun
+	WorkloadStateRunning
+	WorkloadStateDone
+	WorkloadStateError
+	WorkloadStateToDelete
+	WorkloadStateDeleted
+)
+
 //go:generate stringer -type=CommandState -trimprefix=CommandState
 type CommandState int
 

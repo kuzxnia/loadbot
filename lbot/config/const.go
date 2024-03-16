@@ -25,8 +25,8 @@ const (
 
 const (
 	DB                    = "admin"
-	LockCollection        = "lbotLock"
 	CommandCollection     = "lbotCmd"
+	WorkloadCollection    = "lbotWorkload"
 	ConfigCollection      = "lbotConfig"
 	AgentStatusCollection = "lbotAgent"
 

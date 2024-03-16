@@ -2,13 +2,11 @@ package agent
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"net"
 	"net/http"
 	"os"
 	"os/signal"
-	"path/filepath"
 	"sync"
 	"syscall"
 	"time"
@@ -20,6 +18,7 @@ import (
 	"github.com/kuzxnia/loadbot/lbot/proto"
 	"github.com/samber/lo"
 	log "github.com/sirupsen/logrus"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 )
@@ -33,6 +32,7 @@ const (
 )
 
 type Agent struct {
+	id           primitive.ObjectID
 	ctx          context.Context
 	lbot         *lbot.Lbot
 	grpcServer   *grpc.Server
@@ -53,6 +53,7 @@ func NewAgent(ctx context.Context, loadbot *lbot.Lbot) *Agent {
 	reflection.Register(grpcServer)
 
 	return &Agent{
+		id:          primitive.NewObjectID(),
 		ctx:         ctx,
 		lbot:        loadbot,
 		grpcServer:  grpcServer,
@@ -72,6 +73,11 @@ func (a *Agent) Start() error {
 	go a.Metrics()
 	go a.Heartbeat()
 	go a.Listen()
+
+	if err := a.lbot.InitAgent(a.id, a.lbot.Config.Agent.Name); err != nil {
+	} else {
+		log.Info("lbot-agent initialized successfuly")
+	}
 
 	stopSignal := make(chan os.Signal, 1)
 	signal.Notify(
@@ -185,53 +191,9 @@ func (a *Agent) Heartbeat() error {
 	// master ticker should run more often, hint ticker.reset
 
 	for range ticker.C {
-		err := a.lbot.RefreshAgentStatus(a.lbot.Config.Agent.Name)
+		err := a.lbot.AgentHeartBeat(a.id, a.lbot.Config.Agent.Name)
 		if err != nil {
 			log.Error("agent status failed", err)
-		}
-
-		// todo: name should be on agent
-		// todo: need to notify listen goroutine about data change
-		shouldIBeLeader, err := a.lbot.IsMasterAgent(a.lbot.Config.Agent.Name)
-		amILeader := a.state == AgentStateLeader
-		if shouldIBeLeader != amILeader {
-			a.stateChange.L.Lock()
-			a.state = lo.If(shouldIBeLeader == true, AgentStateLeader).Else(AgentStateFollower)
-			log.Println("new state: ", a.state)
-			a.stateChange.L.Unlock()
-			a.stateChange.Signal()
-			// todo: log
-		}
-
-		err = a.lbot.UpdateRunningAgents()
-		if err != nil {
-			log.Error("agent list failed", err)
-		}
-
-		if a.state == AgentStateLeader {
-			commands, err := a.lbot.GetNotFinishedCommands()
-			if err != nil {
-				break
-			}
-
-			for _, command := range commands {
-				subCommands, err := a.lbot.GenerateWorkerSubCommands()
-				if err != nil {
-					break
-				}
-
-				if len(subCommands) == 0 {
-					err = a.lbot.SetCommandFinished(command)
-					if err != nil {
-						break
-					}
-				} else {
-					err := a.lbot.InsertWorkerSubCommands(subCommands)
-					if err != nil {
-						break
-					}
-				}
-			}
 		}
 
 	}
@@ -249,84 +211,44 @@ func (a *Agent) Heartbeat() error {
 //
 
 func (a *Agent) Listen() error {
+	// todo:
+	// 1. commands - to handle on master
+	// 2. subcommands - for worker
+	// 3. agents - handle is master
+
 	// a.lbot.HandleCommands()
 	// todo: change to stream - subscribe, only new commands
 
-
-  // each worker subscribe on subcommands
+	// each worker subscribe on subcommands
 	ticker := time.NewTicker(config.AgentsHeartbeatInterval)
 	defer ticker.Stop()
 
 	for range ticker.C {
 		// check for running commands
-		a.lbot.HandleCommands()
+		a.lbot.HandleWorkload()
 
-		// biorę commendę, która nie jest done
+		// todo: name should be on agent
+		// todo: need to notify listen goroutine about data change
+		shouldIBeLeader, err := a.lbot.IsMasterAgent(a.id)
+		amILeader := a.state == AgentStateLeader
+		if shouldIBeLeader != amILeader {
+			a.stateChange.L.Lock()
+			a.state = lo.If(shouldIBeLeader == true, AgentStateLeader).Else(AgentStateFollower)
+			log.Println("new state: ", a.state)
+			a.stateChange.L.Unlock()
+			a.stateChange.Signal()
+			// todo: log
+		}
+
+		err = a.lbot.UpdateRunningAgents()
+		if err != nil {
+			log.Error("agent list failed", err)
+		}
+
+		if a.state == AgentStateLeader {
+			a.lbot.HandleCommand()
+		}
 	}
 
 	return nil
 }
-
-func (a *Agent) WatchConfigFile(configFile string) (err error) {
-	// Start listening for events.
-	if a.configChange == nil {
-		watcher, err := fsnotify.NewWatcher()
-		if err != nil {
-			log.Fatal(err)
-		}
-		a.configChange = watcher
-	}
-
-	go func() {
-		for {
-			if a.state != AgentStateLeader {
-				a.stateChange.L.Lock()
-				log.Println("waiting for node to be elected as master")
-				a.stateChange.Wait() // wait until state change
-				log.Println("node is master")
-			}
-
-			select {
-			case err, ok := <-a.configChange.Errors:
-				if !ok { // channel was closed (i.e. Watcher.Close() was called)
-					return
-				}
-				log.Println("error:", err)
-			case event, ok := <-a.configChange.Events:
-				if !ok { // channel was closed (i.e. Watcher.Close() was called)
-					return
-				}
-
-				// Ignore files we're not interested in. Can use a
-				if event.Name != configFile {
-					continue
-				}
-				if event.Has(fsnotify.Write) {
-					log.Println("modified file:", event.Name, " applying new configuration")
-					a.ApplyConfigFromFile(event.Name)
-				}
-			}
-		}
-	}()
-
-	st, err := os.Lstat(configFile)
-	if err != nil {
-		return
-	}
-
-	if st.IsDir() {
-		return errors.New(configFile + " is a directory, not a file")
-	}
-
-	// Watch the directory, not the file itself. This solves various issues where files are frequently
-	// renamed, such as editors saving them.
-	err = a.configChange.Add(filepath.Dir(configFile))
-	if err != nil {
-		log.Fatal(err)
-		return
-	}
-	return
-}
-
-// agent config should be removed from base config and later
-// zarzadzanie workloadem przez
