@@ -200,9 +200,13 @@ func (c *MongoClient) RunJob(job config.Job) error {
 }
 
 func (c *MongoClient) SaveWorkload(workload *Workload) error {
+	oldVersion := workload.Version
+	workload.Version = primitive.NewObjectID()
+
 	_, err := c.client.Database(config.DB).Collection(config.WorkloadCollection).
-		UpdateOne(context.TODO(), bson.M{"_id": workload.Id}, bson.M{"$set": workload})
+		UpdateOne(context.TODO(), bson.M{"_id": workload.Id, "version": oldVersion}, bson.M{"$set": workload})
 	if err != nil {
+		workload.Version = oldVersion
 		return err
 	}
 

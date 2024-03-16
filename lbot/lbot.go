@@ -196,6 +196,7 @@ func (l *Lbot) HandleWorkload() {
 
 		err := l.SetWorkloadState(workload, database.WorkloadStateToRun)
 		if err != nil {
+			log.Println("Fetched command with: ", err)
 			// if not saved, propably other agent taked
 			return
 		}
@@ -274,7 +275,6 @@ func (l *Lbot) UpdateRunningAgents() error {
 		return err
 	}
 
-	log.Info("before agents update")
 	runningAgents, err := client.GetAgentWithHeartbeatWithin()
 	if err != nil {
 		return err
@@ -289,7 +289,6 @@ func (l *Lbot) UpdateRunningAgents() error {
 		}
 	}
 
-	log.Info("after agents update")
 	return nil
 }
 
@@ -337,6 +336,7 @@ func (l *Lbot) GenerateWorkload(command *database.Command) ([]*database.Workload
 	log.Println("Generating workloads for agents ", l.runningAgents)
 	for i := 0; i < int(l.runningAgents); i++ {
 		workload := database.Workload{
+			Id:        primitive.NewObjectID(),
 			CommandId: command.Id,
 			Data:      command.Data,
 			State:     database.WorkloadStateCreated.String(),
