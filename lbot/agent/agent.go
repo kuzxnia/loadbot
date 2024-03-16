@@ -49,7 +49,6 @@ func NewAgent(ctx context.Context, loadbot *lbot.Lbot) *Agent {
 	proto.RegisterSetConfigProcessServer(grpcServer, lbot.NewSetConfigProcess(ctx, loadbot))
 	proto.RegisterWatchProcessServer(grpcServer, lbot.NewWatchingProcess(ctx, loadbot))
 	proto.RegisterProgressProcessServer(grpcServer, lbot.NewProgressProcess(ctx, loadbot))
-	proto.RegisterOrchistratorServiceServer(grpcServer, lbot.NewOrchiestrator(ctx))
 
 	reflection.Register(grpcServer)
 

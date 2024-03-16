@@ -5,8 +5,6 @@ import (
 
 	"helm.sh/helm/v3/pkg/cli"
 	"helm.sh/helm/v3/pkg/getter"
-
-	"github.com/kuzxnia/loadbot/lbot/proto"
 )
 
 const (
@@ -21,17 +19,54 @@ type ResourceManagerConfig struct {
 	HelmTimeout    time.Duration
 }
 
+type InstallRequest struct {
+	ResourceManagerConfig
+	Name             string
+	HelmValuesFiles  []string
+	HelmValues       []string
+	HelmFileValues   []string
+	HelmStringValues []string
+}
+
+type InstallResponse struct{}
+
+type UpgradeRequest struct {
+	ResourceManagerConfig
+	Name             string
+	HelmValuesFiles  []string
+	HelmValues       []string
+	HelmFileValues   []string
+	HelmStringValues []string
+}
+
+type UpgradeResponse struct{}
+
+type UnInstallRequest struct {
+	ResourceManagerConfig
+	Name string
+}
+
+type UnInstallResponse struct{}
+
+type ListRequest struct {
+	ResourceManagerConfig
+}
+
+type ListResponse struct{}
+
 type ResourceManager interface {
-	Install(*proto.InstallRequest) error
-	UnInstall(*proto.UnInstallRequest) error
+	Install(*InstallRequest) error
+	Upgrade(*UpgradeRequest) error
+	UnInstall(*UnInstallRequest) error
+	List(*ListRequest) error
 }
 
 var (
 	Strategies = []string{LocalDockerStrategy, HelmChartStrategy}
 
 	nameToStrategy = map[string]ResourceManager{
-		LocalDockerStrategy: &DockerService{},
-		HelmChartStrategy:   &HelmManager{},
+		// LocalDockerStrategy: &DockerService{},
+		HelmChartStrategy: &HelmManager{},
 	}
 
 	DefaultStrategy = LocalDockerStrategy

@@ -1,9 +1,5 @@
 package resourcemanager
 
-import (
-	"github.com/kuzxnia/loadbot/lbot/proto"
-)
-
 type DockerImage struct {
 	// podstawowo obraz
 	Name string
@@ -16,9 +12,9 @@ type DockerContainer struct {
 
 type DockerService struct{}
 
-func (d *DockerService) Install(*proto.InstallRequest) error     { return nil }
-func (d *DockerService) UnInstall(*proto.UnInstallRequest) error { return nil }
-func (d *DockerService) Suspend() error                          { return nil }
+func (d *DockerService) Install(*InstallRequest) error     { return nil }
+func (d *DockerService) UnInstall(*UnInstallRequest) error { return nil }
+func (d *DockerService) Suspend() error                    { return nil }
 
 // add optional argument with chart version
 func NewDockerService() (*DockerService, error) {

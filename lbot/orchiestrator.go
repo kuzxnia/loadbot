@@ -1,15 +1,11 @@
 package lbot
 
 import (
-	"time"
-
-	"github.com/kuzxnia/loadbot/lbot/proto"
 	"github.com/kuzxnia/loadbot/lbot/resourcemanager"
 	"golang.org/x/net/context"
 )
 
 type Orchiestrator struct {
-	proto.UnimplementedOrchistratorServiceServer
 	ctx context.Context
 }
 
@@ -17,18 +13,12 @@ func NewOrchiestrator(ctx context.Context) *Orchiestrator {
 	return &Orchiestrator{ctx: ctx}
 }
 
-func (o *Orchiestrator) Install(ctx context.Context, request *proto.InstallRequest) (*proto.InstallResponse, error) {
-	// if watch arg - run watch
-
-	timeout, err := time.ParseDuration(request.HelmTimeout)
-	if err != nil {
-		return nil, err
-	}
+func (o *Orchiestrator) Install(ctx context.Context, request *resourcemanager.InstallRequest) (*resourcemanager.InstallResponse, error) {
 	cfg := resourcemanager.ResourceManagerConfig{
 		KubeconfigPath: request.KubeconfigPath,
 		Context:        request.Context,
 		Namespace:      request.Namespace,
-		HelmTimeout:    timeout,
+		HelmTimeout:    request.HelmTimeout,
 	}
 
 	resourceManager, err := resourcemanager.GetResourceManager(&cfg)
@@ -51,19 +41,15 @@ func (o *Orchiestrator) Install(ctx context.Context, request *proto.InstallReque
 	// if flag starting is provided it will start workload
 	// same with watch flag
 
-	return &proto.InstallResponse{}, err
+	return &resourcemanager.InstallResponse{}, err
 }
 
-func (o *Orchiestrator) UnInstall(ctx context.Context, request *proto.UnInstallRequest) (*proto.UnInstallResponse, error) {
-	timeout, err := time.ParseDuration(request.HelmTimeout)
-	if err != nil {
-		return nil, err
-	}
+func (o *Orchiestrator) UnInstall(ctx context.Context, request *resourcemanager.UnInstallRequest) (*resourcemanager.UnInstallResponse, error) {
 	cfg := resourcemanager.ResourceManagerConfig{
 		KubeconfigPath: request.KubeconfigPath,
 		Context:        request.Context,
 		Namespace:      request.Namespace,
-		HelmTimeout:    timeout,
+		HelmTimeout:    request.HelmTimeout,
 	}
 
 	resourceManager, err := resourcemanager.GetResourceManager(&cfg)
@@ -73,5 +59,41 @@ func (o *Orchiestrator) UnInstall(ctx context.Context, request *proto.UnInstallR
 
 	err = resourceManager.UnInstall(request)
 
-	return &proto.UnInstallResponse{}, err
+	return &resourcemanager.UnInstallResponse{}, err
+}
+
+func (o *Orchiestrator) Upgrade(ctx context.Context, request *resourcemanager.UpgradeRequest) (*resourcemanager.UpgradeResponse, error) {
+	cfg := resourcemanager.ResourceManagerConfig{
+		KubeconfigPath: request.KubeconfigPath,
+		Context:        request.Context,
+		Namespace:      request.Namespace,
+		HelmTimeout:    request.HelmTimeout,
+	}
+
+	resourceManager, err := resourcemanager.GetResourceManager(&cfg)
+	if err != nil {
+		return nil, err
+	}
+
+	err = resourceManager.Upgrade(request)
+
+	return &resourcemanager.UpgradeResponse{}, err
+}
+
+func (o *Orchiestrator) List(ctx context.Context, request *resourcemanager.ListRequest) (*resourcemanager.ListResponse, error) {
+	cfg := resourcemanager.ResourceManagerConfig{
+		KubeconfigPath: request.KubeconfigPath,
+		Context:        request.Context,
+		Namespace:      request.Namespace,
+		HelmTimeout:    request.HelmTimeout,
+	}
+
+	resourceManager, err := resourcemanager.GetResourceManager(&cfg)
+	if err != nil {
+		return nil, err
+	}
+
+	err = resourceManager.List(request)
+
+	return &resourcemanager.ListResponse{}, nil
 }

@@ -8,7 +8,6 @@ import (
 	"os"
 
 	"github.com/kuzxnia/loadbot/lbot/k8s"
-	"github.com/kuzxnia/loadbot/lbot/proto"
 	"helm.sh/helm/v3/pkg/action"
 	"helm.sh/helm/v3/pkg/chart"
 	"helm.sh/helm/v3/pkg/chart/loader"
@@ -49,7 +48,7 @@ func NewHelmManager(cfg *ResourceManagerConfig) (*HelmManager, error) {
 	}, nil
 }
 
-func (c *HelmManager) Install(request *proto.InstallRequest) (err error) {
+func (c *HelmManager) Install(request *InstallRequest) (err error) {
 	// 1. write values to file
 
 	// 2. helm action config
@@ -67,10 +66,11 @@ func (c *HelmManager) Install(request *proto.InstallRequest) (err error) {
 	installer.Namespace = request.Namespace
 	installer.ReleaseName = "dummy-release-name"
 	installer.Timeout = c.cfg.HelmTimeout
+	installer.Labels["role"] = "workload"
 
 	// 4. get cli values
 	options := values.Options{
-		Values: []string{"workload.name=dummy-workload-name"},
+		Values: []string{"workload.name=" + request.Name},
 	}
 
 	vals, err := options.MergeValues(HelmProviders)
@@ -87,10 +87,65 @@ func (c *HelmManager) Install(request *proto.InstallRequest) (err error) {
 	return
 }
 
-func (c *HelmManager) UnInstall(request *proto.UnInstallRequest) (err error) {
+func (c *HelmManager) UnInstall(request *UnInstallRequest) (err error) {
+	cfg := new(action.Configuration)
+	cfg.Init(
+		c.clusterClient.RESTClientGetter,
+		c.cfg.Namespace,
+		os.Getenv("HELM_DRIVER"),
+		log.Printf,
+	)
+	uninstaller := action.NewUninstall(cfg)
+
+	uninstaller.Run(request.Name)
 	return
+	// todo: add are you shure you want to uninstall sth?
 }
 
-func (c *HelmManager) Upgrade() (err error) {
+func (c *HelmManager) Upgrade(request *UpgradeRequest) (err error) {
+	cfg := new(action.Configuration)
+	cfg.Init(
+		c.clusterClient.RESTClientGetter,
+		c.cfg.Namespace,
+		os.Getenv("HELM_DRIVER"),
+		log.Printf,
+	)
+	upgrader := action.NewUpgrade(cfg)
+	upgrader.Namespace = request.Namespace
+	upgrader.Timeout = c.cfg.HelmTimeout
+	upgrader.Labels["role"] = "workload"
+
+	options := values.Options{
+		Values: []string{"workload.name=" + request.Name},
+	}
+
+	vals, err := options.MergeValues(HelmProviders)
+	if err != nil {
+		return err
+	}
+
+	if _, err = upgrader.Run(request.Name, c.chart, vals); err != nil {
+		return fmt.Errorf("failed to install helm chart: %w", err)
+	}
+  return
+}
+
+func (c *HelmManager) List(*ListRequest) (err error) {
+	cfg := new(action.Configuration)
+	cfg.Init(
+		c.clusterClient.RESTClientGetter,
+		c.cfg.Namespace,
+		os.Getenv("HELM_DRIVER"),
+		log.Printf,
+	)
+
+	list := action.NewList(cfg)
+	list.Selector = "role=workload"
+
+	releases, err := list.Run()
+	for _, release := range releases {
+		fmt.Println(release.Name, release.Namespace, release.Info.Description)
+	}
+
 	return
 }
