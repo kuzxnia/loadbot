@@ -24,6 +24,7 @@ func New(version string, commit string, date string) *cobra.Command {
 	cmd.AddGroup(&AgentGroup)
 	cmd.AddCommand(provideWorkloadCommands()...)
 	cmd.AddGroup(&WorkloadGroup)
+	cmd.AddCommand(provideOrchiestrationCommands()...)
 	cmd.Root().CompletionOptions.HiddenDefaultCmd = true
 
 	return &cmd
@@ -287,8 +288,34 @@ func provideOrchiestrationCommands() []*cobra.Command {
 		Use:     CommandInstall + " <config-file>",
 		Aliases: []string{"i"},
 		Short:   "Install workload driver with helm charts on k8s or only with docker locally",
-		Args:    cobra.ExactArgs(installationArgsNum),
-		RunE:    installationHandler,
+		// handle args - this is name of workload
+		Args: cobra.ExactArgs(installationArgsNum),
+		RunE: func(cmd *cobra.Command, args []string) (err error) {
+			flags := cmd.Flags()
+
+			srcKubeconfigPath, _ := flags.GetString(FlagSourceKubeconfig)
+			srcContext, _ := flags.GetString(FlagSourceContext)
+			srcNS, _ := flags.GetString(FlagSourceNamespace)
+
+			helmTimeout, _ := flags.GetDuration(FlagHelmTimeout)
+			helmValues, _ := flags.GetStringSlice(FlagHelmValues)
+			helmSet, _ := flags.GetStringSlice(FlagHelmSet)
+			helmSetString, _ := flags.GetStringSlice(FlagHelmSetString)
+			helmSetFile, _ := flags.GetStringSlice(FlagHelmSetFile)
+
+			request := proto.InstallRequest{
+				KubeconfigPath:   srcKubeconfigPath,
+				Context:          srcContext,
+				Namespace:        srcNS,
+				HelmTimeout:      helmTimeout.String(),
+				HelmValuesFiles:  helmValues,
+				HelmValues:       helmSet,
+				HelmStringValues: helmSetString,
+				HelmFileValues:   helmSetFile,
+			}
+
+			return InstallResources(Conn, &request)
+		},
 	}
 
 	flags := installationCommand.Flags()
@@ -305,10 +332,25 @@ func provideOrchiestrationCommands() []*cobra.Command {
 
 	unInstallationCommand := cobra.Command{
 		// todo: where to keep configuration? there will be couple workloads at the same time
-		Use:     CommandUnInstall,
-		Aliases: []string{"i"},
-		Short:   "Uninstall workload driver",
-		RunE:    unInstallationHandler,
+		Use:   CommandUnInstall,
+		Short: "Uninstall workload driver",
+		RunE: func(cmd *cobra.Command, args []string) (err error) {
+			flags := cmd.Flags()
+
+			srcKubeconfigPath, _ := flags.GetString(FlagSourceKubeconfig)
+			srcContext, _ := flags.GetString(FlagSourceContext)
+			srcNS, _ := flags.GetString(FlagSourceNamespace)
+			helmTimeout, _ := flags.GetDuration(FlagHelmTimeout)
+
+			request := proto.UnInstallRequest{
+				KubeconfigPath: srcKubeconfigPath,
+				Context:        srcContext,
+				Namespace:      srcNS,
+				HelmTimeout:    helmTimeout.String(),
+			}
+
+			return UnInstallResources(Conn, &request)
+		},
 	}
 
 	return []*cobra.Command{&installationCommand, &unInstallationCommand}
