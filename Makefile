@@ -2,7 +2,7 @@
 
 build-chart:
 	helm package ./helm/workload
-	mv workload-*.tgz ./orchiestrator/resourcemanager/workload-chart.tgz
+	mv workload-*.tgz ./lbot/resourcemanager/workload-chart.tgz
 
 
 build-dev:

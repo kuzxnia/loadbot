@@ -21,22 +21,18 @@ type ResourceManagerConfig struct {
 
 type InstallRequest struct {
 	ResourceManagerConfig
-	Name             string
-	HelmValuesFiles  []string
-	HelmValues       []string
-	HelmFileValues   []string
-	HelmStringValues []string
+	Name                 string
+	HelmValues           []string
+	WorkloadConfigString string
 }
 
 type InstallResponse struct{}
 
 type UpgradeRequest struct {
 	ResourceManagerConfig
-	Name             string
-	HelmValuesFiles  []string
-	HelmValues       []string
-	HelmFileValues   []string
-	HelmStringValues []string
+	Name       string
+	HelmValues []string
+	WorkloadConfigString string
 }
 
 type UpgradeResponse struct{}

@@ -17,9 +17,6 @@ import (
 //go:embed workload-chart.tgz
 var chartBytes []byte
 
-// defult are from above,  - MVP
-// but it should be able to process helm charts from internet also
-
 type HelmManager struct {
 	cfg           *ResourceManagerConfig
 	chart         *chart.Chart
@@ -49,10 +46,6 @@ func NewHelmManager(cfg *ResourceManagerConfig) (*HelmManager, error) {
 }
 
 func (c *HelmManager) Install(request *InstallRequest) (err error) {
-	// 1. write values to file
-
-	// 2. helm action config
-	// namespace, release, timout, kube config, context
 	installConfig := new(action.Configuration)
 	installConfig.Init(
 		c.clusterClient.RESTClientGetter,
@@ -61,25 +54,22 @@ func (c *HelmManager) Install(request *InstallRequest) (err error) {
 		log.Printf,
 	)
 
-	// 3. installer
 	installer := action.NewInstall(installConfig)
 	installer.Namespace = request.Namespace
-	installer.ReleaseName = "dummy-release-name"
+	installer.ReleaseName = request.Name
 	installer.Timeout = c.cfg.HelmTimeout
-	installer.Labels["role"] = "workload"
+	installer.Labels = map[string]string{"role": "workload"}
 
-	// 4. get cli values
 	options := values.Options{
-		Values: []string{"workload.name=" + request.Name},
+		Values:        append([]string{"workload.name=" + request.Name}, request.HelmValues...),
+		LiteralValues: []string{"workload.config=" + request.WorkloadConfigString},
 	}
 
 	vals, err := options.MergeValues(HelmProviders)
 	if err != nil {
 		return err
 	}
-	// 5. merge them with helm value file
 
-	// 5. install
 	if _, err = installer.Run(c.chart, vals); err != nil {
 		return fmt.Errorf("failed to install helm chart: %w", err)
 	}
@@ -99,7 +89,7 @@ func (c *HelmManager) UnInstall(request *UnInstallRequest) (err error) {
 
 	uninstaller.Run(request.Name)
 	return
-	// todo: add are you shure you want to uninstall sth?
+	// todo: add are you sure you want to uninstall sth?
 }
 
 func (c *HelmManager) Upgrade(request *UpgradeRequest) (err error) {
@@ -113,10 +103,11 @@ func (c *HelmManager) Upgrade(request *UpgradeRequest) (err error) {
 	upgrader := action.NewUpgrade(cfg)
 	upgrader.Namespace = request.Namespace
 	upgrader.Timeout = c.cfg.HelmTimeout
-	upgrader.Labels["role"] = "workload"
+	upgrader.Labels = map[string]string{"role": "workload"}
 
 	options := values.Options{
-		Values: []string{"workload.name=" + request.Name},
+		Values:        append([]string{"workload.name=" + request.Name}, request.HelmValues...),
+		LiteralValues: []string{"workload.config=" + request.WorkloadConfigString},
 	}
 
 	vals, err := options.MergeValues(HelmProviders)
@@ -127,7 +118,7 @@ func (c *HelmManager) Upgrade(request *UpgradeRequest) (err error) {
 	if _, err = upgrader.Run(request.Name, c.chart, vals); err != nil {
 		return fmt.Errorf("failed to install helm chart: %w", err)
 	}
-  return
+	return
 }
 
 func (c *HelmManager) List(*ListRequest) (err error) {

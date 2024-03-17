@@ -1,7 +1,6 @@
 package cli
 
 import (
-	"errors"
 	"fmt"
 	"time"
 
@@ -174,26 +173,12 @@ func provideWorkloadCommands() []*cobra.Command {
 			configFile, _ := flags.GetString(ConfigFile)
 			stdin, _ := flags.GetBool(StdIn)
 
-			if configFile == "" && !stdin {
-				return errors.New("You need to provide configuration from either " + ConfigFile + " or " + StdIn)
+			config, err := ParseConfigFile(configFile, stdin)
+			if err != nil {
+				return err
 			}
 
-			var parsedConfig *lbot.ConfigRequest
-			if stdin {
-				parsedConfig, err = lbot.ParseStdInConfig()
-				if err != nil {
-					return err
-				}
-			}
-
-			if configFile != "" {
-				parsedConfig, err = lbot.ParseConfigFile(configFile)
-				if err != nil {
-					return err
-				}
-			}
-
-			return workload.SetConfigWorkload(Conn, parsedConfig)
+			return workload.SetConfigWorkload(Conn, config)
 		},
 	}
 	configCommandFlags := configCommand.Flags()
@@ -277,9 +262,11 @@ const (
 	FlagSourceContext    = "k8s-context"
 	FlagSourceNamespace  = "k8s-namespace"
 
-	FlagHelmTimeout   = "helm-timeout"
+	FlagWorkloadConfig = "workload-config"
+	FlagHelmSet        = "helm-set"
+	FlagHelmTimeout    = "helm-timeout"
+
 	FlagHelmValues    = "helm-values"
-	FlagHelmSet       = "helm-set"
 	FlagHelmSetString = "helm-set-string"
 	FlagHelmSetFile   = "helm-set-file"
 )
@@ -289,7 +276,7 @@ func provideOrchiestrationCommands() []*cobra.Command {
 		Use:     CommandInstall + " <name>",
 		Aliases: []string{"i"},
 		Short:   "Install workload driver with helm charts on k8s or only with docker locally",
-		Args: cobra.ExactArgs(1),
+		Args:    cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
 			flags := cmd.Flags()
 
@@ -298,10 +285,17 @@ func provideOrchiestrationCommands() []*cobra.Command {
 			srcNS, _ := flags.GetString(FlagSourceNamespace)
 
 			helmTimeout, _ := flags.GetDuration(FlagHelmTimeout)
-			helmValues, _ := flags.GetStringSlice(FlagHelmValues)
 			helmSet, _ := flags.GetStringSlice(FlagHelmSet)
-			helmSetString, _ := flags.GetStringSlice(FlagHelmSetString)
-			helmSetFile, _ := flags.GetStringSlice(FlagHelmSetFile)
+			workloadConfigPath, _ := flags.GetString(FlagWorkloadConfig)
+
+			cfg, err := ParseConfigFile(workloadConfigPath, false)
+			if err != nil {
+				return err
+			}
+			configValues, err := cfg.Values()
+			if err != nil {
+				return err
+			}
 
 			rsm := resourcemanager.ResourceManagerConfig{
 				KubeconfigPath: srcKubeconfigPath,
@@ -312,11 +306,9 @@ func provideOrchiestrationCommands() []*cobra.Command {
 
 			request := resourcemanager.InstallRequest{
 				ResourceManagerConfig: rsm,
-        Name: args[0],
-				HelmValuesFiles:       helmValues,
+				Name:                  args[0],
 				HelmValues:            helmSet,
-				HelmStringValues:      helmSetString,
-				HelmFileValues:        helmSetFile,
+				WorkloadConfigString:  configValues,
 			}
 
 			return InstallResources(&request)
@@ -330,16 +322,13 @@ func provideOrchiestrationCommands() []*cobra.Command {
 	flags.StringP(FlagSourceNamespace, "n", "", "namespace of the source PVC")
 
 	flags.DurationP(FlagHelmTimeout, "t", 1*time.Minute, "install/uninstall timeout for helm releases")
-	flags.StringSliceP(FlagHelmValues, "f", nil, "set additional Helm values by a YAML file or a URL (can specify multiple)")
 	flags.StringSlice(FlagHelmSet, nil, "set additional Helm values on the command line (can specify multiple or separate values with commas: key1=val1,key2=val2)")
-	flags.StringSlice(FlagHelmSetString, nil, "set additional Helm STRING values on the command line (can specify multiple or separate values with commas: key1=val1,key2=val2)")
-	flags.StringSlice(FlagHelmSetFile, nil, "set additional Helm values from respective files specified via the command line (can specify multiple or separate values with commas: key1=path1,key2=path2)")
+	flags.StringP(FlagWorkloadConfig, "f", "", "set additional Helm values by a YAML file or a URL (can specify multiple)")
 
 	upgradeCommand := cobra.Command{
 		Use:   CommandUpgrade + " <name>",
 		Short: "Upgrade workload driver with helm charts on k8s or only with docker locally",
-		// handle args - this is name of workload
-		Args: cobra.ExactArgs(1),
+		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
 			flags := cmd.Flags()
 
@@ -348,10 +337,8 @@ func provideOrchiestrationCommands() []*cobra.Command {
 			srcNS, _ := flags.GetString(FlagSourceNamespace)
 
 			helmTimeout, _ := flags.GetDuration(FlagHelmTimeout)
-			helmValues, _ := flags.GetStringSlice(FlagHelmValues)
 			helmSet, _ := flags.GetStringSlice(FlagHelmSet)
-			helmSetString, _ := flags.GetStringSlice(FlagHelmSetString)
-			helmSetFile, _ := flags.GetStringSlice(FlagHelmSetFile)
+			workloadConfigPath, _ := flags.GetString(FlagWorkloadConfig)
 
 			rsm := resourcemanager.ResourceManagerConfig{
 				KubeconfigPath: srcKubeconfigPath,
@@ -362,11 +349,9 @@ func provideOrchiestrationCommands() []*cobra.Command {
 
 			request := resourcemanager.UpgradeRequest{
 				ResourceManagerConfig: rsm,
-        Name: args[0],
-				HelmValuesFiles:       helmValues,
+				Name:                  args[0],
 				HelmValues:            helmSet,
-				HelmStringValues:      helmSetString,
-				HelmFileValues:        helmSetFile,
+				WorkloadConfigString:  workloadConfigPath,
 			}
 
 			return UpgradeResources(&request)
@@ -379,16 +364,14 @@ func provideOrchiestrationCommands() []*cobra.Command {
 	uflags.StringP(FlagSourceContext, "c", "", "context in the kubeconfig file of the source PVC")
 	uflags.StringP(FlagSourceNamespace, "n", "", "namespace of the source PVC")
 	uflags.DurationP(FlagHelmTimeout, "t", 1*time.Minute, "install/uninstall timeout for helm releases")
-	uflags.StringSliceP(FlagHelmValues, "f", nil, "set additional Helm values by a YAML file or a URL (can specify multiple)")
 	uflags.StringSlice(FlagHelmSet, nil, "set additional Helm values on the command line (can specify multiple or separate values with commas: key1=val1,key2=val2)")
-	uflags.StringSlice(FlagHelmSetString, nil, "set additional Helm STRING values on the command line (can specify multiple or separate values with commas: key1=val1,key2=val2)")
-	uflags.StringSlice(FlagHelmSetFile, nil, "set additional Helm values from respective files specified via the command line (can specify multiple or separate values with commas: key1=path1,key2=path2)")
+	uflags.StringP(FlagWorkloadConfig, "f", "", "set additional Helm values by a YAML file or a URL (can specify multiple)")
 
 	unInstallationCommand := cobra.Command{
 		// todo: where to keep configuration? there will be couple workloads at the same time
 		Use:   CommandUnInstall,
 		Short: "Uninstall workload driver",
-		Args: cobra.ExactArgs(1),
+		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
 			flags := cmd.Flags()
 
@@ -406,7 +389,7 @@ func provideOrchiestrationCommands() []*cobra.Command {
 
 			request := resourcemanager.UnInstallRequest{
 				ResourceManagerConfig: rsm,
-        Name: args[0],
+				Name:                  args[0],
 			}
 
 			return UnInstallResources(&request)
@@ -452,7 +435,24 @@ func provideOrchiestrationCommands() []*cobra.Command {
 	lflags.StringP(FlagSourceNamespace, "n", "", "namespace of the source PVC")
 	lflags.DurationP(FlagHelmTimeout, "t", 1*time.Minute, "install/uninstall timeout for helm releases")
 
-	return []*cobra.Command{&installationCommand, &unInstallationCommand}
+	return []*cobra.Command{&installationCommand, &unInstallationCommand, &upgradeCommand, &listCommand}
+}
+
+func ParseConfigFile(path string, fromStdIn bool) (config *lbot.ConfigRequest, err error) {
+	if fromStdIn {
+		config, err = lbot.ParseStdInConfig()
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	if path != "" {
+		config, err = lbot.ParseConfigFile(path)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return config, nil
 }
 
 // todo: generate complection

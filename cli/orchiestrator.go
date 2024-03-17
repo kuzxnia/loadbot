@@ -58,8 +58,6 @@ func UnInstallResources(request *resourcemanager.UnInstallRequest) (err error) {
 }
 
 func ListResources(request *resourcemanager.ListRequest) (err error) {
-	fmt.Println("🚀 UnInstalation started")
-
 	orchiestrator := lbot.NewOrchiestrator(context.TODO())
 
 	_, err = orchiestrator.List(context.TODO(), request)
@@ -67,8 +65,6 @@ func ListResources(request *resourcemanager.ListRequest) (err error) {
 		log.Fatal("arith error:", err)
 		return
 	}
-
-	fmt.Println("✅ UnInstallation finished sucessfully")
 
 	return nil
 }

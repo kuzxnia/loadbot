@@ -19,12 +19,11 @@ spec:
         - name: agent
           image: {{ .Values.workload.agent.image }}
           command: ["/usr/local/bin/loadbot"]
-          {{- if .Values.workload.config -}}
+          {{- if ne .Values.workload.config ""}}
           args: ["start-agent", "-f", "/workload-config.json"]
           {{- else}}
           args: ["start-agent"]
           {{- end}}
-          {{/* args: ["start-agent", "-f", "/workload-config.json", "--watch-config"] */}}
           ports: 
             - containerPort: {{ .Values.workload.agent.port }}
           # todo: move to values, helper
@@ -35,16 +34,19 @@ spec:
             requests:
               cpu: 4000m
               memory: 2Gi
-          {{- if .Values.workload.config -}}
+          {{- if ne .Values.workload.config ""}}
           volumeMounts:
             - name: config
-              subPath: workload-config.json
               mountPath: /workload-config.json
+              subPath: workload-config.json
           {{- end}}
-      {{- if .Values.workload.config -}}
+      {{- if ne .Values.workload.config ""}}
       volumes:
         - name: config
           secret:
             secretName: workload-{{ .Values.workload.name }}-secret
-            defaultMode: 0400
+            defaultMode: 420
+            items:
+              - key: workload-config.json
+                path: workload-config.json
       {{- end}}
