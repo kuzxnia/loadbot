@@ -28,7 +28,7 @@ type Worker struct {
 	done        bool
 }
 
-func NewWorker(ctx context.Context, cfg *config.Config, job *config.Job, dataPool schema.DataPool) (*Worker, error) {
+func NewWorker(ctx context.Context, cfg *config.Config, job *config.Job, dataPool schema.DataPool, runningAgents uint64) (*Worker, error) {
 	// todo: check errors
 	worker := new(Worker)
 	worker.ctx = ctx
@@ -36,13 +36,13 @@ func NewWorker(ctx context.Context, cfg *config.Config, job *config.Job, dataPoo
 	worker.job = job
 	worker.wg.Add(int(job.Connections))
 	worker.pool = NewJobPool(job)
-	worker.rateLimiter = NewLimiter(job)
+	worker.rateLimiter = NewLimiter(job.Pace / runningAgents)
 	worker.Metrics = NewMetrics(job)
 	worker.done = false
-
+	jobSchema := cfg.GetSchema(job.Schema)
 	// introduce no db worker
 	if job.Type != string(config.Sleep) {
-		db, err := database.NewMongoClient(cfg.ConnectionString, job, job.GetSchema())
+		db, err := database.NewMongoClient(cfg.ConnectionString, job, jobSchema)
 		if err != nil {
 			return nil, err
 		}
@@ -50,19 +50,21 @@ func NewWorker(ctx context.Context, cfg *config.Config, job *config.Job, dataPoo
 	}
 
 	worker.dataPool = dataPool
-	worker.handler = NewJobHandler(job, worker.db, dataPool)
+	worker.handler = NewJobHandler(job, worker.db, dataPool, jobSchema)
 	return worker, nil
 }
 
-func (w *Worker) Work() {
+func (w *Worker) Work(agents chan uint64) {
 	fmt.Printf("Starting job: %s\n", lo.If(w.job.Name != "", w.job.Name).Else(w.job.Type))
 	// something wrong with context propagation change this
-	// go func() {
-	// 	select {
-	// 	case <-w.ctx.Done():
-	// 		w.Cancel()
-	// 	}
-	// }()
+	go func() {
+		for {
+			runningAgents := <-agents
+			rate := w.job.Pace / runningAgents
+			fmt.Println("new rps rate: ", rate)
+			w.rateLimiter.SetRate(rate)
+		}
+	}()
 
 	for i := 0; i < int(w.job.Connections); i++ {
 		go func() {
@@ -79,8 +81,6 @@ func (w *Worker) Work() {
 	}
 	w.wg.Wait()
 	w.done = true
-  // todo: set end date
-	// w.Report.SetDuration(time.Since(w.startTime))
 }
 
 func (w *Worker) InitMetrics() {

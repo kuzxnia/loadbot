@@ -1,16 +1,5 @@
 package resourcemanager
 
-import (
-	"context"
-	"io"
-	"log"
-	"os"
-
-	"github.com/docker/docker/api/types"
-	"github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/client"
-)
-
 type DockerImage struct {
 	// podstawowo obraz
 	Name string
@@ -23,9 +12,9 @@ type DockerContainer struct {
 
 type DockerService struct{}
 
-func (d *DockerService) Install() error   { return nil }
-func (d *DockerService) UnInstall() error { return nil }
-func (d *DockerService) Suspend() error   { return nil }
+func (d *DockerService) Install(*InstallRequest) error     { return nil }
+func (d *DockerService) UnInstall(*UnInstallRequest) error { return nil }
+func (d *DockerService) Suspend() error                    { return nil }
 
 // add optional argument with chart version
 func NewDockerService() (*DockerService, error) {
@@ -41,70 +30,70 @@ func NewDockerService() (*DockerService, error) {
 	return &DockerService{}, nil
 }
 
-func (c *DockerService) createContainer(image DockerImage) (err error) {
-	ctx := context.Background()
-	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
-	if err != nil {
-		return err
-	}
-	defer cli.Close()
+// func (c *DockerService) createContainer(image DockerImage) (err error) {
+// 	ctx := context.Background()
+// 	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
+// 	if err != nil {
+// 		return err
+// 	}
+// 	defer cli.Close()
 
-	out, err := cli.ImagePull(ctx, image.Name, types.ImagePullOptions{})
-	if err != nil {
-		return err
-	}
-	defer out.Close()
-	io.Copy(os.Stdout, out)
+// 	out, err := cli.ImagePull(ctx, image.Name, types.ImagePullOptions{})
+// 	if err != nil {
+// 		return err
+// 	}
+// 	defer out.Close()
+// 	io.Copy(os.Stdout, out)
 
-	resp, err := cli.ContainerCreate(ctx, &container.Config{
-		Image: image.Name,
-	}, nil, nil, nil, "")
-	if err != nil {
-		return err
-	}
+// 	resp, err := cli.ContainerCreate(ctx, &container.Config{
+// 		Image: image.Name,
+// 	}, nil, nil, nil, "")
+// 	if err != nil {
+// 		return err
+// 	}
 
-	if err := cli.ContainerStart(ctx, resp.ID, types.ContainerStartOptions{}); err != nil {
-		return err
-	}
-	return
-}
+// 	if err := cli.ContainerStart(ctx, resp.ID, types.ContainerStartOptions{}); err != nil {
+// 		return err
+// 	}
+// 	return
+// }
 
-func (c *DockerService) stopContainer(cont DockerContainer) (err error) {
-	ctx := context.Background()
+// func (c *DockerService) stopContainer(cont DockerContainer) (err error) {
+// 	ctx := context.Background()
 
-	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
-	if err != nil {
-		return err
-	}
-	defer cli.Close()
+// 	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
+// 	if err != nil {
+// 		return err
+// 	}
+// 	defer cli.Close()
 
-	if err := cli.ContainerStop(ctx, cont.Name, container.StopOptions{}); err != nil {
-		log.Printf("Unable to stop container %s: %s", cont.Name, err)
-	}
+// 	if err := cli.ContainerStop(ctx, cont.Name, container.StopOptions{}); err != nil {
+// 		log.Printf("Unable to stop container %s: %s", cont.Name, err)
+// 	}
 
-	return nil
-}
+// 	return nil
+// }
 
-func (c *DockerService) removeContainer(cont DockerContainer) (err error) {
-	ctx := context.Background()
-	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
-	if err != nil {
-		return err
-	}
-	defer cli.Close()
+// func (c *DockerService) removeContainer(cont DockerContainer) (err error) {
+// 	ctx := context.Background()
+// 	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
+// 	if err != nil {
+// 		return err
+// 	}
+// 	defer cli.Close()
 
-	removeOptions := types.ContainerRemoveOptions{
-		RemoveVolumes: true,
-		Force:         true,
-	}
+// 	removeOptions := types.ContainerRemoveOptions{
+// 		RemoveVolumes: true,
+// 		Force:         true,
+// 	}
 
-	if err := cli.ContainerRemove(ctx, cont.Name, removeOptions); err != nil {
-		log.Printf("Unable to remove container: %s", err)
-		return err
-	}
+// 	if err := cli.ContainerRemove(ctx, cont.Name, removeOptions); err != nil {
+// 		log.Printf("Unable to remove container: %s", err)
+// 		return err
+// 	}
 
-	return
-}
+// 	return
+// }
 
 // func runContainer(client *client.Client, imagename string, containername string, port string, inputEnv []string) error {
 // 	// Define a PORT opening

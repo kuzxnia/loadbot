@@ -11,9 +11,9 @@ type DataProvider interface {
 	GetFilter() interface{}
 }
 
-func NewDataProvider(job *config.Job) DataProvider {
+func NewDataProvider(job *config.Job, schema *config.Schema) DataProvider {
 	return DataProvider(
-		NewLiveDataProvider(job),
+		NewLiveDataProvider(job, schema),
 	)
 }
 
@@ -27,10 +27,10 @@ type LiveDataProvider struct {
 
 // todo: generate on file and take from pool
 // type PoolDataProvider struct { }
-func NewLiveDataProvider(job *config.Job) *LiveDataProvider {
+func NewLiveDataProvider(job *config.Job, schema *config.Schema) *LiveDataProvider {
 	return &LiveDataProvider{
 		job:           job,
-		dataGenerator: NewDataGenerator(job.GetSchema(), job.DataSize),
+		dataGenerator: NewDataGenerator(schema, job.DataSize),
 	}
 }
 

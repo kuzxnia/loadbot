@@ -23,13 +23,9 @@ func NewStartProcess(ctx context.Context, lbot *Lbot) *StartProcess {
 }
 
 func (c *StartProcess) Run(ctx context.Context, request *proto.StartRequest) (*proto.StartResponse, error) {
-	// if watch arg - run watch
+	err := c.lbot.Run()
 
-	// validate is configured
-	go c.lbot.Run()
-
-	// before starting process it will varify health of cluster, if pods
-	return &proto.StartResponse{}, nil
+	return &proto.StartResponse{}, err
 }
 
 func (c *StartProcess) RunWithProgress(request *proto.StartWithProgressRequest, srv proto.StartProcess_RunWithProgressServer) error {
@@ -59,7 +55,7 @@ func (c *StartProcess) RunWithProgress(request *proto.StartWithProgressRequest, 
 			default:
 			}
 			if notDoneWorkers == nil || len(notDoneWorkers) == 0 {
-				notDoneWorkers = lo.Filter(c.lbot.workers, func(worker *worker.Worker, index int) bool {
+				notDoneWorkers = lo.Filter(lo.Values(c.lbot.workers), func(worker *worker.Worker, index int) bool {
 					return !worker.IsDone()
 				})
 			}
@@ -81,7 +77,7 @@ func (c *StartProcess) RunWithProgress(request *proto.StartWithProgressRequest, 
 					return
 				}
 				if isWorkerFinished {
-					notDoneWorkers = lo.Filter(c.lbot.workers, func(worker *worker.Worker, index int) bool {
+					notDoneWorkers = lo.Filter(lo.Values(c.lbot.workers), func(worker *worker.Worker, index int) bool {
 						return !worker.IsDone()
 					})
 				}

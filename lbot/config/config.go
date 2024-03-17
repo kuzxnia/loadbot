@@ -12,6 +12,15 @@ type Config struct {
 	Debug            bool      `json:"debug"`
 }
 
+func (c *Config) GetSchema(name string) *Schema {
+	for _, schema := range c.Schemas {
+		if schema.Name == name {
+			return schema
+		}
+	}
+	return nil
+}
+
 type Agent struct {
 	Name                         string `json:"name"`
 	Port                         string `json:"port"`
@@ -21,7 +30,6 @@ type Agent struct {
 }
 
 type Job struct {
-	Parent      *Config
 	Name        string
 	Database    string
 	Collection  string
@@ -43,13 +51,4 @@ type Schema struct {
 	Collection string                 `json:"collection"`
 	Schema     map[string]interface{} `json:"schema"` // todo: introducte new type and parse
 	Save       []string               `json:"save"`
-}
-
-func (j *Job) GetSchema() *Schema {
-	for _, schema := range j.Parent.Schemas {
-		if schema.Name == j.Schema {
-			return schema
-		}
-	}
-	return nil
 }

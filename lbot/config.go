@@ -30,8 +30,8 @@ func NewConfig(request *ConfigRequest) *config.Config {
 	}
 	for i, job := range request.Jobs {
 		cfg.Jobs[i] = &config.Job{
-			Name:        job.Name,
-			Parent:      cfg,
+			Name: job.Name,
+			// Parent:      cfg,
 			Database:    job.Database,
 			Collection:  job.Collection,
 			Type:        job.Type,
@@ -77,8 +77,8 @@ func NewConfigFromProtoConfigRequest(request *proto.ConfigRequest) *config.Confi
 		duration, _ := time.ParseDuration(job.Duration)
 		timeout, _ := time.ParseDuration(job.Timeout)
 		cfg.Jobs[i] = &config.Job{
-			Name:        job.Name,
-			Parent:      cfg,
+			Name: job.Name,
+			// Parent:      cfg,
 			Database:    job.Database,
 			Collection:  job.Collection,
 			Type:        job.Type,
@@ -114,6 +114,10 @@ type ConfigRequest struct {
 	Debug            bool             `json:"debug"`
 }
 
+// todo: change or even remove,
+// yes, remove - there will be multiple agents, and agent will be configred from commandline
+// todo: move agentn-name nad add new config flage - custom metrics label or similar
+// purpose is to export metrics with cluster name
 type AgentRequest struct {
 	Name                         string `json:"name"`
 	Port                         string `json:"port"`
@@ -123,19 +127,19 @@ type AgentRequest struct {
 }
 
 type JobRequest struct {
-	Name        string
-	Database    string
-	Collection  string
-	Type        string
-	Schema      string
-	Connections uint64 // Maximum number of concurrent connections
-	Pace        uint64 // rps limit / peace - if not set max
-	DataSize    uint64 // data size in bytes
-	BatchSize   uint64
-	Duration    time.Duration
-	Operations  uint64
-	Timeout     time.Duration // if not set, default
-	Filter      map[string]interface{}
+	Name        string                 `json:"name"`
+	Database    string                 `json:"database"`
+	Collection  string                 `json:"collection"`
+	Type        string                 `json:"type"`
+	Schema      string                 `json:"schema"`
+	Connections uint64                 `json:"connections"`
+	Pace        uint64                 `json:"pace"`
+	DataSize    uint64                 `json:"data_size"`
+	BatchSize   uint64                 `json:"batch_size"`
+	Duration    time.Duration          `json:"duration"`
+	Operations  uint64                 `json:"operations"`
+	Timeout     time.Duration          `json:"timeout"`
+	Filter      map[string]interface{} `json:"filter"`
 }
 
 type SchemaRequest struct {
@@ -234,9 +238,9 @@ func (c *JobRequest) UnmarshalJSON(data []byte) (err error) {
 		Pace        uint64                 `json:"pace"`
 		DataSize    uint64                 `json:"data_size"`
 		BatchSize   uint64                 `json:"batch_size"`
-		Duration    string                 `json:"duration"`
+		Duration    config.Duration               `json:"duration"`
 		Operations  uint64                 `json:"operations"`
-		Timeout     string                 `json:"timeout"` // if not set, default
+		Timeout     config.Duration               `json:"timeout"` // if not set, default
 		Filter      map[string]interface{} `json:"filter"`
 	}
 	// default values
@@ -255,23 +259,20 @@ func (c *JobRequest) UnmarshalJSON(data []byte) (err error) {
 	c.Pace = tmp.Pace
 	c.DataSize = tmp.DataSize
 	c.BatchSize = tmp.BatchSize
-
-	if tmp.Duration != "" {
-		if c.Duration, err = time.ParseDuration(tmp.Duration); err != nil {
-			return err
-		}
-	}
-
+  c.Duration = tmp.Duration.Duration
 	c.Operations = tmp.Operations
-
-	if tmp.Timeout != "" {
-		if c.Timeout, err = time.ParseDuration(tmp.Timeout); err != nil {
-			return err
-		}
-	}
+  c.Timeout = tmp.Timeout.Duration
 	c.Filter = tmp.Filter
 
 	return
+}
+
+func (c *ConfigRequest) Values() (string, error) {
+	result, err := json.Marshal(c)
+	if err != nil {
+		return "", nil
+	}
+	return string(result), nil
 }
 
 func (c *ConfigRequest) Validate() error {

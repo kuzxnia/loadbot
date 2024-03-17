@@ -64,6 +64,8 @@ type DataGenerator interface {
 }
 
 func NewDataGenerator(schema *config.Schema, dataSize uint64) DataGenerator {
+  // todo: check size of object using, unsafe.Sizeof( )
+
 	if schema != nil {
 		return DataGenerator(
 			&StructuralizableDataGenerator{

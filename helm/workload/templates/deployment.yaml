@@ -1,0 +1,52 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: workload-{{ .Values.workload.name }}
+  namespace: {{ .Values.workload.namespace }}
+spec:
+  replicas: {{ .Values.workload.replicas }}
+  selector:
+    matchLabels:
+      role: workload
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        role: workload 
+    spec:
+      containers:
+        - name: agent
+          image: {{ .Values.workload.agent.image }}
+          command: ["/usr/local/bin/loadbot"]
+          {{- if ne .Values.workload.config ""}}
+          args: ["start-agent", "-f", "/workload-config.json"]
+          {{- else}}
+          args: ["start-agent"]
+          {{- end}}
+          ports: 
+            - containerPort: {{ .Values.workload.agent.port }}
+          # todo: move to values, helper
+          resources:
+            limits:
+              memory: 4Gi
+              cpu: 8000m
+            requests:
+              cpu: 4000m
+              memory: 2Gi
+          {{- if ne .Values.workload.config ""}}
+          volumeMounts:
+            - name: config
+              mountPath: /workload-config.json
+              subPath: workload-config.json
+          {{- end}}
+      {{- if ne .Values.workload.config ""}}
+      volumes:
+        - name: config
+          secret:
+            secretName: workload-{{ .Values.workload.name }}-secret
+            defaultMode: 420
+            items:
+              - key: workload-config.json
+                path: workload-config.json
+      {{- end}}

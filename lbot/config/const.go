@@ -1,5 +1,7 @@
 package config
 
+import "time"
+
 type JobType string
 
 const (
@@ -14,4 +16,19 @@ const (
 	Update         JobType = "update"
 	Sleep          JobType = "sleep"
 	DropCollection JobType = "drop_collection"
+)
+
+const (
+	AgentsHeartbeatInterval   = time.Second * 2
+	AgentsHeartbeatExpiration = -time.Second * 4
+)
+
+const (
+	DB                    = "admin"
+	CommandCollection     = "lbotCmd"
+	WorkloadCollection    = "lbotWorkload"
+	ConfigCollection      = "lbotConfig"
+	AgentStatusCollection = "lbotAgent"
+
+	// new commands
 )
