@@ -168,6 +168,8 @@ func provideWorkloadCommands() []*cobra.Command {
 		Use:     CommandConfigWorkload,
 		Short:   "Config",
 		GroupID: WorkloadGroup.ID,
+		PersistentPreRunE: persistentPreRunE,
+		PersistentPostRun: persistentPostRun,
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
 			flags := cmd.Flags()
 			configFile, _ := flags.GetString(ConfigFile)
@@ -340,6 +342,15 @@ func provideOrchiestrationCommands() []*cobra.Command {
 			helmSet, _ := flags.GetStringSlice(FlagHelmSet)
 			workloadConfigPath, _ := flags.GetString(FlagWorkloadConfig)
 
+			cfg, err := ParseConfigFile(workloadConfigPath, false)
+			if err != nil {
+				return err
+			}
+			configValues, err := cfg.Values()
+			if err != nil {
+				return err
+			}
+
 			rsm := resourcemanager.ResourceManagerConfig{
 				KubeconfigPath: srcKubeconfigPath,
 				Context:        srcContext,
@@ -351,7 +362,7 @@ func provideOrchiestrationCommands() []*cobra.Command {
 				ResourceManagerConfig: rsm,
 				Name:                  args[0],
 				HelmValues:            helmSet,
-				WorkloadConfigString:  workloadConfigPath,
+				WorkloadConfigString:  configValues,
 			}
 
 			return UpgradeResources(&request)

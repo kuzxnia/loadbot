@@ -238,9 +238,9 @@ func (c *JobRequest) UnmarshalJSON(data []byte) (err error) {
 		Pace        uint64                 `json:"pace"`
 		DataSize    uint64                 `json:"data_size"`
 		BatchSize   uint64                 `json:"batch_size"`
-		Duration    config.Duration               `json:"duration"`
+		Duration    config.Duration        `json:"duration"`
 		Operations  uint64                 `json:"operations"`
-		Timeout     config.Duration               `json:"timeout"` // if not set, default
+		Timeout     config.Duration        `json:"timeout"` // if not set, default
 		Filter      map[string]interface{} `json:"filter"`
 	}
 	// default values
@@ -259,9 +259,9 @@ func (c *JobRequest) UnmarshalJSON(data []byte) (err error) {
 	c.Pace = tmp.Pace
 	c.DataSize = tmp.DataSize
 	c.BatchSize = tmp.BatchSize
-  c.Duration = tmp.Duration.Duration
+	c.Duration = tmp.Duration.Duration
 	c.Operations = tmp.Operations
-  c.Timeout = tmp.Timeout.Duration
+	c.Timeout = tmp.Timeout.Duration
 	c.Filter = tmp.Filter
 
 	return

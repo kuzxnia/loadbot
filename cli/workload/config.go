@@ -17,7 +17,7 @@ import (
 
 // checks if process is running in local system
 // here should be cli config request - not lbot one
-func SetConfigWorkload(conn *grpc.ClientConn, parsedConfig *lbot.ConfigRequest) (err error) {
+func SetConfigWorkload(conn grpc.ClientConnInterface, parsedConfig *lbot.ConfigRequest) (err error) {
 	requestConfig := BuildConfigRequest(parsedConfig)
 
 	fmt.Println("🚀 Setting new config")
