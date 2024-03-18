@@ -30,7 +30,7 @@ type LiveDataProvider struct {
 func NewLiveDataProvider(job *config.Job, schema *config.Schema) *LiveDataProvider {
 	return &LiveDataProvider{
 		job:           job,
-		dataGenerator: NewDataGenerator(schema, job.DataSize),
+		dataGenerator: NewDataGenerator(schema, int(job.DataSize)),
 	}
 }
 
