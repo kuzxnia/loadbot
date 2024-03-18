@@ -40,6 +40,7 @@ func (l *Lbot) Run() error {
 	if err != nil {
 		return err
 	}
+  defer client.Disconnect()
 
 	for _, job := range l.Config.Jobs {
 		err = client.RunJob(*job)
@@ -56,6 +57,7 @@ func (l *Lbot) SetCommandState(command *database.Command, state database.Command
 	if err != nil {
 		return err
 	}
+  defer client.Disconnect()
 	command.State = state.String()
 	return client.SaveCommand(command)
 }
@@ -65,6 +67,7 @@ func (l *Lbot) SetWorkloadState(workload *database.Workload, state database.Work
 	if err != nil {
 		return err
 	}
+  defer client.Disconnect()
 	workload.State = state.String()
 	return client.SaveWorkload(workload)
 }
@@ -147,6 +150,7 @@ func (l *Lbot) InitAgent(id primitive.ObjectID, name string) error {
 	if err != nil {
 		return err
 	}
+  defer client.Disconnect()
 	ct, err := client.ClusterTime()
 	if err != nil {
 		return errors.Wrap(err, "get cluster time")
@@ -167,6 +171,7 @@ func (l *Lbot) AgentHeartBeat(id primitive.ObjectID, name string) error {
 	if err != nil {
 		return err
 	}
+  defer client.Disconnect()
 
 	agentStatus := database.AgentStatus{
 		Id:   id,
@@ -180,9 +185,11 @@ func (l *Lbot) HandleWorkload() {
 	log.Println("Fetching new workloads")
 	// todo: change to generic abstraction
 	client, err := database.NewInternalMongoClient(l.Config.ConnectionString)
+  defer client.Disconnect()
 	if err != nil {
 		return
 	}
+  defer client.Disconnect()
 
 	// todo: change to commands
 	workload, err := client.GetNewWorkloads()
@@ -218,6 +225,7 @@ func (l *Lbot) HandleCommand() {
 	if err != nil {
 		return
 	}
+  defer client.Disconnect()
 
 	log.Println("Fetching not finished commands")
 	// todo: change to commands
@@ -265,6 +273,7 @@ func (l *Lbot) IsMasterAgent(agentId primitive.ObjectID) (bool, error) {
 	if err != nil {
 		return false, err
 	}
+  defer client.Disconnect()
 	return client.IsMasterAgent(agentId)
 }
 
@@ -274,6 +283,7 @@ func (l *Lbot) UpdateRunningAgents() error {
 	if err != nil {
 		return err
 	}
+  defer client.Disconnect()
 
 	runningAgents, err := client.GetAgentWithHeartbeatWithin()
 	if err != nil {
@@ -297,6 +307,7 @@ func (l *Lbot) GetNextUnFinishedCommand() (*database.Command, error) {
 	if err != nil {
 		return nil, err
 	}
+  defer client.Disconnect()
 	return client.GetNextUnFinishedCommand()
 }
 
@@ -305,6 +316,7 @@ func (l *Lbot) AreWorkloadsFinished(command *database.Command) (bool, error) {
 	if err != nil {
 		return false, err
 	}
+  defer client.Disconnect()
 	workloads, err := client.GetCommandWorkloads(command)
 
 	finished := lo.Filter(workloads, func(w *database.Workload, index int) bool {
@@ -319,6 +331,7 @@ func (l *Lbot) GenerateWorkload(command *database.Command) ([]*database.Workload
 	if err != nil {
 		return nil, err
 	}
+  defer client.Disconnect()
 	ct, err := client.ClusterTime()
 	if err != nil {
 		return nil, errors.Wrap(err, "get cluster time")
@@ -356,6 +369,7 @@ func (l *Lbot) SaveWorkloads(ws []*database.Workload) error {
 	if err != nil {
 		return err
 	}
+  defer client.Disconnect()
 
 	var worklods []interface{}
 	for _, w := range ws {

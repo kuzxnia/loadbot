@@ -61,7 +61,7 @@ func (c *HelmManager) Install(request *InstallRequest) (err error) {
 	installer.Labels = map[string]string{"role": "workload"}
 
 	options := values.Options{
-		Values:        append([]string{"workload.name=" + request.Name}, request.HelmValues...),
+		Values:        append([]string{"workload.name=" + request.Name, "workload.namespace=" + request.Namespace}, request.HelmValues...),
 		LiteralValues: []string{"workload.config=" + request.WorkloadConfigString},
 	}
 
@@ -106,7 +106,7 @@ func (c *HelmManager) Upgrade(request *UpgradeRequest) (err error) {
 	upgrader.Labels = map[string]string{"role": "workload"}
 
 	options := values.Options{
-		Values:        append([]string{"workload.name=" + request.Name}, request.HelmValues...),
+		Values:        append([]string{"workload.name=" + request.Name, "workload.namespace=" + request.Namespace}, request.HelmValues...),
 		LiteralValues: []string{"workload.config=" + request.WorkloadConfigString},
 	}
 

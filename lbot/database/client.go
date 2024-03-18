@@ -36,7 +36,8 @@ func NewMongoClient(connectionString string, cfg *config.Job, schema *config.Sch
 	opts = opts.
 		ApplyURI(connectionString).
 		SetReadPreference(readpref.SecondaryPreferred()).
-		SetMaxConnecting(100).
+		SetMaxPoolSize(cfg.Connections * 2).
+		// SetMaxConnecting(100).
 		SetMaxConnIdleTime(90 * time.Second).
 		SetTimeout(cfg.Timeout)
 
