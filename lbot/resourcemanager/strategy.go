@@ -30,8 +30,8 @@ type InstallResponse struct{}
 
 type UpgradeRequest struct {
 	ResourceManagerConfig
-	Name       string
-	HelmValues []string
+	Name                 string
+	HelmValues           []string
 	WorkloadConfigString string
 }
 
