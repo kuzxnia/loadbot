@@ -3,11 +3,13 @@ syntax = "proto3";
 package proto;
 
 import "google/protobuf/any.proto";
+import "google/protobuf/empty.proto";
 
 option go_package = "proto/";
 
-service SetConfigProcess {
-  rpc Run(ConfigRequest) returns (ConfigResponse) {}
+service ConfigService {
+  rpc SetConfig(ConfigRequest) returns (ConfigResponse) {}
+  rpc GetConfig(google.protobuf.Empty) returns (ConfigResponse) {}
 }
 
 message SchemaRequest {
@@ -50,4 +52,10 @@ message ConfigRequest {
   bool debug = 5;
 }
 
-message ConfigResponse {}
+message ConfigResponse {
+  string connection_string = 1;
+  AgentRequest agent = 2;
+  repeated JobRequest jobs = 3;
+  repeated SchemaRequest schemas = 4;
+  bool debug = 5;
+}

@@ -11,6 +11,7 @@ import (
 
 	"github.com/kuzxnia/loadbot/lbot/config"
 	"github.com/kuzxnia/loadbot/lbot/proto"
+	emptypb "google.golang.org/protobuf/types/known/emptypb"
 	"github.com/tailscale/hujson"
 )
 
@@ -105,6 +106,50 @@ func NewConfigFromProtoConfigRequest(request *proto.ConfigRequest) *config.Confi
 	return cfg
 }
 
+func NewConfigResponseFromConfig(cfg *config.Config) *proto.ConfigResponse {
+	response := &proto.ConfigResponse{
+		ConnectionString: cfg.ConnectionString,
+		Agent: &proto.AgentRequest{
+			Name:                         cfg.Agent.Name,
+			Port:                         cfg.Agent.Port,
+			MetricsExportUrl:             cfg.Agent.MetricsExportUrl,
+			MetricsExportIntervalSeconds: cfg.Agent.MetricsExportIntervalSeconds,
+			MetricsExportPort:            cfg.Agent.MetricsExportPort,
+		},
+		Jobs:    make([]*proto.JobRequest, len(cfg.Jobs)),
+		Schemas: make([]*proto.SchemaRequest, len(cfg.Schemas)),
+		Debug:   cfg.Debug,
+	}
+	for i, job := range cfg.Jobs {
+		response.Jobs[i] = &proto.JobRequest{
+			Name: job.Name,
+			// Parent:      cfg,
+			Database:    job.Database,
+			Collection:  job.Collection,
+			Type:        job.Type,
+			Schema:      job.Schema,
+			Connections: job.Connections,
+			Pace:        job.Pace,
+			DataSize:    job.DataSize,
+			BatchSize:   job.BatchSize,
+			Duration:    job.Duration.String(),
+			Operations:  job.Operations,
+			Timeout:     job.Timeout.String(),
+			// Filter:          job.Filter,
+		}
+	}
+	for i, schema := range cfg.Schemas {
+		response.Schemas[i] = &proto.SchemaRequest{
+			Name:       schema.Name,
+			Database:   schema.Database,
+			Collection: schema.Collection,
+			// Schema:     schema.Schema,
+			Save: schema.Save,
+		}
+	}
+	return response 
+}
+
 // todo: should be pointers
 type ConfigRequest struct {
 	ConnectionString string           `json:"connection_string"`
@@ -150,22 +195,30 @@ type SchemaRequest struct {
 	Save       []string               `json:"save"`
 }
 
-type SetConfigProcess struct {
-	proto.UnimplementedSetConfigProcessServer
+type ConfigService struct {
+	proto.UnimplementedConfigServiceServer
 	ctx  context.Context
 	lbot *Lbot
 }
 
-func NewSetConfigProcess(ctx context.Context, lbot *Lbot) *SetConfigProcess {
-	return &SetConfigProcess{ctx: ctx, lbot: lbot}
+func NewConfigService(ctx context.Context, lbot *Lbot) *ConfigService {
+	return &ConfigService{ctx: ctx, lbot: lbot}
 }
 
-func (c *SetConfigProcess) Run(ctx context.Context, request *proto.ConfigRequest) (*proto.ConfigResponse, error) {
+func (c *ConfigService) SetConfig(ctx context.Context, request *proto.ConfigRequest) (*proto.ConfigResponse, error) {
 	cfg := NewConfigFromProtoConfigRequest(request)
 	c.lbot.SetConfig(cfg)
 
 	// before configing process it will varify health of cluster, if pods
 	return &proto.ConfigResponse{}, nil
+}
+
+func (c *ConfigService) GetConfig(ctx context.Context, empty *emptypb.Empty) (*proto.ConfigResponse, error) {
+	// todo: should get from db
+	response := NewConfigResponseFromConfig(c.lbot.Config)
+  fmt.Println("in2")
+
+	return response, nil
 }
 
 func ParseConfigFile(configFile string) (*ConfigRequest, error) {

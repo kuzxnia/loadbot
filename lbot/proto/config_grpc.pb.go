@@ -11,6 +11,7 @@ import (
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
+	emptypb "google.golang.org/protobuf/types/known/emptypb"
 )
 
 // This is a compile-time assertion to ensure that this generated file
@@ -19,89 +20,126 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	SetConfigProcess_Run_FullMethodName = "/proto.SetConfigProcess/Run"
+	ConfigService_SetConfig_FullMethodName = "/proto.ConfigService/SetConfig"
+	ConfigService_GetConfig_FullMethodName = "/proto.ConfigService/GetConfig"
 )
 
-// SetConfigProcessClient is the client API for SetConfigProcess service.
+// ConfigServiceClient is the client API for ConfigService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
-type SetConfigProcessClient interface {
-	Run(ctx context.Context, in *ConfigRequest, opts ...grpc.CallOption) (*ConfigResponse, error)
+type ConfigServiceClient interface {
+	SetConfig(ctx context.Context, in *ConfigRequest, opts ...grpc.CallOption) (*ConfigResponse, error)
+	GetConfig(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*ConfigResponse, error)
 }
 
-type setConfigProcessClient struct {
+type configServiceClient struct {
 	cc grpc.ClientConnInterface
 }
 
-func NewSetConfigProcessClient(cc grpc.ClientConnInterface) SetConfigProcessClient {
-	return &setConfigProcessClient{cc}
+func NewConfigServiceClient(cc grpc.ClientConnInterface) ConfigServiceClient {
+	return &configServiceClient{cc}
 }
 
-func (c *setConfigProcessClient) Run(ctx context.Context, in *ConfigRequest, opts ...grpc.CallOption) (*ConfigResponse, error) {
+func (c *configServiceClient) SetConfig(ctx context.Context, in *ConfigRequest, opts ...grpc.CallOption) (*ConfigResponse, error) {
 	out := new(ConfigResponse)
-	err := c.cc.Invoke(ctx, SetConfigProcess_Run_FullMethodName, in, out, opts...)
+	err := c.cc.Invoke(ctx, ConfigService_SetConfig_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-// SetConfigProcessServer is the server API for SetConfigProcess service.
-// All implementations must embed UnimplementedSetConfigProcessServer
+func (c *configServiceClient) GetConfig(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*ConfigResponse, error) {
+	out := new(ConfigResponse)
+	err := c.cc.Invoke(ctx, ConfigService_GetConfig_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// ConfigServiceServer is the server API for ConfigService service.
+// All implementations must embed UnimplementedConfigServiceServer
 // for forward compatibility
-type SetConfigProcessServer interface {
-	Run(context.Context, *ConfigRequest) (*ConfigResponse, error)
-	mustEmbedUnimplementedSetConfigProcessServer()
+type ConfigServiceServer interface {
+	SetConfig(context.Context, *ConfigRequest) (*ConfigResponse, error)
+	GetConfig(context.Context, *emptypb.Empty) (*ConfigResponse, error)
+	mustEmbedUnimplementedConfigServiceServer()
 }
 
-// UnimplementedSetConfigProcessServer must be embedded to have forward compatible implementations.
-type UnimplementedSetConfigProcessServer struct {
+// UnimplementedConfigServiceServer must be embedded to have forward compatible implementations.
+type UnimplementedConfigServiceServer struct {
 }
 
-func (UnimplementedSetConfigProcessServer) Run(context.Context, *ConfigRequest) (*ConfigResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Run not implemented")
+func (UnimplementedConfigServiceServer) SetConfig(context.Context, *ConfigRequest) (*ConfigResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SetConfig not implemented")
 }
-func (UnimplementedSetConfigProcessServer) mustEmbedUnimplementedSetConfigProcessServer() {}
+func (UnimplementedConfigServiceServer) GetConfig(context.Context, *emptypb.Empty) (*ConfigResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetConfig not implemented")
+}
+func (UnimplementedConfigServiceServer) mustEmbedUnimplementedConfigServiceServer() {}
 
-// UnsafeSetConfigProcessServer may be embedded to opt out of forward compatibility for this service.
-// Use of this interface is not recommended, as added methods to SetConfigProcessServer will
+// UnsafeConfigServiceServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to ConfigServiceServer will
 // result in compilation errors.
-type UnsafeSetConfigProcessServer interface {
-	mustEmbedUnimplementedSetConfigProcessServer()
+type UnsafeConfigServiceServer interface {
+	mustEmbedUnimplementedConfigServiceServer()
 }
 
-func RegisterSetConfigProcessServer(s grpc.ServiceRegistrar, srv SetConfigProcessServer) {
-	s.RegisterService(&SetConfigProcess_ServiceDesc, srv)
+func RegisterConfigServiceServer(s grpc.ServiceRegistrar, srv ConfigServiceServer) {
+	s.RegisterService(&ConfigService_ServiceDesc, srv)
 }
 
-func _SetConfigProcess_Run_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _ConfigService_SetConfig_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ConfigRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(SetConfigProcessServer).Run(ctx, in)
+		return srv.(ConfigServiceServer).SetConfig(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: SetConfigProcess_Run_FullMethodName,
+		FullMethod: ConfigService_SetConfig_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(SetConfigProcessServer).Run(ctx, req.(*ConfigRequest))
+		return srv.(ConfigServiceServer).SetConfig(ctx, req.(*ConfigRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-// SetConfigProcess_ServiceDesc is the grpc.ServiceDesc for SetConfigProcess service.
+func _ConfigService_GetConfig_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(emptypb.Empty)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ConfigServiceServer).GetConfig(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ConfigService_GetConfig_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ConfigServiceServer).GetConfig(ctx, req.(*emptypb.Empty))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+// ConfigService_ServiceDesc is the grpc.ServiceDesc for ConfigService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
-var SetConfigProcess_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "proto.SetConfigProcess",
-	HandlerType: (*SetConfigProcessServer)(nil),
+var ConfigService_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "proto.ConfigService",
+	HandlerType: (*ConfigServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "Run",
-			Handler:    _SetConfigProcess_Run_Handler,
+			MethodName: "SetConfig",
+			Handler:    _ConfigService_SetConfig_Handler,
+		},
+		{
+			MethodName: "GetConfig",
+			Handler:    _ConfigService_GetConfig_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
