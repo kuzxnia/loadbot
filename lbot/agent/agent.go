@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	_ "net/http/pprof"
 	"sync"
 	"syscall"
 	"time"
@@ -89,6 +90,7 @@ func (a *Agent) Start() error {
 	// is this needed?
 	_, cancel := context.WithCancel(a.ctx)
 	cancel()
+  a.lbot.Cancel()
 
 	return nil
 }

@@ -17,33 +17,51 @@ import (
 )
 
 type Lbot struct {
-	Config        *config.Config
-	ctx           context.Context
-	mutext        sync.Mutex
-	workers       map[string]*worker.Worker
-	done          chan bool
-	runningAgents uint64 // todo: remove from here
-	changed       chan uint64
+	Config         *config.Config
+	ctx            context.Context
+	mutext         sync.Mutex
+	workers        map[string]*worker.Worker
+	done           chan bool
+	runningAgents  uint64 // todo: remove from here
+	changed        chan uint64
+
+  // todo: to move to abstraction
+	internalClient *database.MongoClient
 }
 
-func NewLbot(ctx context.Context) *Lbot {
-	return &Lbot{
-		ctx:           ctx,
-		runningAgents: 1,
-		changed:       make(chan uint64),
-		workers:       map[string]*worker.Worker{},
-	}
-}
-
-func (l *Lbot) Run() error {
-	client, err := database.NewInternalMongoClient(l.Config.ConnectionString)
+func NewLbot(ctx context.Context, cfg *config.Config) (*Lbot, error) {
+	client, err := database.NewInternalMongoClient(cfg.ConnectionString)
 	if err != nil {
-		return err
+		return nil, fmt.Errorf("Connecting to database failed: %w", err)
 	}
-  defer client.Disconnect()
 
+	return &Lbot{
+		ctx:            ctx,
+		Config:         cfg,
+		runningAgents:  1,
+		changed:        make(chan uint64),
+		workers:        map[string]*worker.Worker{},
+		internalClient: client,
+	}, nil
+}
+
+func (l *Lbot) Client() (err error) {
+	if l.internalClient == nil {
+		return l.internalClient.Disconnect()
+	}
+	return nil
+}
+
+func (l *Lbot) Close() (err error) {
+	if l.internalClient == nil {
+		return l.internalClient.Disconnect()
+	}
+	return nil
+}
+
+func (l *Lbot) Run() (err error) {
 	for _, job := range l.Config.Jobs {
-		err = client.RunJob(*job)
+		err = l.internalClient.RunJob(*job)
 		if err != nil {
 			return err
 		}
@@ -53,23 +71,13 @@ func (l *Lbot) Run() error {
 }
 
 func (l *Lbot) SetCommandState(command *database.Command, state database.CommandState) error {
-	client, err := database.NewInternalMongoClient(l.Config.ConnectionString)
-	if err != nil {
-		return err
-	}
-  defer client.Disconnect()
 	command.State = state.String()
-	return client.SaveCommand(command)
+	return l.internalClient.SaveCommand(command)
 }
 
 func (l *Lbot) SetWorkloadState(workload *database.Workload, state database.WorkloadState) error {
-	client, err := database.NewInternalMongoClient(l.Config.ConnectionString)
-	if err != nil {
-		return err
-	}
-  defer client.Disconnect()
 	workload.State = state.String()
-	return client.SaveWorkload(workload)
+	return l.internalClient.SaveWorkload(workload)
 }
 
 func (l *Lbot) SetConfig(config *config.Config) {
@@ -145,13 +153,7 @@ func (l *Lbot) Cancel() error {
 }
 
 func (l *Lbot) InitAgent(id primitive.ObjectID, name string) error {
-	// todo: change to generic abstraction
-	client, err := database.NewInternalMongoClient(l.Config.ConnectionString)
-	if err != nil {
-		return err
-	}
-  defer client.Disconnect()
-	ct, err := client.ClusterTime()
+	ct, err := l.internalClient.ClusterTime()
 	if err != nil {
 		return errors.Wrap(err, "get cluster time")
 	}
@@ -162,37 +164,22 @@ func (l *Lbot) InitAgent(id primitive.ObjectID, name string) error {
 		CreatedAt: *ct,
 	}
 
-	return client.AddAgentStatus(agentStatus)
+	return l.internalClient.AddAgentStatus(agentStatus)
 }
 
 func (l *Lbot) AgentHeartBeat(id primitive.ObjectID, name string) error {
-	// todo: change to generic abstraction
-	client, err := database.NewInternalMongoClient(l.Config.ConnectionString)
-	if err != nil {
-		return err
-	}
-  defer client.Disconnect()
-
 	agentStatus := database.AgentStatus{
 		Id:   id,
 		Name: name,
 	}
 
-	return client.SaveAgentStatus(agentStatus)
+	return l.internalClient.SaveAgentStatus(agentStatus)
 }
 
 func (l *Lbot) HandleWorkload() {
 	log.Println("Fetching new workloads")
-	// todo: change to generic abstraction
-	client, err := database.NewInternalMongoClient(l.Config.ConnectionString)
-  defer client.Disconnect()
-	if err != nil {
-		return
-	}
-  defer client.Disconnect()
-
 	// todo: change to commands
-	workload, err := client.GetNewWorkloads()
+	workload, err := l.internalClient.GetNewWorkloads()
 	if err != nil {
 		return
 	}
@@ -221,15 +208,9 @@ func (l *Lbot) HandleWorkload() {
 
 func (l *Lbot) HandleCommand() {
 	// todo: change to generic abstraction
-	client, err := database.NewInternalMongoClient(l.Config.ConnectionString)
-	if err != nil {
-		return
-	}
-  defer client.Disconnect()
-
 	log.Println("Fetching not finished commands")
 	// todo: change to commands
-	command, err := client.GetNextUnFinishedCommand()
+	command, err := l.internalClient.GetNextUnFinishedCommand()
 	if err != nil {
 		return
 	}
@@ -269,23 +250,12 @@ func (l *Lbot) HandleCommand() {
 }
 
 func (l *Lbot) IsMasterAgent(agentId primitive.ObjectID) (bool, error) {
-	client, err := database.NewInternalMongoClient(l.Config.ConnectionString)
-	if err != nil {
-		return false, err
-	}
-  defer client.Disconnect()
-	return client.IsMasterAgent(agentId)
+	return l.internalClient.IsMasterAgent(agentId)
 }
 
 // depricated, to be removed
 func (l *Lbot) UpdateRunningAgents() error {
-	client, err := database.NewInternalMongoClient(l.Config.ConnectionString)
-	if err != nil {
-		return err
-	}
-  defer client.Disconnect()
-
-	runningAgents, err := client.GetAgentWithHeartbeatWithin()
+	runningAgents, err := l.internalClient.GetAgentWithHeartbeatWithin()
 	if err != nil {
 		return err
 	}
@@ -303,21 +273,14 @@ func (l *Lbot) UpdateRunningAgents() error {
 }
 
 func (l *Lbot) GetNextUnFinishedCommand() (*database.Command, error) {
-	client, err := database.NewInternalMongoClient(l.Config.ConnectionString)
-	if err != nil {
-		return nil, err
-	}
-  defer client.Disconnect()
-	return client.GetNextUnFinishedCommand()
+	return l.internalClient.GetNextUnFinishedCommand()
 }
 
 func (l *Lbot) AreWorkloadsFinished(command *database.Command) (bool, error) {
-	client, err := database.NewInternalMongoClient(l.Config.ConnectionString)
+	workloads, err := l.internalClient.GetCommandWorkloads(command)
 	if err != nil {
 		return false, err
 	}
-  defer client.Disconnect()
-	workloads, err := client.GetCommandWorkloads(command)
 
 	finished := lo.Filter(workloads, func(w *database.Workload, index int) bool {
 		return w.State == database.WorkloadStateDone.String() || w.State == database.WorkloadStateError.String()
@@ -327,12 +290,7 @@ func (l *Lbot) AreWorkloadsFinished(command *database.Command) (bool, error) {
 }
 
 func (l *Lbot) GenerateWorkload(command *database.Command) ([]*database.Workload, error) {
-	client, err := database.NewInternalMongoClient(l.Config.ConnectionString)
-	if err != nil {
-		return nil, err
-	}
-  defer client.Disconnect()
-	ct, err := client.ClusterTime()
+	ct, err := l.internalClient.ClusterTime()
 	if err != nil {
 		return nil, errors.Wrap(err, "get cluster time")
 	}
@@ -365,16 +323,10 @@ func (l *Lbot) GenerateWorkload(command *database.Command) ([]*database.Workload
 }
 
 func (l *Lbot) SaveWorkloads(ws []*database.Workload) error {
-	client, err := database.NewInternalMongoClient(l.Config.ConnectionString)
-	if err != nil {
-		return err
-	}
-  defer client.Disconnect()
-
 	var worklods []interface{}
 	for _, w := range ws {
 		worklods = append(worklods, w)
 	}
 
-	return client.AddWorkloads(worklods)
+	return l.internalClient.AddWorkloads(worklods)
 }
