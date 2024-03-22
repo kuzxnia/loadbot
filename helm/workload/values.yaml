@@ -4,6 +4,6 @@ workload:
   name:
   replicas: 1
   agent:
-    image: kuzxnia/loadbot:v1.0.6
+    image: kuzxnia/loadbot:v1.0.7
     port: 1234
   config:
