@@ -1,4 +1,4 @@
-package workload 
+package workload
 
 // 1. without args, just prints configfile
 
@@ -13,6 +13,8 @@ import (
 	"github.com/kuzxnia/loadbot/lbot"
 	"github.com/kuzxnia/loadbot/lbot/proto"
 	"google.golang.org/grpc"
+	"google.golang.org/protobuf/encoding/prototext"
+	"google.golang.org/protobuf/types/known/emptypb"
 )
 
 // checks if process is running in local system
@@ -22,13 +24,24 @@ func SetConfigWorkload(conn grpc.ClientConnInterface, parsedConfig *lbot.ConfigR
 
 	fmt.Println("🚀 Setting new config")
 
-	client := proto.NewSetConfigProcessClient(conn)
-	_, err = client.Run(context.TODO(), requestConfig)
+	client := proto.NewConfigServiceClient(conn)
+	_, err = client.SetConfig(context.TODO(), requestConfig)
 	if err != nil {
 		return fmt.Errorf("Setting config failed: %w", err)
 	}
-
 	fmt.Println("✅ Setting config succeeded")
+
+	return
+}
+
+func GetConfigWorkload(conn grpc.ClientConnInterface) (err error) {
+	client := proto.NewConfigServiceClient(conn)
+	cfg, err := client.GetConfig(context.TODO(), &emptypb.Empty{})
+	if err != nil {
+		return fmt.Errorf("Getting config failed: %w", err)
+	}
+
+	fmt.Println(prototext.MarshalOptions{Multiline: true}.Format(cfg))
 
 	return
 }
@@ -43,9 +56,9 @@ func BuildConfigRequest(request *lbot.ConfigRequest) *proto.ConfigRequest {
 			MetricsExportIntervalSeconds: request.Agent.MetricsExportIntervalSeconds,
 			MetricsExportPort:            request.Agent.MetricsExportPort,
 		},
-		Jobs:             make([]*proto.JobRequest, len(request.Jobs)),
-		Schemas:          make([]*proto.SchemaRequest, len(request.Schemas)),
-		Debug:            request.Debug,
+		Jobs:    make([]*proto.JobRequest, len(request.Jobs)),
+		Schemas: make([]*proto.SchemaRequest, len(request.Schemas)),
+		Debug:   request.Debug,
 	}
 	for i, job := range request.Jobs {
 		cfg.Jobs[i] = &proto.JobRequest{

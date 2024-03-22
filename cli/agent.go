@@ -56,11 +56,13 @@ func StartAgent(
 		requestConfig.Agent.MetricsExportPort = config.MetricsExportPort
 	}
 
-	loadbot := lbot.NewLbot(context)
-
+	cfg := lbot.NewConfig(requestConfig)
+	loadbot, err := lbot.NewLbot(context, cfg)
+	if err != nil {
+		return err
+	}
 	agent := agent.NewAgent(context, loadbot)
 	if requestConfig != nil {
-		agent.ApplyConfig(requestConfig)
 		if watchConfigFile {
 			err = agent.WatchConfigFile(configFile)
 			if err != nil {

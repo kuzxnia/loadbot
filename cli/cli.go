@@ -165,15 +165,19 @@ func provideWorkloadCommands() []*cobra.Command {
 	progressCommandFlags.StringP(AgentUri, "u", "127.0.0.1:1234", "loadbot agent uri (default: 127.0.0.1:1234)")
 
 	configCommand := cobra.Command{
-		Use:     CommandConfigWorkload,
-		Short:   "Config",
-		GroupID: WorkloadGroup.ID,
+		Use:               CommandConfigWorkload,
+		Short:             "Config",
+		GroupID:           WorkloadGroup.ID,
 		PersistentPreRunE: persistentPreRunE,
 		PersistentPostRun: persistentPostRun,
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
 			flags := cmd.Flags()
 			configFile, _ := flags.GetString(ConfigFile)
 			stdin, _ := flags.GetBool(StdIn)
+
+			if configFile == "" && stdin == false {
+				return workload.GetConfigWorkload(Conn)
+			}
 
 			config, err := ParseConfigFile(configFile, stdin)
 			if err != nil {

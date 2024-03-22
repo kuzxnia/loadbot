@@ -72,7 +72,7 @@ func NewInternalMongoClient(connectionString string) (*MongoClient, error) {
 	opts = opts.
 		ApplyURI(connectionString).
 		SetReadPreference(readpref.SecondaryPreferred()).
-		SetMaxConnecting(100).
+		SetMaxPoolSize(10).
 		SetMaxConnIdleTime(90 * time.Second)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)

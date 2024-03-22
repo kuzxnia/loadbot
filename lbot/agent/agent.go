@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	_ "net/http/pprof"
 	"sync"
 	"syscall"
 	"time"
@@ -46,7 +47,7 @@ func NewAgent(ctx context.Context, loadbot *lbot.Lbot) *Agent {
 	// register commands
 	proto.RegisterStartProcessServer(grpcServer, lbot.NewStartProcess(ctx, loadbot))
 	proto.RegisterStopProcessServer(grpcServer, lbot.NewStoppingProcess(ctx, loadbot))
-	proto.RegisterSetConfigProcessServer(grpcServer, lbot.NewSetConfigProcess(ctx, loadbot))
+	proto.RegisterConfigServiceServer(grpcServer, lbot.NewConfigService(ctx, loadbot))
 	proto.RegisterWatchProcessServer(grpcServer, lbot.NewWatchingProcess(ctx, loadbot))
 	proto.RegisterProgressProcessServer(grpcServer, lbot.NewProgressProcess(ctx, loadbot))
 
@@ -89,6 +90,7 @@ func (a *Agent) Start() error {
 	// is this needed?
 	_, cancel := context.WithCancel(a.ctx)
 	cancel()
+  a.lbot.Cancel()
 
 	return nil
 }
