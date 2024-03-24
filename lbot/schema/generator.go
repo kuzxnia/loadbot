@@ -88,6 +88,7 @@ type MeasurableDataGenerator struct {
 }
 
 func (g *MeasurableDataGenerator) Generate() (interface{}, error) {
+  // size - 33 
 	return &bson.M{"data": randStringBytes(g.dataSize)}, nil
 }
 

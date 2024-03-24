@@ -153,10 +153,10 @@ func NewConfigResponseFromConfig(cfg *config.Config) *proto.ConfigResponse {
 // todo: should be pointers
 type ConfigRequest struct {
 	ConnectionString string           `json:"connection_string"`
-	Agent            *AgentRequest    `json:"agent"`
-	Jobs             []*JobRequest    `json:"jobs"`
-	Schemas          []*SchemaRequest `json:"schemas"`
-	Debug            bool             `json:"debug"`
+	Agent            *AgentRequest    `json:"agent,omitempty"`
+	Jobs             []*JobRequest    `json:"jobs,omitempty"`
+	Schemas          []*SchemaRequest `json:"schemas,omitempty"`
+	Debug            bool             `json:"debug,omitempty"`
 }
 
 // todo: change or even remove,
@@ -164,35 +164,35 @@ type ConfigRequest struct {
 // todo: move agentn-name nad add new config flage - custom metrics label or similar
 // purpose is to export metrics with cluster name
 type AgentRequest struct {
-	Name                         string `json:"name"`
-	Port                         string `json:"port"`
-	MetricsExportUrl             string `json:"metrics_export_url"`
-	MetricsExportIntervalSeconds uint64 `json:"metrics_export_interval_seconds"`
-	MetricsExportPort            string `json:"metrics_export_port"`
+	Name                         string `json:"name,omitempty"`
+	Port                         string `json:"port,omitempty"`
+	MetricsExportUrl             string `json:"metrics_export_url,omitempty"`
+	MetricsExportIntervalSeconds uint64 `json:"metrics_export_interval_seconds,omitempty"`
+	MetricsExportPort            string `json:"metrics_export_port,omitempty"`
 }
 
 type JobRequest struct {
-	Name        string                 `json:"name"`
-	Database    string                 `json:"database"`
-	Collection  string                 `json:"collection"`
-	Type        string                 `json:"type"`
-	Schema      string                 `json:"schema"`
-	Connections uint64                 `json:"connections"`
-	Pace        uint64                 `json:"pace"`
-	DataSize    uint64                 `json:"data_size"`
-	BatchSize   uint64                 `json:"batch_size"`
-	Duration    time.Duration          `json:"duration"`
-	Operations  uint64                 `json:"operations"`
-	Timeout     time.Duration          `json:"timeout"`
-	Filter      map[string]interface{} `json:"filter"`
+	Name        string                 `json:"name,omitempty"`
+	Database    string                 `json:"database,omitempty"`
+	Collection  string                 `json:"collection,omitempty"`
+	Type        string                 `json:"type,omitempty"`
+	Schema      string                 `json:"schema,omitempty"`
+	Connections uint64                 `json:"connections,omitempty"`
+	Pace        uint64                 `json:"pace,omitempty"`
+	DataSize    uint64                 `json:"data_size,omitempty"`
+	BatchSize   uint64                 `json:"batch_size,omitempty"`
+	Duration    time.Duration          `json:"duration,omitempty"`
+	Operations  uint64                 `json:"operations,omitempty"`
+	Timeout     time.Duration          `json:"timeout,omitempty"`
+	Filter      map[string]interface{} `json:"filter,omitempty"`
 }
 
 type SchemaRequest struct {
-	Name       string                 `json:"name"`
-	Database   string                 `json:"database"`
-	Collection string                 `json:"collection"`
-	Schema     map[string]interface{} `json:"schema"` // todo: introducte new type and parse
-	Save       []string               `json:"save"`
+	Name       string                 `json:"name,omitempty"`
+	Database   string                 `json:"database,omitempty"`
+	Collection string                 `json:"collection,omitempty"`
+	Schema     map[string]interface{} `json:"schema,omitempty"` // todo: introducte new type and parse
+	Save       []string               `json:"save,omitempty"`
 }
 
 type ConfigService struct {
@@ -216,7 +216,6 @@ func (c *ConfigService) SetConfig(ctx context.Context, request *proto.ConfigRequ
 func (c *ConfigService) GetConfig(ctx context.Context, empty *emptypb.Empty) (*proto.ConfigResponse, error) {
 	// todo: should get from db
 	response := NewConfigResponseFromConfig(c.lbot.Config)
-  fmt.Println("in2")
 
 	return response, nil
 }
@@ -282,19 +281,19 @@ func standardizeJSON(b []byte) ([]byte, error) {
 
 func (c *JobRequest) UnmarshalJSON(data []byte) (err error) {
 	var tmp struct {
-		Name        string                 `json:"name"`
-		Type        string                 `json:"type"`
-		Database    string                 `json:"database"`
-		Collection  string                 `json:"collection"`
-		Schema      string                 `json:"template"`
-		Connections uint64                 `json:"connections"`
-		Pace        uint64                 `json:"pace"`
-		DataSize    uint64                 `json:"data_size"`
-		BatchSize   uint64                 `json:"batch_size"`
-		Duration    config.Duration        `json:"duration"`
-		Operations  uint64                 `json:"operations"`
-		Timeout     config.Duration        `json:"timeout"` // if not set, default
-		Filter      map[string]interface{} `json:"filter"`
+		Name        string                 `json:"name,omitempty"`
+		Type        string                 `json:"type,omitempty"`
+		Database    string                 `json:"database,omitempty"`
+		Collection  string                 `json:"collection,omitempty"`
+		Schema      string                 `json:"template,omitempty"`
+		Connections uint64                 `json:"connections,omitempty"`
+		Pace        uint64                 `json:"pace,omitempty"`
+		DataSize    uint64                 `json:"data_size,omitempty"`
+		BatchSize   uint64                 `json:"batch_size,omitempty"`
+		Duration    config.Duration        `json:"duration,omitempty"`
+		Operations  uint64                 `json:"operations,omitempty"`
+		Timeout     config.Duration        `json:"timeout,omitempty"` // if not set, default
+		Filter      map[string]interface{} `json:"filter,omitempty"`
 	}
 	// default values
 	tmp.Connections = 1

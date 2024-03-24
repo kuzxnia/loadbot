@@ -25,6 +25,7 @@ func New(version string, commit string, date string) *cobra.Command {
 	cmd.AddCommand(provideWorkloadCommands()...)
 	cmd.AddGroup(&WorkloadGroup)
 	cmd.AddCommand(provideOrchiestrationCommands()...)
+	cmd.AddGroup(&OrchiestrationGroup)
 	cmd.Root().CompletionOptions.HiddenDefaultCmd = true
 
 	return &cmd
@@ -43,11 +44,12 @@ var WorkloadGroup = cobra.Group{
 const (
 	WorkloadRootCommand = "workload"
 
-	CommandStartWorkload    = "start"
-	CommandStopWorkload     = "stop"
-	CommandWatchWorkload    = "watch"
-	CommandProgressWorkload = "progress"
-	CommandConfigWorkload   = "config"
+	CommandStartWorkload          = "start"
+	CommandStopWorkload           = "stop"
+	CommandWatchWorkload          = "watch"
+	CommandProgressWorkload       = "progress"
+	CommandConfigWorkload         = "config"
+	CommandGenerateConfigWorkload = "generate-config"
 
 	// config args
 	ConfigFile = "config-file"
@@ -166,7 +168,7 @@ func provideWorkloadCommands() []*cobra.Command {
 
 	configCommand := cobra.Command{
 		Use:               CommandConfigWorkload,
-		Short:             "Config",
+		Short:             "Get or set workload config",
 		GroupID:           WorkloadGroup.ID,
 		PersistentPreRunE: persistentPreRunE,
 		PersistentPostRun: persistentPostRun,
@@ -176,7 +178,7 @@ func provideWorkloadCommands() []*cobra.Command {
 			stdin, _ := flags.GetBool(StdIn)
 
 			if configFile == "" && stdin == false {
-				return workload.GetConfigWorkload(Conn)
+				return workload.GetWorkloadConfig(Conn)
 			}
 
 			config, err := ParseConfigFile(configFile, stdin)
@@ -184,7 +186,7 @@ func provideWorkloadCommands() []*cobra.Command {
 				return err
 			}
 
-			return workload.SetConfigWorkload(Conn, config)
+			return workload.SetWorkloadConfig(Conn, config)
 		},
 	}
 	configCommandFlags := configCommand.Flags()
@@ -192,7 +194,15 @@ func provideWorkloadCommands() []*cobra.Command {
 	configCommandFlags.Bool(StdIn, false, "get workload configuration from stdin")
 	configCommandFlags.StringP(AgentUri, "u", "127.0.0.1:1234", "loadbot agent uri (default: 127.0.0.1:1234)")
 
-	return []*cobra.Command{&startCommand, &stopCommand, &configCommand, &progressCommand}
+	generateConfigCommand := cobra.Command{
+		Use:   CommandGenerateConfigWorkload,
+		Short: "Generate sample workload config",
+		RunE: func(cmd *cobra.Command, args []string) (err error) {
+      return workload.GenerateConfigWorkload()
+		},
+	}
+
+	return []*cobra.Command{&startCommand, &stopCommand, &configCommand, &generateConfigCommand, &progressCommand}
 }
 
 var AgentGroup = cobra.Group{
@@ -277,12 +287,18 @@ const (
 	FlagHelmSetFile   = "helm-set-file"
 )
 
+var OrchiestrationGroup = cobra.Group{
+	ID:    "orchiestrator",
+	Title: "Orchiestration Commands:",
+}
+
 func provideOrchiestrationCommands() []*cobra.Command {
 	installationCommand := cobra.Command{
 		Use:     CommandInstall + " <name>",
 		Aliases: []string{"i"},
 		Short:   "Install workload driver with helm charts on k8s or only with docker locally",
 		Args:    cobra.ExactArgs(1),
+		GroupID: OrchiestrationGroup.ID,
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
 			flags := cmd.Flags()
 
@@ -332,9 +348,10 @@ func provideOrchiestrationCommands() []*cobra.Command {
 	flags.StringP(FlagWorkloadConfig, "f", "", "set additional Helm values by a YAML file or a URL (can specify multiple)")
 
 	upgradeCommand := cobra.Command{
-		Use:   CommandUpgrade + " <name>",
-		Short: "Upgrade workload driver with helm charts on k8s or only with docker locally",
-		Args:  cobra.ExactArgs(1),
+		Use:     CommandUpgrade + " <name>",
+		Short:   "Upgrade workload driver with helm charts on k8s or only with docker locally",
+		Args:    cobra.ExactArgs(1),
+		GroupID: OrchiestrationGroup.ID,
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
 			flags := cmd.Flags()
 
@@ -384,9 +401,10 @@ func provideOrchiestrationCommands() []*cobra.Command {
 
 	unInstallationCommand := cobra.Command{
 		// todo: where to keep configuration? there will be couple workloads at the same time
-		Use:   CommandUnInstall,
-		Short: "Uninstall workload driver",
-		Args:  cobra.ExactArgs(1),
+		Use:     CommandUnInstall,
+		Short:   "Uninstall workload driver",
+		Args:    cobra.ExactArgs(1),
+		GroupID: OrchiestrationGroup.ID,
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
 			flags := cmd.Flags()
 
@@ -419,8 +437,9 @@ func provideOrchiestrationCommands() []*cobra.Command {
 
 	listCommand := cobra.Command{
 		// todo: where to keep configuration? there will be couple workloads at the same time
-		Use:   CommandList,
-		Short: "List workloads",
+		Use:     CommandList,
+		Short:   "List workloads",
+		GroupID: OrchiestrationGroup.ID,
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
 			flags := cmd.Flags()
 
