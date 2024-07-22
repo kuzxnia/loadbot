@@ -8,7 +8,7 @@ loadbot start-agent -f config_file.json
 
 2. Start and watch the workload using the loadbot client:
 ```bash
-loadbot start-agent --progress
+loadbot start --progress
 Job "My first job" |██████████████████████████████████████████████████████████████████| 30/30S 50RPS 1509REQ
 ```
 
